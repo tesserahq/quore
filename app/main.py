@@ -1,0 +1,69 @@
+from typing import Callable
+from app.middleware.db_session import DBSessionMiddleware
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from app.config import get_settings
+
+from .routers import workspace, user, membership, project, ingest, llm
+from .routers.assistant import assistant_router
+from .ws import status
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from app.telemetry import setup_tracing
+from app.exceptions.handlers import register_exception_handlers
+from llama_index.core.workflow import Workflow
+from app.core.logging_config import get_logger
+
+
+def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
+    logger = get_logger()
+    settings = get_settings()
+
+    app = FastAPI()
+
+    if not testing and not settings.disable_auth:
+        logger.info("Main: Adding authentication middleware")
+        from app.middleware.authentication import AuthenticationMiddleware
+
+        app.add_middleware(AuthenticationMiddleware)
+    else:
+        logger.info("Main: No authentication middleware")
+        if auth_middleware:
+            app.add_middleware(auth_middleware)
+
+    app.add_middleware(DBSessionMiddleware)
+
+    # TODO: Restrict this to the allowed origins
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # Puedes restringir esto a dominios específicos
+        allow_credentials=True,
+        allow_methods=["*"],  # Permitir todos los métodos (GET, POST, etc.)
+        allow_headers=["*"],  # Permitir todos los headers
+    )
+
+    app.include_router(workspace.router)
+    app.include_router(user.router)
+    app.include_router(membership.router)
+    app.include_router(project.router)
+    app.include_router(ingest.router)
+    app.include_router(status.router)
+    app.include_router(llm.router)
+    app.include_router(assistant_router())
+
+    register_exception_handlers(app)
+
+    return app
+
+
+# Production app instance
+app = create_app()
+
+settings = get_settings()
+if settings.otel_enabled:
+    tracer_provider = setup_tracing()  # Or use env/config
+    FastAPIInstrumentor.instrument_app(app, tracer_provider=tracer_provider)
+
+
+@app.get("/")
+def main_route():
+    return {"message": "Hey, It is me Goku"}
