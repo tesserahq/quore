@@ -26,10 +26,10 @@ class Ingestor:
     """
 
     def __init__(
-        self, 
-        embedding_model: BaseEmbedding, 
+        self,
+        embedding_model: BaseEmbedding,
         vector_store: PGVectorStore,
-        storage: Optional[StorageManager] = None
+        storage: Optional[StorageManager] = None,
     ):
         self.embedding_model = embedding_model
         self.vector_store = vector_store

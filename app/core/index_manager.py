@@ -39,7 +39,12 @@ class IndexManager:
         storage (StorageManager, optional): Storage manager instance. Defaults to a new StorageManager instance.
     """
 
-    def __init__(self, db_session: Session, project: Project, storage: Optional[StorageManager] = None):
+    def __init__(
+        self,
+        db_session: Session,
+        project: Project,
+        storage: Optional[StorageManager] = None,
+    ):
         self.db = db_session
         self.project = project
         self.ingest_settings = project.ingest_settings_obj()

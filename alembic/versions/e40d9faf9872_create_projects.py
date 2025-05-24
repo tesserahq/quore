@@ -1,7 +1,7 @@
 """create projects
 
 Revision ID: e40d9faf9872
-Revises: aeca0aab0e4d
+Revises: create_workspaces_table
 Create Date: 2025-05-06 10:05:15.045646
 
 """
@@ -14,7 +14,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "e40d9faf9872"
-down_revision: Union[str, None] = "aeca0aab0e4d"
+down_revision: Union[str, None] = "create_workspaces_table"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -37,17 +37,22 @@ def upgrade() -> None:
         sa.Column("workspace_id", sa.UUID(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
-        sa.Column("ingest_settings", sa.JSON(), nullable=True),
+        sa.Column(
+            "ingest_settings",
+            postgresql.JSONB(),
+            nullable=False,
+            server_default=sa.text("'{}'::jsonb"),
+        ),
         sa.Column("llm_provider", sa.String(), nullable=False),
         sa.Column("llm", sa.String(), nullable=False),
         sa.Column("embed_model", sa.String(), nullable=False),
-    ),
-
+        sa.ForeignKeyConstraint(
+            ["workspace_id"],
+            ["workspaces.id"],
+            name="fk_projects_workspace_id_workspaces",
+        ),
+    )
     # ### end Alembic commands ###
-    sa.ForeignKeyConstraint(
-        ["workspace_id"],
-        ["workspaces.id"],
-    ),
 
 
 def downgrade() -> None:

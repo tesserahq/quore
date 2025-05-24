@@ -10,10 +10,10 @@ from app.schemas.project import ProjectCreate, ProjectUpdate
 
 
 def test_create_project(db: Session, setup_workspace):
+    workspace = setup_workspace
     service = ProjectService(db)
     settings = get_settings()
 
-    workspace = setup_workspace
     project_in = ProjectCreate(
         name="Test Project",
         workspace_id=workspace.id,

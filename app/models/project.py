@@ -78,10 +78,10 @@ class Project(Base, TimestampMixin):
     name = Column(String(50), nullable=False)
     description = Column(String, nullable=True)
     logo = Column(String, nullable=True)  # We'll handle file uploads separately
-    llm_provider = Column(String)
-    embed_model = Column(String)
+    llm_provider = Column(String, nullable=False)
+    embed_model = Column(String, nullable=False)
     system_prompt = Column(String, nullable=True)
-    llm = Column(String)
+    llm = Column(String, nullable=False)
     workspace_id = Column(
         UUID(as_uuid=True), ForeignKey("workspaces.id"), nullable=False
     )
@@ -103,6 +103,7 @@ class Project(Base, TimestampMixin):
 
     # Relationships
     workspace = relationship("Workspace", back_populates="projects")
+    plugins = relationship("ProjectPlugin", back_populates="project")
 
     def __init__(self, **kwargs):
         ingest_data = kwargs.pop("ingest_settings", None)

@@ -28,7 +28,7 @@ def upgrade() -> None:
             primary_key=True,
             server_default=sa.text("gen_random_uuid()"),
         ),
-        sa.Column("name", sa.String(50), nullable=False),
+        sa.Column("name", sa.String(100), nullable=False),
         sa.Column("description", sa.String, nullable=True),
         sa.Column("logo", sa.String, nullable=True),
         sa.Column("created_by_id", postgresql.UUID(as_uuid=True), nullable=False),
