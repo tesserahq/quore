@@ -8,6 +8,7 @@ from app.utils.auth import get_current_user
 from app.db import get_db
 from app.services.project import ProjectService
 from app.core.index_manager import IndexManager
+from app.core.ingestor import Ingestor
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -50,6 +51,7 @@ def ingest_text(
 
     # Use IndexManager to ingest the text
     index_manager = IndexManager(db, project)
-    index_manager.ingest_raw_text(request.id, request.text, request.labels)
+    ingestor = Ingestor(index_manager.embedding_model(), index_manager.vector_store())
+    ingestor.ingest_raw_text(request.id, request.text, request.labels)
 
     return {"message": "Text successfully ingested into the vector store."}

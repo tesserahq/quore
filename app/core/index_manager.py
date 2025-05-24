@@ -3,17 +3,15 @@ from app.config import get_settings
 from app.models.project import Project
 from llama_index.core import StorageContext
 from llama_index.core import VectorStoreIndex
-from llama_index.vector_stores.postgres import PGVectorStore
 from sqlalchemy.orm import Session
 from llama_index.core.schema import Document
 from app.constants.providers import (
     OPENAI_PROVIDER,
-    get_embedding_provider,
     get_llm_provider,
+    get_embedding_provider,
 )
 from sqlalchemy import text
 from typing import Optional
-from llama_index.core.indices import load_index_from_storage
 from llama_index.core.tools.query_engine import QueryEngineTool
 from llama_index.core.base.base_query_engine import BaseQueryEngine
 from typing import Any
@@ -22,11 +20,23 @@ from llama_index.llms.openai import OpenAI
 from app.core.logging_config import get_logger
 from llama_index.storage.chat_store.postgres import PostgresChatStore
 from llama_index.core.memory import ChatMemoryBuffer
-
-logger = get_logger()
+from llama_index.vector_stores.postgres import PGVectorStore
+from app.core.telemetry import instrument_method, instrument_span
 
 
 class IndexManager:
+    """A class to manage vector indices and document storage for projects.
+
+    This class handles the creation, loading, and management of vector indices
+    using LlamaIndex, with support for Redis document storage and PostgreSQL
+    vector storage. It provides functionality for document querying,
+    and chat memory management.
+
+    Args:
+        db_session (Session): SQLAlchemy database session
+        project (Project): Project instance containing configuration and settings
+    """
+
     def __init__(self, db_session: Session, project: Project):
         self.db = db_session
         self.project = project
@@ -35,18 +45,27 @@ class IndexManager:
         self.logger = get_logger()
 
     def get_redis_docstore(self) -> RedisDocumentStore:
-        """Get a Redis document store instance using settings from config."""
-        print(self.settings.redis_host)
-        print(self.settings.redis_port)
-        print(self.settings.redis_namespace)
+        """Get a Redis document store instance using settings from config.
+
+        Returns:
+            RedisDocumentStore: Configured Redis document store instance
+        """
         return RedisDocumentStore.from_host_and_port(
             host=self.settings.redis_host,
             port=self.settings.redis_port,
             namespace=self.settings.redis_namespace,
         )
 
-    def get_chat_memory(self, project_id: str, user_id: str) -> PostgresChatStore:
-        """Get a chat store instance using settings from config."""
+    def get_chat_memory(self, project_id: str, user_id: str) -> ChatMemoryBuffer:
+        """Get a chat memory buffer instance for a specific project and user.
+
+        Args:
+            project_id (str): Unique identifier for the project
+            user_id (str): Unique identifier for the user
+
+        Returns:
+            ChatMemoryBuffer: Configured chat memory buffer with PostgreSQL storage
+        """
         settings = get_settings()
         chat_store = PostgresChatStore.from_uri(
             uri=settings.database_url,
@@ -58,42 +77,76 @@ class IndexManager:
             chat_store_key=f"{project_id}-{user_id}",
         )
 
+    def default_text(self) -> str:
+        """Get the default text content for initializing a new index.
+
+        Returns:
+            str: The content of the default markdown file
+        """
+        default_doc_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+            "docs",
+            "default_index.md",
+        )
+        with open(default_doc_path, "r") as f:
+            return f.read()
+
+    @instrument_method()
     def create_index(self):
-        """Create an index for a given project."""
+        """Create a new vector index for the project.
 
+        Creates a new vector index with a default markdown document to ensure
+        the index is initialized properly. The index uses the configured
+        vector store and embedding model.
+
+        Returns:
+            VectorStoreIndex: The newly created vector index
+        """
         # create (or load) docstore and add nodes
-        docstore = self.get_redis_docstore()
+        with instrument_span("get_redis_docstore") as docstore_span:
+            docstore = self.get_redis_docstore()
+            docstore_span.set_attribute("redis_host", self.settings.redis_host)
+            docstore_span.set_attribute("redis_port", self.settings.redis_port)
 
-        storage_context = StorageContext.from_defaults(
-            vector_store=self.vector_store(), docstore=docstore
-        )
+        with instrument_span("create_storage_context") as storage_span:
+            storage_context = StorageContext.from_defaults(
+                vector_store=self.vector_store(), docstore=docstore
+            )
+            storage_span.set_attribute("vector_store_type", "PGVectorStore")
 
-        # TODO: I think it would be a good idea to have a default document per project
-        # to ensure that the index is created even if no documents are ingested
-        # This is a placeholder document. You should replace it with actual documents.
-        document = Document(text="Hello world", id_=str(self.project.id))
+        with instrument_span("create_document") as doc_span:
+            document = Document(text=self.default_text(), id_=str(self.project.id))
+            doc_span.set_attribute("document_id", str(self.project.id))
 
-        self.logger.debug(
-            "IndexManager: Creating index", extra={"project_id": self.project.id}
-        )
-        index = VectorStoreIndex.from_documents(
-            [document],
-            storage_context=storage_context,
-            embed_model=self.embedding_model(),
-            show_progress=False,
-        )
+        with instrument_span("create_vector_store_index") as index_span:
+            index = VectorStoreIndex.from_documents(
+                [document],
+                storage_context=storage_context,
+                embed_model=self.embedding_model(),
+                show_progress=False,
+            )
+            index_span.set_attribute("embed_model", self.project.embed_model)
+
         return index
 
+    @instrument_method()
     def load_index(self):
-        """Load an index for a given project."""
+        """Load an existing vector index for the project.
+
+        Loads the vector index using the configured vector store and
+        embedding model. If no index exists, creates an empty one.
+
+        Returns:
+            VectorStoreIndex: The loaded vector index
+        """
 
         # create (or load) docstore and add nodes
         docstore = self.get_redis_docstore()
 
-        embed_model = self.embedding_model()
+        embed_model = self.ingestor.embedding_model()
 
         storage_context = StorageContext.from_defaults(
-            vector_store=self.vector_store(), docstore=docstore
+            vector_store=self.ingestor.vector_store(), docstore=docstore
         )
 
         index = VectorStoreIndex(
@@ -102,69 +155,29 @@ class IndexManager:
 
         return index
 
+    @instrument_method()
     def drop_index(self):
+        """Drop the vector index table for the project.
+
+        Removes the vector index table from the database if it exists.
+        This is a destructive operation that will remove all indexed data.
+        """
         # Logic to drop the index table
         table_name = self.project.vector_llama_index_name()
         self.db.execute(text(f"DROP TABLE IF EXISTS {table_name};"))
         self.db.commit()
 
-    def vector_store(self):
-        self.logger.debug(
-            "IndexManager: Creating vector store", extra={"project_id": self.project.id}
-        )
-        return PGVectorStore.from_params(
-            database=self.settings.database_url_obj.database,
-            host=self.settings.database_url_obj.host,
-            password=self.settings.database_url_obj.password,
-            port=self.settings.database_url_obj.port,
-            user=self.settings.database_url_obj.username,
-            table_name=self.project.vector_index_name(),
-            embed_dim=self.ingest_settings.embed_dim,
-            hybrid_search=True,
-            hnsw_kwargs={
-                "hnsw_m": self.ingest_settings.hnsw_m,
-                "hnsw_ef_construction": self.ingest_settings.hnsw_ef_construction,
-                "hnsw_ef_search": self.ingest_settings.hnsw_ef_search,
-                "hnsw_dist_method": self.ingest_settings.hnsw_dist_method,
-            },
-        )
-
-    def ingest_raw_text(
-        self, id: str, text: str, labels: Optional[dict[str, str]] = None
-    ):
-        """Ingest raw text into the vector store for a given project."""
-        # Create a document from the raw text
-        document = Document(
-            text=text, id_=id, metadata={"labels": labels, "ref_doc_id": id}
-        )
-
-        index = self.load_index()
-        self.logger.info("Refreshing docs")
-        index.refresh_ref_docs([document])
-        # index.update_ref_doc(document)
-
-        # # Create the vector store
-        # self.ingest_documents([document])
-
-    def ingest_documents(self, documents: list[Document]):
-        """Ingest documents into the vector store for a given project."""
-        storage_context = StorageContext.from_defaults(vector_store=self.vector_store())
-        index = VectorStoreIndex.from_documents(
-            documents,
-            storage_context=storage_context,
-            show_progress=False,
-            embed_model=self.embedding_model(),
-        )
-
-        return index
-
     def create_query_engine(self, **kwargs: Any) -> BaseQueryEngine:
-        """
-        Create a query engine for the given index.
+        """Create a query engine for the project's index.
+
+        Creates a query engine with the project's configured LLM and
+        optional parameters for query customization.
 
         Args:
-            index: The index to create a query engine for.
-            params (optional): Additional parameters for the query engine, e.g: similarity_top_k
+            **kwargs: Additional parameters for the query engine configuration
+
+        Returns:
+            BaseQueryEngine: Configured query engine instance
         """
         # TODO: This settings should come from the project settings
         top_k = int(os.getenv("TOP_K", 0))
@@ -173,19 +186,10 @@ class IndexManager:
 
         index = self.load_index()
 
-        self.logger.debug(
-            "IndexManager: Loading LLM", extra={"project_id": self.project.id}
-        )
-        llm = OpenAI(model="gpt-4o-mini", api_key=self.project_openai_api_key())
+        llm = OpenAI(model="gpt-4o-mini", api_key=self.llm_api_key())
 
-        self.logger.debug(
-            "IndexManager: Creating query engine", extra={"project_id": self.project.id}
-        )
         query_engine = index.as_query_engine(llm=llm)
 
-        self.logger.debug(
-            "IndexManager: Query engine created", extra={"project_id": self.project.id}
-        )
         return query_engine
 
     def get_query_engine_tool(
@@ -194,13 +198,15 @@ class IndexManager:
         description: Optional[str] = None,
         **kwargs: Any,
     ) -> QueryEngineTool:
-        """
-        Get a query engine tool for the given index.
+        """Create a query engine tool for the project's index.
 
         Args:
-            index: The index to create a query engine for.
-            name (optional): The name of the tool.
-            description (optional): The description of the tool.
+            name (Optional[str]): Name for the query tool
+            description (Optional[str]): Description of the tool's functionality
+            **kwargs: Additional parameters for the query engine configuration
+
+        Returns:
+            QueryEngineTool: Configured query engine tool instance
         """
         if name is None:
             name = "query_index"
@@ -222,60 +228,70 @@ class IndexManager:
             description=description,
         )
 
-    # def ingest(self, labels: Optional[dict[str, str]] = None):
-    #     """Ingest documents into the vector store for a given project."""
+    def vector_store(self) -> PGVectorStore:
+        """Create a PostgreSQL vector store instance for the project.
 
-    #     # load the documents and create the index
-    #     reader = SimpleDirectoryReader(
-    #         self.settings.data_dir,
-    #         recursive=True,
-    #     )
+        Configures and returns a PGVectorStore instance with project-specific
+        settings including HNSW parameters for hybrid search.
 
-    #     documents = reader.load_data()
-
-    #     storage_context = StorageContext.from_defaults(vector_store=self.vector_store())
-    #     index = VectorStoreIndex.from_documents(
-    #         documents, storage_context=storage_context, show_progress=False,
-    #         metadata=labels
-    #     )
-    #     query_engine = index.as_query_engine()
-
-    def embedding_model(self):
-        self.logger.debug(
-            "IndexManager: Getting Embedding model",
-            extra={"project_id": self.project.id},
-        )
-        return get_embedding_provider(
-            self.project.llm_provider,
-            model_name=self.project.embed_model,
-            api_key=self.project_openai_api_key(),
+        Returns:
+            PGVectorStore: Configured PostgreSQL vector store instance
+        """
+        return PGVectorStore.from_params(
+            database=self.settings.database_url_obj.database,
+            host=self.settings.database_url_obj.host,
+            password=self.settings.database_url_obj.password,
+            port=self.settings.database_url_obj.port,
+            user=self.settings.database_url_obj.username,
+            table_name=self.project.vector_index_name(),
+            embed_dim=self.ingest_settings.embed_dim,
+            hybrid_search=True,
+            hnsw_kwargs={
+                "hnsw_m": self.ingest_settings.hnsw_m,
+                "hnsw_ef_construction": self.ingest_settings.hnsw_ef_construction,
+                "hnsw_ef_search": self.ingest_settings.hnsw_ef_search,
+                "hnsw_dist_method": self.ingest_settings.hnsw_dist_method,
+            },
         )
 
     def llm(self):
-        self.logger.debug(
-            "IndexManager: LLM provider: %s",
-            self.project.llm_provider,
-            extra={"project_id": self.project.id},
-        )
+        """Get the configured LLM provider for the project.
+
+        Returns:
+            BaseLLM: Configured language model instance
+        """
+
         return get_llm_provider(
             self.project.llm_provider,
             model_name=self.project.llm,
-            api_key=self.project_openai_api_key(),
+            api_key=self.llm_api_key(),
         )
 
-    def project_openai_api_key(self):
+    def llm_api_key(self):
+        """Get the appropriate OpenAI API key for the project.
+
+        Returns the project-specific API key if configured, otherwise
+        falls back to the global API key.
+
+        Returns:
+            Optional[str]: OpenAI API key or None if not using OpenAI
+        """
         if self.project.llm_provider != OPENAI_PROVIDER:
             return None
 
         if self.ingest_settings.has_key("openai_api_key") == False:
-            self.logger.debug(
-                "IndexManager: Using global OpenAI API key",
-                extra={"project_id": self.project.id},
-            )
             return self.settings.openai_api_key
 
-        self.logger.debug(
-            "IndexManager: Using project-specific OpenAI API key",
-            extra={"project_id": self.project.id},
+        return self.ingest_settings.get("openai_api_key")
+
+    def embedding_model(self):
+        """Get the configured embedding model for the project.
+
+        Returns:
+            BaseEmbedding: Configured embedding model instance
+        """
+        return get_embedding_provider(
+            self.project.llm_provider,
+            model_name=self.project.embed_model,
+            api_key=self.llm_api_key(),
         )
-        return self.ingest_settings.get("openai_api_key")  # adapt as needed

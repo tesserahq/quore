@@ -1,6 +1,7 @@
 services:
   api:
-    build: .
+    image: mustela/quore:main
+    pull_policy: always
     ports:
       - "8000:8000"
     environment:
@@ -10,10 +11,23 @@ services:
     depends_on:
       - db
       - redis
-    volumes:
-      - .:/app
-    command: ./start.sh
+  quore-portal:
+    image: mustela/quore-portal:main
+    pull_policy: always
+    expose:
+      - "3000"
+    env_file:
+      - .env
 
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - quore-portal
+      - api
   db:
     image: pgvector/pgvector:pg17
     env_file: ".env"
