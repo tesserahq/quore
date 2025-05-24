@@ -9,7 +9,7 @@ from llama_index.core.base.embeddings.base import BaseEmbedding
 from typing import Optional
 from llama_index.vector_stores.postgres import PGVectorStore
 from app.core.telemetry import instrument_method, instrument_span
-from app.core.storage_context import StorageManager
+from app.core.storage_manager import StorageManager
 
 
 class Ingestor:

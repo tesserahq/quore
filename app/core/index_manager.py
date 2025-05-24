@@ -22,7 +22,7 @@ from llama_index.storage.chat_store.postgres import PostgresChatStore
 from llama_index.core.memory import ChatMemoryBuffer
 from llama_index.vector_stores.postgres import PGVectorStore
 from app.core.telemetry import instrument_method, instrument_span
-from app.core.storage_context import StorageManager
+from app.core.storage_manager import StorageManager
 
 
 class IndexManager:
@@ -98,7 +98,7 @@ class IndexManager:
 
         with instrument_span("create_storage_context") as storage_span:
             storage_context = StorageContext.from_defaults(
-                vector_store=self.vector_store(), docstore=docstore
+                vector_store=self.storage.vector_store(self.project), docstore=docstore
             )
             storage_span.set_attribute("vector_store_type", "PGVectorStore")
 
@@ -134,7 +134,7 @@ class IndexManager:
         embed_model = self.ingestor.embedding_model()
 
         storage_context = StorageContext.from_defaults(
-            vector_store=self.ingestor.vector_store(), docstore=docstore
+            vector_store=self.storage.vector_store(self.project), docstore=docstore
         )
 
         index = VectorStoreIndex(
@@ -174,9 +174,7 @@ class IndexManager:
 
         index = self.load_index()
 
-        llm = OpenAI(model="gpt-4o-mini", api_key=self.llm_api_key())
-
-        query_engine = index.as_query_engine(llm=llm)
+        query_engine = index.as_query_engine(llm=self.llm)
 
         return query_engine
 
@@ -201,45 +199,12 @@ class IndexManager:
         if description is None:
             description = "Use this tool to retrieve information about the text corpus from an index."
 
-        self.logger.debug(
-            "Creating query engine", extra={"project_id": self.project.id}
-        )
         query_engine = self.create_query_engine(**kwargs)
-        self.logger.debug("Query engine created", extra={"project_id": self.project.id})
 
-        self.logger.debug(
-            "Creating Query engine tool", extra={"project_id": self.project.id}
-        )
         return QueryEngineTool.from_defaults(
             query_engine=query_engine,
             name=name,
             description=description,
-        )
-
-    def vector_store(self) -> PGVectorStore:
-        """Create a PostgreSQL vector store instance for the project.
-
-        Configures and returns a PGVectorStore instance with project-specific
-        settings including HNSW parameters for hybrid search.
-
-        Returns:
-            PGVectorStore: Configured PostgreSQL vector store instance
-        """
-        return PGVectorStore.from_params(
-            database=self.settings.database_url_obj.database,
-            host=self.settings.database_url_obj.host,
-            password=self.settings.database_url_obj.password,
-            port=self.settings.database_url_obj.port,
-            user=self.settings.database_url_obj.username,
-            table_name=self.project.vector_index_name(),
-            embed_dim=self.ingest_settings.embed_dim,
-            hybrid_search=True,
-            hnsw_kwargs={
-                "hnsw_m": self.ingest_settings.hnsw_m,
-                "hnsw_ef_construction": self.ingest_settings.hnsw_ef_construction,
-                "hnsw_ef_search": self.ingest_settings.hnsw_ef_search,
-                "hnsw_dist_method": self.ingest_settings.hnsw_dist_method,
-            },
         )
 
     def llm(self):
