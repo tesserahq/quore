@@ -9,6 +9,7 @@ from llama_index.core.base.embeddings.base import BaseEmbedding
 from typing import Optional
 from llama_index.vector_stores.postgres import PGVectorStore
 from app.core.telemetry import instrument_method, instrument_span
+from app.core.storage_context import StorageManager
 
 
 class Ingestor:
@@ -19,27 +20,21 @@ class Ingestor:
     conjunction with IndexManager to maintain vector indices.
 
     Args:
-        db_session (Session): SQLAlchemy database session
-        project (Project): Project instance containing configuration and settings
-        index_manager (IndexManager): The index manager instance to use for index operations
+        embedding_model (BaseEmbedding): The embedding model to use
+        vector_store (PGVectorStore): The vector store to use
+        storage (StorageManager, optional): Storage manager instance. Defaults to a new StorageManager instance.
     """
 
-    def __init__(self, embedding_model: BaseEmbedding, vector_store: PGVectorStore):
+    def __init__(
+        self, 
+        embedding_model: BaseEmbedding, 
+        vector_store: PGVectorStore,
+        storage: Optional[StorageManager] = None
+    ):
         self.embedding_model = embedding_model
         self.vector_store = vector_store
         self.settings = get_settings()
-
-    def get_redis_docstore(self) -> RedisDocumentStore:
-        """Get a Redis document store instance using settings from config.
-
-        Returns:
-            RedisDocumentStore: Configured Redis document store instance
-        """
-        return RedisDocumentStore.from_host_and_port(
-            host=self.settings.redis_host,
-            port=self.settings.redis_port,
-            namespace=self.settings.redis_namespace,
-        )
+        self.storage = storage or StorageManager()
 
     @instrument_method()
     def ingest_raw_text(
@@ -62,7 +57,7 @@ class Ingestor:
         )
 
         # create (or load) docstore and add nodes
-        docstore = self.get_redis_docstore()
+        docstore = self.storage.get_docstore()
 
         storage_context = StorageContext.from_defaults(
             vector_store=self.vector_store, docstore=docstore

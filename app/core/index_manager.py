@@ -22,6 +22,7 @@ from llama_index.storage.chat_store.postgres import PostgresChatStore
 from llama_index.core.memory import ChatMemoryBuffer
 from llama_index.vector_stores.postgres import PGVectorStore
 from app.core.telemetry import instrument_method, instrument_span
+from app.core.storage_context import StorageManager
 
 
 class IndexManager:
@@ -35,26 +36,16 @@ class IndexManager:
     Args:
         db_session (Session): SQLAlchemy database session
         project (Project): Project instance containing configuration and settings
+        storage (StorageManager, optional): Storage manager instance. Defaults to a new StorageManager instance.
     """
 
-    def __init__(self, db_session: Session, project: Project):
+    def __init__(self, db_session: Session, project: Project, storage: Optional[StorageManager] = None):
         self.db = db_session
         self.project = project
         self.ingest_settings = project.ingest_settings_obj()
         self.settings = get_settings()
         self.logger = get_logger()
-
-    def get_redis_docstore(self) -> RedisDocumentStore:
-        """Get a Redis document store instance using settings from config.
-
-        Returns:
-            RedisDocumentStore: Configured Redis document store instance
-        """
-        return RedisDocumentStore.from_host_and_port(
-            host=self.settings.redis_host,
-            port=self.settings.redis_port,
-            namespace=self.settings.redis_namespace,
-        )
+        self.storage = storage or StorageManager()
 
     def get_chat_memory(self, project_id: str, user_id: str) -> ChatMemoryBuffer:
         """Get a chat memory buffer instance for a specific project and user.
@@ -102,11 +93,8 @@ class IndexManager:
         Returns:
             VectorStoreIndex: The newly created vector index
         """
-        # create (or load) docstore and add nodes
-        with instrument_span("get_redis_docstore") as docstore_span:
-            docstore = self.get_redis_docstore()
-            docstore_span.set_attribute("redis_host", self.settings.redis_host)
-            docstore_span.set_attribute("redis_port", self.settings.redis_port)
+
+        docstore = self.storage.get_docstore()
 
         with instrument_span("create_storage_context") as storage_span:
             storage_context = StorageContext.from_defaults(
@@ -141,7 +129,7 @@ class IndexManager:
         """
 
         # create (or load) docstore and add nodes
-        docstore = self.get_redis_docstore()
+        docstore = self.storage.get_docstore()
 
         embed_model = self.ingestor.embedding_model()
 
