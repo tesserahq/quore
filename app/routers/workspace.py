@@ -50,7 +50,9 @@ def update_workspace(
     workspace: Workspace = Depends(get_workspace_by_id),
     db: Session = Depends(get_db),
 ):
-    updated_workspace = WorkspaceService(db).update_workspace(workspace.id, workspace_update)
+    updated_workspace = WorkspaceService(db).update_workspace(
+        workspace.id, workspace_update
+    )
     if updated_workspace is None:
         raise HTTPException(status_code=404, detail="Workspace not found")
     return updated_workspace
