@@ -9,6 +9,7 @@ from app.schemas.credential import (
     CredentialCreate,
     CredentialCreateRequest,
     CredentialUpdate,
+    CredentialTypeInfo,
 )
 from app.services.credential import CredentialService
 from app.services.workspace import WorkspaceService
@@ -17,10 +18,17 @@ from app.utils.auth import get_current_user
 from app.models.workspace import Workspace
 from app.models.credential import Credential
 from app.utils.dependencies import get_workspace_by_id
+from app.core.credentials import credential_registry
 
 router = APIRouter(
     prefix="/workspaces/{workspace_id}/credentials", tags=["credentials"]
 )
+
+
+@router.get("/types", response_model=List[CredentialTypeInfo])
+def list_credential_types():
+    """List all available credential types and their field schemas."""
+    return list(credential_registry.values())
 
 
 def get_credential_by_id(

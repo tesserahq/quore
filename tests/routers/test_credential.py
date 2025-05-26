@@ -1,5 +1,40 @@
 import pytest
 from uuid import uuid4
+from app.constants.credentials import CredentialType
+
+
+def test_list_credential_types(client, setup_workspace):
+    """Test GET /workspaces/{workspace_id}/credentials/types endpoint."""
+    workspace = setup_workspace
+
+    response = client.get(f"/workspaces/{workspace.id}/credentials/types")
+    assert response.status_code == 200
+    data = response.json()
+
+    # Verify we get a list of credential types
+    assert isinstance(data, list)
+    assert len(data) > 0
+
+    # Verify each credential type has the expected structure
+    for cred_type in data:
+        assert "type_name" in cred_type
+        assert "display_name" in cred_type
+        assert "fields" in cred_type
+        assert isinstance(cred_type["fields"], list)
+
+        # Verify fields have the expected structure
+        for field in cred_type["fields"]:
+            assert "name" in field
+            assert "label" in field
+            assert "type" in field
+            assert "input_type" in field
+            assert "required" in field
+
+    # Verify specific credential types are present
+    type_names = {cred_type["type_name"] for cred_type in data}
+    assert CredentialType.GITHUB_PAT in type_names
+    assert CredentialType.GITLAB_PAT in type_names
+    assert CredentialType.SSH_KEY in type_names
 
 
 def test_list_credentials(client, setup_credential, setup_workspace):
