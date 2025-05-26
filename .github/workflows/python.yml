@@ -35,6 +35,8 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/quore_test
+      CREDENTIAL_MASTER_KEY: "test"
+      PLUGINS_DIR: /tmp/plugins
     steps:
       - uses: actions/checkout@v3
       - name: Wait for DB to be ready

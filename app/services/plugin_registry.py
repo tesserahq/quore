@@ -25,6 +25,19 @@ class PluginRegistryService:
         self.db.add(plugin)
         self.db.commit()
         self.db.refresh(plugin)
+
+        # Clone the repository
+        from app.core.plugin_manager.manager import PluginManager
+
+        try:
+            plugin_manager = PluginManager(self.db, UUID(str(plugin.id)))
+            plugin_manager.clone_repository()
+        except Exception as e:
+            # If cloning fails, delete the plugin and re-raise the error
+            self.db.delete(plugin)
+            self.db.commit()
+            raise RuntimeError(f"Failed to clone plugin repository: {str(e)}")
+
         return plugin
 
     def get_plugin(self, plugin_id: UUID) -> Optional[Plugin]:

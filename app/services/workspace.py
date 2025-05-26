@@ -5,6 +5,7 @@ from sqlalchemy import or_, and_
 from app.models.workspace import Workspace
 from app.schemas.workspace import WorkspaceCreate, WorkspaceUpdate
 from app.utils.db.filtering import apply_filters
+from app.services.workspace_prune import WorkspacePruneService
 
 """
 Module providing the WorkspaceService class for managing Workspace entities.
@@ -15,6 +16,7 @@ Includes methods for CRUD operations and dynamic searching with flexible filters
 class WorkspaceService:
     def __init__(self, db: Session):
         self.db = db
+        self.prune_service = WorkspacePruneService(db)
 
     def get_workspace(self, workspace_id: UUID) -> Optional[Workspace]:
         return self.db.query(Workspace).filter(Workspace.id == workspace_id).first()
@@ -48,6 +50,11 @@ class WorkspaceService:
             self.db.query(Workspace).filter(Workspace.id == workspace_id).first()
         )
         if db_workspace:
+            # First prune all workspace resources
+            if not self.prune_service.prune_workspace(workspace_id):
+                return False
+
+            # Then delete the workspace from the database
             self.db.delete(db_workspace)
             self.db.commit()
             return True

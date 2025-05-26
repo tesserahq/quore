@@ -4,11 +4,12 @@ from typing import List, Optional, Dict, Any
 from uuid import UUID
 
 from app.db import get_db
-from app.schemas.plugin import PluginResponse, PluginCreate
+from app.schemas.plugin import PluginResponse, PluginCreate, PluginUpdate
 from app.services.plugin_registry import PluginRegistryService
 from app.schemas.common import ListResponse
 from app.models.workspace import Workspace
-from app.utils.dependencies import get_workspace_by_id
+from app.models.project import Project
+from app.utils.dependencies import get_workspace_by_id, get_project_by_id
 
 router = APIRouter(tags=["plugins"])
 
@@ -41,11 +42,11 @@ def create_workspace_plugin(
     "/projects/{project_id}/plugins", response_model=ListResponse[PluginResponse]
 )
 def list_project_plugins(
-    project_id: UUID,
+    project: Project = Depends(get_project_by_id),
     db: Session = Depends(get_db),
 ):
     """List all enabled plugins for a project."""
-    plugins = PluginRegistryService(db).get_project_plugins(project_id)
+    plugins = PluginRegistryService(db).get_project_plugins(project.id)
     return ListResponse(data=plugins)
 
 
@@ -53,12 +54,12 @@ def list_project_plugins(
     "/projects/{project_id}/plugins/{plugin_id}", response_model=PluginResponse
 )
 def enable_project_plugin(
-    project_id: UUID,
-    plugin_id: UUID,
+    project: Project = Depends(get_project_by_id),
+    plugin_id: UUID = None,
     config: Optional[Dict[str, Any]] = None,
     db: Session = Depends(get_db),
 ):
     """Enable a plugin in a project."""
     service = PluginRegistryService(db)
-    project_plugin = service.enable_plugin_in_project(project_id, plugin_id, config)
+    project_plugin = service.enable_plugin_in_project(project.id, plugin_id, config)
     return service.get_plugin(plugin_id)

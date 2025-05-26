@@ -40,6 +40,32 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
     )
+
+    op.create_table(
+        "credentials",
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("name", sa.String(length=100), nullable=False),
+        sa.Column(
+            "type",
+            sa.String(length=50),
+            nullable=False,
+        ),
+        sa.Column("encrypted_data", sa.LargeBinary(), nullable=False),
+        sa.Column("created_by_id", sa.UUID(), nullable=False),
+        sa.Column("workspace_id", sa.UUID(), nullable=False),
+        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["created_by_id"],
+            ["users.id"],
+        ),
+        sa.ForeignKeyConstraint(
+            ["workspace_id"],
+            ["workspaces.id"],
+        ),
+        sa.PrimaryKeyConstraint("id"),
+    )
+
     op.create_table(
         "plugins",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -53,15 +79,18 @@ def upgrade() -> None:
         sa.Column(
             "plugin_metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=True
         ),
-        sa.Column(
-            "credentials", postgresql.JSONB(astext_type=sa.Text()), nullable=True
-        ),
+        sa.Column("credential_id", sa.UUID(), nullable=True),
         sa.Column("workspace_id", sa.UUID(), nullable=False),
+        sa.Column("credentials_id", sa.UUID(), nullable=True),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(
             ["workspace_id"],
             ["workspaces.id"],
+        ),
+        sa.ForeignKeyConstraint(
+            ["credentials_id"],
+            ["credentials.id"],
         ),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -142,4 +171,5 @@ def downgrade() -> None:
     op.drop_table("plugin_tools")
     op.drop_table("plugins")
     op.drop_table("memberships")
+    op.drop_table("credentials")
     # ### end Alembic commands ###

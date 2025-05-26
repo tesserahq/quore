@@ -7,6 +7,17 @@ from app.models.project_plugin import ProjectPlugin
 from tests.fixtures.workspace_fixtures import setup_workspace
 from tests.fixtures.project_fixtures import setup_project
 from tests.fixtures.plugin_fixtures import sample_plugin_data, setup_plugin
+from unittest.mock import patch
+
+
+# Global fixture to mock PluginManager.clone_repository for all tests
+@pytest.fixture(autouse=True)
+def mock_plugin_manager_clone_repository():
+    with patch(
+        "app.core.plugin_manager.manager.PluginManager.clone_repository"
+    ) as mock_clone:
+        mock_clone.return_value = None  # Simulate success
+        yield mock_clone
 
 
 def test_list_workspace_plugins(client, db, setup_workspace, setup_plugin):

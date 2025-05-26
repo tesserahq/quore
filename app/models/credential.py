@@ -28,6 +28,7 @@ class Credential(Base, TimestampMixin):
     # Relationships
     created_by = relationship("User", back_populates="credentials")
     workspace = relationship("Workspace", back_populates="credentials")
+    plugins = relationship("Plugin", back_populates="credential")
 
     def __repr__(self):
         return f"<Credential(id={self.id}, name={self.name}, type={self.type}, workspace_id={self.workspace_id})>"

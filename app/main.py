@@ -13,6 +13,7 @@ from .routers import (
     llm,
     plugin,
     credential,
+    system,
 )
 from .routers.assistant import assistant_router
 from .ws import status
@@ -60,6 +61,7 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
     app.include_router(plugin.router)
     app.include_router(credential.router)
     app.include_router(assistant_router())
+    app.include_router(system.router)
 
     register_exception_handlers(app)
 

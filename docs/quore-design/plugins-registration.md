@@ -100,11 +100,14 @@ If no manifest is present, the manager could also have some hardcoded fallbacks 
 
 ### Launching the Plugin Subprocess
 
-After determining the appropriate start command, the manager launches the plugin server as a subprocess. This is done initially with Python’s subprocess.Popen for flexibility (later could be adapted to use asyncio’s create_subprocess, but using Popen is straightforward). Key considerations when launching:
+After determining the appropriate start command, the manager launches the plugin server as a subprocess. This is done initially with Python’s subprocess. Popen for flexibility (later could be adapted to use asyncio’s create_subprocess, but using Popen is straightforward). Key considerations when launching:
 
 * Command construction: The command should be an array of executable and arguments, e.g. ["npm", "start"] or ["python", "main.py"]. Avoid invoking via shell unless necessary, to prevent shell injection issues (since we trust the plugin code, shell injection is less a concern, but using list form is still cleaner). If using a manifest-provided command string, you might use shell=True or parse it into args manually.
+
 * Working directory: Set cwd to the plugin’s repository directory. This ensures the process runs in the context of its files (for example, Node will look at local node_modules, Python might have relative imports or files).
+
 * Environment variables: If a dynamic port or other config is needed, prepare an env dict. For example, choose an available port and set env["PORT"] = "12345". Also merge in the current environment (so that PATH and other necessary vars are inherited). If the plugin manifest or configuration requires specific env vars (like API keys or secrets), those should be provided here as well.
+
 * Dynamic port selection: It’s important to avoid port collisions. The manager can request a free TCP port from the OS by binding to port 0 on localhost and letting the OS pick one, then using that port for the plugin ￼. For example:
 
 ```python
@@ -155,8 +158,11 @@ The PluginInfo data structure would hold the process and port (and we’d set la
 After launching the subprocess, the manager should verify that the plugin server actually starts and is ready to accept requests. There are a few ways to detect readiness:
 
 * Polling a health endpoint: If the MCP server exposes an HTTP endpoint (which is likely for an OpenAPI-based plugin), the manager can periodically attempt an HTTP request to it. A common approach is to ping the root URL or a known discovery endpoint (for example, some MCP servers might expose GET / or /healthz or the OpenAPI JSON at /openapi.json). If the request succeeds (or returns expected data) then the server is ready. Using a small timeout for each request (e.g. 1 second) and retrying until a global timeout (like 10-30 seconds) is reached is prudent.
+
 * Checking process output: In addition to or instead of HTTP polling, the manager can watch the stdout of the process for a specific log line that indicates readiness. For example, many servers print a message like “Listening on port 12345” or “Server started”. The manager could read from process.stdout asynchronously and look for such a cue. This can sometimes detect readiness earlier than an HTTP poll, and also catch errors if the server fails to start (by reading error output).
+
 * Process exit check: Continuously check if the process has exited (using process.poll()). If it exits before becoming ready, it likely crashed or terminated, so the manager should capture the stderr output, log an error (or surface it), and not mark it as running.
+
 * Timeout: If neither a successful poll nor a readiness log is seen within a reasonable timeframe (say 30 seconds), the manager should assume the startup failed or hung. In that case, it should terminate the process (send a kill signal) and report a failure to start. This prevents orphaned processes that never became ready.
 
 An example flow using polling might be:

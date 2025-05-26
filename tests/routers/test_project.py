@@ -225,4 +225,4 @@ def test_get_nodes_nonexistent_project(client):
     non_existent_id = "00000000-0000-0000-0000-000000000000"
     response = client.get(f"/projects/{non_existent_id}/nodes")
     assert response.status_code == 404
-    assert response.json()["detail"] == f"Project with ID {non_existent_id} not found"
+    assert response.json()["detail"] == f"Project not found"

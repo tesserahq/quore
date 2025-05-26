@@ -22,4 +22,4 @@ Quore is an intelligent document management and analysis system designed to help
 - Leverage custom metadata for better organization
 
 ## Support
-For any questions or assistance, please refer to our documentation or contact support. 
+For any questions or assistance, please refer to our documentation or contact support.
