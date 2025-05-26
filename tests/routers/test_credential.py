@@ -1,0 +1,121 @@
+import pytest
+from uuid import uuid4
+
+
+def test_list_credentials(client, setup_credential, setup_workspace):
+    """Test GET /workspaces/{workspace_id}/credentials endpoint."""
+    credential = setup_credential
+    workspace = setup_workspace
+
+    response = client.get(f"/workspaces/{workspace.id}/credentials")
+    assert response.status_code == 200
+    data = response.json()
+    assert "data" in data
+    assert isinstance(data["data"], list)
+
+    # Make sure the response contains the correct credential
+    assert len(data["data"]) == 1
+    assert data["data"][0]["id"] == str(credential.id)
+    assert data["data"][0]["name"] == credential.name
+    assert data["data"][0]["type"] == credential.type
+    assert data["data"][0]["workspace_id"] == str(workspace.id)
+    assert data["data"][0]["created_by_id"] == str(credential.created_by_id)
+
+
+def test_get_credential(client, setup_credential, setup_workspace):
+    """Test GET /workspaces/{workspace_id}/credentials/{credential_id} endpoint."""
+    credential = setup_credential
+    workspace = setup_workspace
+
+    response = client.get(f"/workspaces/{workspace.id}/credentials/{credential.id}")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == str(credential.id)
+    assert data["name"] == credential.name
+    assert data["type"] == credential.type
+    assert data["workspace_id"] == str(workspace.id)
+    assert data["created_by_id"] == str(credential.created_by_id)
+
+
+def test_create_credential(client, setup_workspace, test_credential_data):
+    """Test POST /workspaces/{workspace_id}/credentials endpoint."""
+    workspace = setup_workspace
+
+    response = client.post(
+        f"/workspaces/{workspace.id}/credentials", json=test_credential_data
+    )
+    print(response.json())
+    assert response.status_code == 201
+    data = response.json()
+    assert data["name"] == test_credential_data["name"]
+    assert data["type"] == test_credential_data["type"]
+    assert data["workspace_id"] == str(workspace.id)
+
+
+def test_update_credential(client, setup_credential, setup_workspace):
+    """Test PUT /workspaces/{workspace_id}/credentials/{credential_id} endpoint."""
+    credential = setup_credential
+    workspace = setup_workspace
+
+    update_data = {
+        "name": "Updated GitHub PAT",
+        "fields": {"token": "ghp_updated-token-456"},
+    }
+
+    response = client.put(
+        f"/workspaces/{workspace.id}/credentials/{credential.id}", json=update_data
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["name"] == update_data["name"]
+    assert data["id"] == str(credential.id)
+    assert data["workspace_id"] == str(workspace.id)
+
+
+def test_delete_credential(client, setup_credential, setup_workspace):
+    """Test DELETE /workspaces/{workspace_id}/credentials/{credential_id} endpoint."""
+    credential = setup_credential
+    workspace = setup_workspace
+
+    response = client.delete(f"/workspaces/{workspace.id}/credentials/{credential.id}")
+    assert response.status_code == 200
+    assert response.json() == {"message": "Credential deleted successfully"}
+
+    # Verify the credential is deleted
+    response = client.get(f"/workspaces/{workspace.id}/credentials/{credential.id}")
+    assert response.status_code == 404
+
+
+def test_get_nonexistent_credential(client, setup_workspace):
+    """Test GET /workspaces/{workspace_id}/credentials/{credential_id} with non-existent credential."""
+    workspace = setup_workspace
+    nonexistent_id = uuid4()
+
+    response = client.get(f"/workspaces/{workspace.id}/credentials/{nonexistent_id}")
+    assert response.status_code == 404
+
+
+def test_create_credential_invalid_workspace(client, test_credential_data):
+    """Test POST /workspaces/{workspace_id}/credentials with invalid workspace."""
+    nonexistent_workspace_id = uuid4()
+
+    response = client.post(
+        f"/workspaces/{nonexistent_workspace_id}/credentials", json=test_credential_data
+    )
+    assert response.status_code == 404
+
+
+def test_update_nonexistent_credential(client, setup_workspace):
+    """Test PUT /workspaces/{workspace_id}/credentials/{credential_id} with non-existent credential."""
+    workspace = setup_workspace
+    nonexistent_id = uuid4()
+
+    update_data = {
+        "name": "Updated GitHub PAT",
+        "fields": {"token": "ghp_updated-token-456"},
+    }
+
+    response = client.put(
+        f"/workspaces/{workspace.id}/credentials/{nonexistent_id}", json=update_data
+    )
+    assert response.status_code == 404

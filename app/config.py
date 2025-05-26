@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     env: str = Field(default="development", json_schema_extra={"env": "ENV"})
     log_level: str = Field(default="INFO", json_schema_extra={"env": "LOG_LEVEL"})
     disable_auth: bool = Field(default=False, json_schema_extra={"env": "DISABLE_AUTH"})
+    credential_master_key: str = Field(
+        ..., json_schema_extra={"env": "CREDENTIAL_MASTER_KEY"}
+    )  # Required field
     oidc_domain: str = "test.oidc.com"
     oidc_api_audience: str = "https://test-api"
     oidc_issuer: str = "https://test.oidc.com/"

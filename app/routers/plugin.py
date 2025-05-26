@@ -7,6 +7,8 @@ from app.db import get_db
 from app.schemas.plugin import PluginResponse, PluginCreate
 from app.services.plugin_registry import PluginRegistryService
 from app.schemas.common import ListResponse
+from app.models.workspace import Workspace
+from app.utils.dependencies import get_workspace_by_id
 
 router = APIRouter(tags=["plugins"])
 
@@ -15,22 +17,22 @@ router = APIRouter(tags=["plugins"])
     "/workspaces/{workspace_id}/plugins", response_model=ListResponse[PluginResponse]
 )
 def list_workspace_plugins(
-    workspace_id: UUID,
+    workspace: Workspace = Depends(get_workspace_by_id),
     db: Session = Depends(get_db),
 ):
     """List all plugins available for a workspace (both system plugins and workspace-specific plugins)."""
-    plugins = PluginRegistryService(db).get_workspace_plugins(workspace_id)
+    plugins = PluginRegistryService(db).get_workspace_plugins(UUID(str(workspace.id)))
     return ListResponse(data=plugins)
 
 
 @router.post("/workspaces/{workspace_id}/plugins", response_model=PluginResponse)
 def create_workspace_plugin(
-    workspace_id: UUID,
     plugin_data: PluginCreate,
+    workspace: Workspace = Depends(get_workspace_by_id),
     db: Session = Depends(get_db),
 ):
     """Create a new plugin for a workspace."""
-    plugin_data.workspace_id = workspace_id
+    plugin_data.workspace_id = UUID(str(workspace.id))
     plugin = PluginRegistryService(db).register_plugin(plugin_data)
     return plugin
 
