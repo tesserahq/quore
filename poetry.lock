@@ -909,6 +909,20 @@ all = ["email-validator (>=2.0.0)", "fastapi-cli[standard] (>=0.0.5)", "httpx (>
 standard = ["email-validator (>=2.0.0)", "fastapi-cli[standard] (>=0.0.5)", "httpx (>=0.23.0)", "jinja2 (>=3.1.5)", "python-multipart (>=0.0.18)", "uvicorn[standard] (>=0.12.0)"]
 
 [[package]]
+name = "fernet"
+version = "1.0.1"
+description = "A simple python fernet implementation"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "fernet-1.0.1.tar.gz", hash = "sha256:c50a51c997e09199695b51761bdc090ccf4129917520681e69dcfff4355325c7"},
+]
+
+[package.dependencies]
+pyaes = "*"
+
+[[package]]
 name = "filelock"
 version = "3.18.0"
 description = "A platform independent file lock."
@@ -3568,6 +3582,17 @@ files = [
 tests = ["pytest"]
 
 [[package]]
+name = "pyaes"
+version = "1.6.1"
+description = "Pure-Python Implementation of the AES block-cipher and common modes of operation"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "pyaes-1.6.1.tar.gz", hash = "sha256:02c1b1405c38d3c370b085fb952dd8bea3fadcee6411ad99f312cc129c536d8f"},
+]
+
+[[package]]
 name = "pyasn1"
 version = "0.4.8"
 description = "ASN.1 types and codecs"
@@ -5452,4 +5477,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.14"
-content-hash = "46168dd101e0814a7d67f9c46260015de12cba7b59db271f45e61679fbc1c872"
+content-hash = "ed2991d988e398b385c1ee911fc7e88b903ee62db94f5bb47972b029cf54cee8"

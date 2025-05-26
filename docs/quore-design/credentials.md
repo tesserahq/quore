@@ -6,18 +6,17 @@ We are designing a secure and extensible credential management system for a Fast
 
 * Dynamic Credential Schema: Define credential types with a schema (fields, labels, help text, field types) so that UIs can generate forms dynamically (similar to n8n’s credential modals).
 * Extensibility: Use a class-based registry pattern to easily add new credential types (plugins can register new credential classes with their metadata and field requirements).
-* API and UI Integration: Provide API endpoints (and eventually a UI) to create, update, and manage credentials via this schema-driven approach.
 * Secure Storage: Encrypt all sensitive credential data at rest in a PostgreSQL database using strong symmetric encryption (e.g. Fernet/AES) with a master key kept out of the DB.
 * Plugin Integration: Allow each plugin registration to explicitly reference a named credential. When a plugin (e.g. a workflow integration or a Git-based plugin) is registered, it can specify which stored credential to use for actions like cloning a private Git repo.
 * Multiple Credential Types: Support various credential types from the start (GitHub PAT, GitLab PAT/OAuth token, SSH key for Git, etc.) and allow new types to be added later.
-* Sharing and Reuse: Allow optional sharing of credentials between users or teams. Credentials can be marked as reusable (shared) so that others can use them without seeing the secret values.
+* Sharing and Reuse: Allow optional sharing of credentials between workspaces or projects. Credentials can be marked as reusable (shared) so that others can use them without seeing the secret values.
 * Usability: Make the system easy to reason about for developers and to present in a UI (forms are generated from schemas, similar to n8n’s UI for credentials).
 
 ## Credential Types and Dynamic Schema
 
 Credential types are defined as classes or schemas that specify what fields are required for that type of credential. Each credential type includes metadata for UI form generation, such as field labels, input types, and help text. This is similar to n8n’s approach where each credential has a name, display name, and a list of properties (fields) with types and descriptions ￼. For example, a GitHub Personal Access Token (PAT) credential might be defined with one field for the token string, whereas an SSH Key credential type might require a private key and an optional passphrase.
 
-We can represent the schema in a JSON-schema-like structure or via Pydantic models. For instance, we might define a credential type’s fields like so:
+We needs to represent the schema in a JSON-schema-like structure or via Pydantic models. For instance, we might define a credential type’s fields like so:
 
 ```
 # Example schema definitions for credential types

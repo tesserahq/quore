@@ -9,6 +9,7 @@ from fastapi.security import HTTPAuthorizationCredentials
 from app.db import Base, get_db
 from app.main import create_app
 from starlette.middleware.base import BaseHTTPMiddleware
+from cryptography.fernet import Fernet
 
 pytest_plugins = [
     "tests.fixtures.workspace_fixtures",
@@ -16,9 +17,26 @@ pytest_plugins = [
     "tests.fixtures.project_fixtures",
     "tests.fixtures.membership_fixtures",
     "tests.fixtures.node_fixtures",
+    "tests.fixtures.credential_fixtures",
 ]
 
 logger = logging.getLogger(__name__)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_environment():
+    """Set up test environment variables."""
+    # Generate a test Fernet key
+    test_key = Fernet.generate_key().decode()
+    # Set it in the environment
+    import os
+
+    os.environ["CREDENTIAL_MASTER_KEY"] = test_key
+    # Get settings with the new key
+    settings = get_settings()
+    yield settings
+
+
 settings = get_settings()
 
 

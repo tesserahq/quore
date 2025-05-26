@@ -7,6 +7,8 @@ from app.models.plugin_tool import PluginTool
 from app.models.project_plugin import ProjectPlugin
 from app.models.project_plugin_tool import ProjectPluginTool
 from app.models.app_setting import AppSetting
+from app.models.credential import Credential
+
 
 __all__ = [
     "AppSetting",
@@ -18,4 +20,5 @@ __all__ = [
     "PluginTool",
     "ProjectPlugin",
     "ProjectPluginTool",
+    "Credential",
 ]

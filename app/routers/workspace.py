@@ -12,6 +12,7 @@ from app.schemas.membership import MembershipInDB, MembershipCreate, MembershipU
 from app.services.membership import MembershipService
 from app.services.workspace import WorkspaceService
 from app.schemas.common import ListResponse
+from app.utils.dependencies import get_workspace_by_id
 
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 
@@ -39,26 +40,30 @@ def create_workspace(
 
 
 @router.get("/{workspace_id}", response_model=Workspace)
-def get_workspace(workspace_id: UUID, db: Session = Depends(get_db)):
-    workspace = WorkspaceService(db).get_workspace(workspace_id)
-    if workspace is None:
-        raise HTTPException(status_code=404, detail="Workspace not found")
+def get_workspace(workspace: Workspace = Depends(get_workspace_by_id)):
     return workspace
 
 
 @router.put("/{workspace_id}", response_model=Workspace)
 def update_workspace(
-    workspace_id: UUID, workspace: WorkspaceUpdate, db: Session = Depends(get_db)
+    workspace_update: WorkspaceUpdate,
+    workspace: Workspace = Depends(get_workspace_by_id),
+    db: Session = Depends(get_db),
 ):
-    updated_workspace = WorkspaceService(db).update_workspace(workspace_id, workspace)
+    updated_workspace = WorkspaceService(db).update_workspace(
+        workspace.id, workspace_update
+    )
     if updated_workspace is None:
         raise HTTPException(status_code=404, detail="Workspace not found")
     return updated_workspace
 
 
 @router.delete("/{workspace_id}")
-def delete_workspace(workspace_id: UUID, db: Session = Depends(get_db)):
-    success = WorkspaceService(db).delete_workspace(workspace_id)
+def delete_workspace(
+    workspace: Workspace = Depends(get_workspace_by_id),
+    db: Session = Depends(get_db),
+):
+    success = WorkspaceService(db).delete_workspace(workspace.id)
     if not success:
         raise HTTPException(status_code=404, detail="Workspace not found")
     return {"message": "Workspace deleted successfully"}
@@ -66,7 +71,7 @@ def delete_workspace(workspace_id: UUID, db: Session = Depends(get_db)):
 
 @router.get("/{workspace_id}/projects", response_model=ListResponse[Project])
 def list_projects(
-    workspace_id: UUID,
+    workspace: Workspace = Depends(get_workspace_by_id),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -75,7 +80,7 @@ def list_projects(
 
     # TODO: we need to filter by the user's membership in the workspace
     filters = {
-        "workspace_id": {"operator": "=", "value": workspace_id},
+        "workspace_id": {"operator": "=", "value": workspace.id},
     }
 
     projects = service.search(filters)
@@ -88,15 +93,14 @@ def list_projects(
     status_code=status.HTTP_201_CREATED,
 )
 def create_project(
-    workspace_id: UUID,
     project: ProjectCreate,
+    workspace: Workspace = Depends(get_workspace_by_id),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
     """Create a new project in a workspace."""
-    print(f"Creating project with project: {project}")
     service = ProjectService(db)
 
     # Override the workspace_id in the payload for safety
-    project.workspace_id = workspace_id
+    project.workspace_id = workspace.id
     return service.create_project(project)

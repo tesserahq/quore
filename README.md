@@ -18,7 +18,7 @@
   High-performance similarity search using PostgreSQL and PGVector. Supports project-scoped embeddings, metadata filtering, and customizable retrieval strategies.
 
 - **LlamaIndex + LangChain Integration**  
-  Native support for structured document ingestion, chunking, embedding, and retrieval using LlamaIndex’s modular data pipeline and LangChain’s agent framework.
+  Native support for structured document ingestion, chunking, embedding, and retrieval using LlamaIndex's modular data pipeline and LangChain's agent framework.
 
 - **Flexible Metadata & Labeling**  
   JSON-based labels on vector entries for dynamic filtering (e.g. user-level scoping, status flags, content tags).
@@ -61,10 +61,25 @@ Each plugin exposes one or more tools that agents can use — such as `get_invoi
 - **LangChain** — Agent reasoning and orchestration
 - **MCP** — Plugin communication protocol (via stdio or HTTP)
 
+## 🔑 Credential Management
+
+Quore uses a master key for encrypting sensitive credential data. To generate a secure master key:
+
+```bash
+./scripts/generate_credential_key.py
+```
+
+This script will:
+1. Generate a cryptographically secure random key
+2. Create or update your `.env` file with the `CREDENTIAL_MASTER_KEY`
+3. Provide instructions for secure key management
+
+> **Important**: Keep your credential master key secure and never commit it to version control. For production deployments, set this key through your environment variables or secrets management system.
+
 ## 🚧 Status
 
 > Quore is currently in **active development**.  
-> We’re focusing on core infrastructure, plugin management, and vector indexing. Contributions, feedback, and early collaborators are welcome!
+> We're focusing on core infrastructure, plugin management, and vector indexing. Contributions, feedback, and early collaborators are welcome!
 
 ## 📖 License
 

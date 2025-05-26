@@ -94,10 +94,7 @@ def test_create_project_nonexistent_workspace(client):
 
     response = client.post(f"/workspaces/{non_existent_id}/projects", json=project_data)
     assert response.status_code == 404
-    assert (
-        response.json()["detail"]
-        == "Workspace with ID 00000000-0000-0000-0000-000000000000 not found"
-    )
+    assert response.json()["detail"] == "Workspace not found"
 
 
 def test_create_project_invalid_data(client, setup_workspace):
