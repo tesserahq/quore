@@ -34,13 +34,29 @@ def decrypt_value(token: bytes) -> bytes:
 # Define credential type schemas
 github_pat_fields = [
     CredentialField(
+        name="server",
+        label="GitHub Server",
+        type="string",
+        input_type="text",
+        help="GitHub API server URL (default: https://api.github.com)",
+        required=True,
+    ),
+    CredentialField(
+        name="user",
+        label="User",
+        type="string",
+        input_type="text",
+        help="GitHub username (optional)",
+        required=False,
+    ),
+    CredentialField(
         name="token",
-        label="Personal Access Token",
+        label="Access Token",
         type="string",
         input_type="password",
-        help="GitHub PAT with repo scope",
+        help="GitHub Personal Access Token with repo access",
         required=True,
-    )
+    ),
 ]
 
 gitlab_pat_fields = [

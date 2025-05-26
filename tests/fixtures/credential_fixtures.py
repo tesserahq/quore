@@ -10,7 +10,11 @@ def test_credential_data():
     return {
         "name": "Test GitHub PAT",
         "type": "github_pat",
-        "fields": {"token": "ghp_test-token-123"},
+        "fields": {
+            "server": "https://api.github.com",
+            "user": "testuser",
+            "token": "ghp_test-token-123",
+        },
     }
 
 

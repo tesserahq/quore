@@ -70,8 +70,20 @@ class CredentialInfo(CredentialBase):
 class GithubPATModel(BaseModel):
     """Model for GitHub Personal Access Token credentials."""
 
+    server: str = Field(
+        default="https://api.github.com",
+        title="GitHub Server",
+        description="GitHub API server URL (default: https://api.github.com)",
+    )
+    user: Optional[str] = Field(
+        default=None,
+        title="User",
+        description="GitHub username (optional)",
+    )
     token: SecretStr = Field(
-        ..., title="Personal Access Token", description="GitHub PAT with repo access"
+        ...,
+        title="Access Token",
+        description="GitHub Personal Access Token with repo access",
     )
 
 
