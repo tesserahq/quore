@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 
-from .routers import workspace, user, membership, project, ingest, llm
+from .routers import workspace, user, membership, project, ingest, llm, plugin
 from .routers.assistant import assistant_router
 from .ws import status
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -48,6 +48,7 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
     app.include_router(ingest.router)
     app.include_router(status.router)
     app.include_router(llm.router)
+    app.include_router(plugin.router)
     app.include_router(assistant_router())
 
     register_exception_handlers(app)

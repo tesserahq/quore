@@ -1,5 +1,5 @@
 import os
-
+import re
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
@@ -39,6 +39,21 @@ config = context.config
 config.set_main_option("sqlalchemy.url", settings.database_url)
 
 
+def include_object(object, name, type_, reflected, compare_to):
+    """Filter out dynamically created tables and other objects."""
+    # Skip dynamically created tables (those with UUIDs in their names)
+    if type_ == "table":
+        # Skip tables that start with 'data_' and contain UUIDs
+        if name.startswith("data_") and re.search(
+            r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", name
+        ):
+            return False
+        # Skip data_chatstore table
+        if name == "data_chatstore":
+            return False
+    return True
+
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
@@ -57,6 +72,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        include_object=include_object,
     )
 
     with context.begin_transaction():
@@ -77,7 +93,11 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            include_object=include_object,
+        )
 
         with context.begin_transaction():
             context.run_migrations()

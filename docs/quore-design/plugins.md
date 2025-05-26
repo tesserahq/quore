@@ -1,17 +1,57 @@
 ## Plugins
 
 Plugins are **extensible tool integrations** that the platform can leverage to perform actions or fetch data via standardized APIs. In this design, plugins follow the **Model Context Protocol (MCP)** format – essentially each plugin is an independent MCP server (often open-sourced in a GitHub repository) exposing one or more “tools” that an AI agent can use. The platform’s plugin subsystem is inspired by **Connery**, an open-source plugin infrastructure for AI apps . Just as Connery allows developers to package actions into standalone plugin servers and handles the runtime and authorization for using them, our platform will let administrators **install plugins from GitHub repos** and make them available to LLM agents.  
-   <br/>**Plugin Metadata and Structure:** Each plugin is identified by a repository (e.g. a GitHub URL). The repository contains the code for an MCP server – typically implemented either in Python (using the MCP Python SDK) or TypeScript/Node (using the MCP TypeScript SDK). The code defines a set of **Tools** (functions the LLM can call) and possibly **Resources** and **Prompts** as per the MCP spec . Tools correspond to operations with side effects or computations (e.g. “query a database”, “send an email”), while Resources are read-only data fetchers. For example, a “GitHub plugin” might expose a tool search_issues(repo, query) and a resource latest_commits(repo). Internally, the plugin code uses the MCP framework to implement these actions (calling real external APIs or databases) and exposes them via a standardized API (often an HTTP + Server-Sent Events interface, or stdio if local) to any MCP client.  
-   <br/>Each plugin repository is expected to include some **metadata** describing its capabilities, such as:
 
-- A manifest or configuration file (for instance, mcp.json or similar) listing the plugin’s name, version, description, and the tools it provides (with input/output schema for each tool).
+**Plugin Metadata and Structure:** Each plugin is identified by a repository (e.g. a GitHub URL). The repository contains the code for an MCP server – typically implemented either in Python (using the MCP Python SDK) or TypeScript/Node (using the MCP TypeScript SDK). The code defines a set of **Tools** (functions the LLM can call) and possibly **Resources** and **Prompts** as per the MCP spec . Tools correspond to operations with side effects or computations (e.g. “query a database”, “send an email”), while Resources are read-only data fetchers. For example, a “GitHub plugin” might expose a tool search_issues(repo, query) and a resource latest_commits(repo). Internally, the plugin code uses the MCP framework to implement these actions (calling real external APIs or databases) and exposes them via a standardized API (often an HTTP + Server-Sent Events interface, or stdio if local) to any MCP client.  
+
+Each plugin repository is expected to include some **metadata** describing its capabilities, such as:
+
+- Plugin metadata is discovered dynamically via the MCP protocol. When the plugin server (e.g., using FastMCP) is running, the platform connects to it and requests a list of tools, resources, and prompts. This includes each tool’s name, description, and input/output schema, eliminating the need for a manually written manifest.
 
 - Alternatively, the MCP protocol allows dynamic discovery: an MCP client can connect to the server and request a list of available Tools, Resources, and Prompts . The plugin’s MCP server will respond with descriptions of each tool (names and usage). Our platform can leverage this to gather plugin metadata after installation.
-  - Plugins may also include metadata like required credentials (for accessing external services – e.g. an API key for a third-party API) and might define how those credentials should be provided (environment variables, config files, etc.). Storing or managing those secrets might be handled in future (similar to how Connery manages secrets ), but at least we store what is needed and ensure the runtime can supply them.
+  - Plugins may also include metadata like required credentials (for accessing external services – e.g. an API key for a third-party API) and should define how those credentials are expected to be provided (e.g., environment variables or config files). To support this in a structured and machine-readable way, plugins can include a credentials field in their MCP discovery response. Although not part of the official MCP spec, our platform recognizes and parses this field if present. The format is as follows:
+    ```
+    "credentials": [
+      {
+        "name": "GITHUB_TOKEN",
+        "type": "env",
+        "description": "GitHub API token used to authenticate requests."
+      }
+    ]
+    ```
+    This block allows the platform to understand which secrets a plugin expects, and in the future could support validation or secure injection. Plugin authors using FastMCP can override the discovery endpoint to include this field.
 
-- **Plugin Registration & Caching:** To add a new plugin, an admin of a workspace (or a system admin) will **register the plugin by providing its GitHub repository URL (and optionally a version or tag)**. Upon registration, the system will download the plugin code – e.g., clone the repository or fetch an archive – and cache it locally. This cached code is stored in a designated plugins directory and indexed in a **Plugin Registry** table in the database. The plugin registry stores metadata such as: plugin_id, repository URL, branch/commit hash of the cached version, plugin name and description, and the list of tools (capabilities) if known. By caching the plugin code, we avoid repeated network calls to GitHub and ensure a consistent version is used until explicitly updated. (In future, an update mechanism could pull a newer commit and refresh the cache upon admin request.)  
-<br/>After downloading, the platform **extracts plugin metadata**. If the plugin provides a manifest file, we will parse it to record the tool definitions. If not, the platform can spin up the plugin in an isolated way to perform an MCP handshake and discovery – essentially launching the plugin server (perhaps in a subprocess or a sandbox environment) just to query its capabilities via the MCP protocol, then shutting it down. (Execution of the full plugin functionality is out of scope at this stage; we only need to discover what tools it has.) This step yields information like tool names, their input parameters, and descriptions, which we store in the plugin metadata. For example, the GitHub plugin might register tools “list_issues” and “create_issue” with certain param schemas.  
-<br/>Each plugin in the registry can then be **enabled** either at the **Workspace level (globally)** or for individual **Projects**:
+    ```python
+    from mcp.server.fastmcp import FastMCP
+    from fastapi.responses import JSONResponse
+
+    class MyFastMCP(FastMCP):
+        async def discovery(self):
+            base_discovery = await super().discovery()
+            data = base_discovery.body
+
+            # Inject custom credentials block
+            data["credentials"] = [
+                {
+                    "name": "GITHUB_TOKEN",
+                    "type": "env",
+                    "description": "GitHub API token used to authenticate requests."
+                }
+            ]
+
+            return JSONResponse(content=data)
+
+    app = MyFastMCP(tools=[...])
+    ```
+
+- **Plugin Registration & Caching:** To add a new plugin, an admin of a workspace (or a system admin) will **register the plugin by providing its GitHub repository URL (and optionally a version or tag)**. Upon registration, the system will download the plugin code – e.g., clone the repository or fetch an archive – and cache it locally. This cached code is stored in a designated plugins directory and indexed in a **Plugin Registry** table in the database. The plugin registry stores metadata such as: plugin_id, repository URL, branch/commit hash of the cached version, plugin name and description, and the list of tools (capabilities) if known. By caching the plugin code, we avoid repeated network calls to GitHub and ensure a consistent version is used until explicitly updated. (In future, an update mechanism could pull a newer commit and refresh the cache upon admin request.)
+
+After downloading, the platform **extracts plugin metadata** by launching the plugin in an isolated environment and performing an MCP handshake to request its capabilities. This yields the list of tools and their parameters, which we then store in the registry.
+
+
+Each plugin in the registry can then be **enabled** either at the **Workspace level (globally)** or for individual **Projects**:
+
+Beyond enabling a plugin at the workspace or project level, the platform also allows **fine-grained control over individual tools within each plugin**. This means admins can selectively enable or disable specific tools that the plugin provides, similar to how Claude AI lets users toggle individual capabilities. This gives teams more flexibility and security — for example, you may want to enable a plugin's data-fetching tools but disable its write or destructive operations. The UI exposes a toggle interface for each tool, and the system respects these settings when registering tools in the LLM context.
 
 - _Workspace-Global Plugin:_ Enabling a plugin globally in a workspace means all projects under that workspace can use the plugin’s tools. In the database, we might have a join table linking workspace_id and plugin_id to indicate it’s enabled. The platform will then load that plugin’s tools into any agent or query associated with any project of that workspace (unless a project explicitly opts out).
 

@@ -6,16 +6,16 @@ from app.models.project import Project
 
 class StorageManager:
     """A class to manage various storage components across the application.
-    
+
     This class provides centralized access to different storage services
     like document stores, vector stores, and other storage-related functionality.
     It ensures consistent configuration and initialization across different
     parts of the application.
     """
-    
+
     def __init__(self):
         self.settings = get_settings()
-    
+
     def get_docstore(self) -> RedisDocumentStore:
         """Get a Redis document store instance using settings from config.
 
@@ -56,4 +56,4 @@ class StorageManager:
                 "hnsw_ef_search": ingest_settings.hnsw_ef_search,
                 "hnsw_dist_method": ingest_settings.hnsw_dist_method,
             },
-        ) 
+        )
