@@ -45,6 +45,13 @@ class Settings(BaseSettings):
     plugins_dir: str = Field(
         default="/plugins", json_schema_extra={"env": "PLUGINS_DIR"}
     )
+    # Flower credentials
+    flower_username: str = Field(
+        default="admin", json_schema_extra={"env": "FLOWER_USERNAME"}
+    )
+    flower_password: str = Field(
+        default="admin", json_schema_extra={"env": "FLOWER_PASSWORD"}
+    )
 
     @model_validator(mode="before")
     def set_database_url(cls, values):
