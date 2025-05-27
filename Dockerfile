@@ -2,7 +2,14 @@
 FROM python:3.12-slim
 
 # Install system dependencies and Poetry
-RUN apt-get update && apt-get install -y curl gcc libffi-dev libpq-dev postgresql-client --no-install-recommends && \
+RUN apt-get update && apt-get install -y \
+    curl \
+    gcc \
+    git \
+    libffi-dev \
+    libpq-dev \
+    postgresql-client \
+    --no-install-recommends && \
     curl -sSL https://install.python-poetry.org | python3 - && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 

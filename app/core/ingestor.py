@@ -38,19 +38,19 @@ class Ingestor:
 
     @instrument_method()
     def ingest_raw_text(
-        self, id: str, text: str, labels: Optional[dict[str, str]] = None
+        self, ref_id: str, text: str, labels: Optional[dict[str, str]] = None
     ):
         """Ingest raw text into the vector store.
 
         Args:
-            id (str): Unique identifier for the document
+            ref_id (str): Unique identifier for the document
             text (str): Raw text content to be ingested
             labels (Optional[dict[str, str]]): Optional metadata labels for the document
         """
         # Create a document from the raw text
         document = Document(
             text=text,
-            id_=id,
+            id_=ref_id,
             metadata={
                 "labels": labels,
             },
@@ -70,4 +70,4 @@ class Ingestor:
         )
         # TODO: Make sure this is the correct way to update the document
         # The update method will delete the document and insert a new one
-        index.update(document)
+        index.update_ref_doc(document)

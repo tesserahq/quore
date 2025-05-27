@@ -1,8 +1,10 @@
 import os
 import json
-from typing import Dict, Type, Any
+import tempfile
+from typing import Dict, Type, Any, Tuple, List
 from cryptography.fernet import Fernet
 from pydantic import BaseModel
+from urllib.parse import urlparse
 
 from app.constants.credentials import CredentialType
 from app.schemas.credential import (
@@ -149,3 +151,49 @@ def decrypt_credential_fields(encrypted_data: bytes) -> Dict[str, Any]:
     """Decrypt credential fields."""
     plaintext = decrypt_value(encrypted_data)
     return json.loads(plaintext)
+
+
+def apply_git_credentials(
+    repo_url: str, credential_fields: Dict[str, Any]
+) -> Tuple[List[str], Dict[str, str]]:
+    """
+    Apply Git credentials to a repository URL and return the appropriate git command and environment.
+
+    Args:
+        repo_url: The repository URL to clone
+        credential_fields: The decrypted credential fields
+
+    Returns:
+        Tuple containing:
+        - List of git command arguments
+        - Dictionary of environment variables
+    """
+    parsed_url = urlparse(repo_url)
+    is_ssh = parsed_url.scheme == "ssh" or parsed_url.scheme == "git"
+
+    if is_ssh:
+        if not credential_fields or "private_key" not in credential_fields:
+            raise ValueError("SSH repository requires a private key credential")
+
+        # Create temporary key file
+        key_file = tempfile.NamedTemporaryFile(delete=False)
+        key_file.write(credential_fields["private_key"].encode())
+        key_file.close()
+
+        # Set up SSH command with the key
+        ssh_cmd = f"ssh -i {key_file.name} -o StrictHostKeyChecking=no"
+        env = os.environ.copy()
+        env["GIT_SSH_COMMAND"] = ssh_cmd
+
+        return ["git", "clone", repo_url], env
+
+    else:  # HTTPS
+        if credential_fields and "token" in credential_fields:
+            # Insert token into URL for authentication
+            auth_url = repo_url.replace(
+                "https://", f"https://{credential_fields['token']}@"
+            )
+            return ["git", "clone", auth_url], os.environ.copy()
+        else:
+            # Public repository, no authentication needed
+            return ["git", "clone", repo_url], os.environ.copy()

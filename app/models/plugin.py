@@ -27,13 +27,16 @@ class Plugin(Base, TimestampMixin):
     plugin_metadata = Column(
         JSONB, nullable=True
     )  # Additional plugin metadata from MCP discovery
-    credentials = Column(JSONB, nullable=True)  # Required credentials configuration
+    credential_id = Column(
+        UUID(as_uuid=True), ForeignKey("credentials.id"), nullable=True
+    )  # Reference to stored credential
     workspace_id = Column(
         UUID(as_uuid=True), ForeignKey("workspaces.id"), nullable=False
     )  # Required workspace association
 
     # Relationships
     workspace = relationship("Workspace", back_populates="plugins")
+    credential = relationship("Credential", back_populates="plugins")
     tools = relationship(
         "PluginTool", back_populates="plugin", cascade="all, delete-orphan"
     )

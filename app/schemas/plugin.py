@@ -15,7 +15,7 @@ class PluginBase(BaseModel):
     is_active: bool = True
     endpoint_url: Optional[str] = None
     plugin_metadata: Optional[Dict[str, Any]] = None
-    credentials: Optional[Dict[str, Any]] = None
+    credential_id: Optional[UUID] = None
     workspace_id: Optional[UUID] = None  # Optional since it's set from URL parameter
 
 
@@ -35,7 +35,7 @@ class PluginUpdate(BaseModel):
     is_active: Optional[bool] = None
     endpoint_url: Optional[str] = None
     plugin_metadata: Optional[Dict[str, Any]] = None
-    credentials: Optional[Dict[str, Any]] = None
+    credential_id: Optional[UUID] = None
 
 
 class PluginToolBase(BaseModel):

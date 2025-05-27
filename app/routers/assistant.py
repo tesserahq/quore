@@ -27,6 +27,8 @@ from app.services.project import ProjectService
 from app.utils.auth import get_current_user
 from app.utils.vercel_stream import VercelStreamResponse
 from sqlalchemy.orm import Session
+from app.models.project import Project
+from app.utils.dependencies import get_project_by_id
 
 
 def assistant_router() -> APIRouter:
@@ -36,18 +38,12 @@ def assistant_router() -> APIRouter:
     async def chat(
         request: ChatRequest,
         background_tasks: BackgroundTasks,
-        project_id: str,
+        project: Project = Depends(get_project_by_id),
         db_session: Session = Depends(get_db),
         current_user=Depends(get_current_user),
     ) -> StreamingResponse:
         logger = get_logger()
-        logger.debug(f"Chat route: Starting chat request for project {project_id}")
-
-        project = ProjectService(db_session).get_project(UUID(project_id))
-        if not project:
-            logger.error(f"Chat route: Project {project_id} not found")
-            raise ResourceNotFoundError("Project not found")
-        logger.debug(f"Chat route: Retrieved project {project_id}")
+        logger.debug(f"Chat route: Starting chat request for project {project.id}")
 
         workflow_manager = WorkflowManager(db_session, project)
 
@@ -68,7 +64,7 @@ def assistant_router() -> APIRouter:
                 user_msg=user_message.content,
                 chat_history=chat_history,
                 memory=workflow_manager.index_manager.get_chat_memory(
-                    project_id, current_user.id
+                    str(project.id), current_user.id
                 ),
             )
             logger.debug(

@@ -13,18 +13,20 @@ from app.schemas.project import (
     NodeResponse,
 )
 from app.services.project import ProjectService
+from app.models.project import Project as ProjectModel
+from app.utils.dependencies import get_project_by_id
 
 router = APIRouter(prefix="/projects", tags=["workspace-projects"])
 
 
 @router.get("/{project_id}/nodes", response_model=NodeListResponse)
 def nodes(
-    project_id: UUID,
+    project: ProjectModel = Depends(get_project_by_id),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
     service = ProjectService(db)
-    nodes = service.get_nodes(project_id=project_id)
+    nodes = service.get_nodes(project_id=project.id)
     node_responses = []
     for node in nodes:
         node_dict = node.__dict__.copy()
@@ -67,28 +69,23 @@ def search_projects(
 
 @router.get("/{project_id}", response_model=Project)
 def get_project(
-    project_id: UUID,
-    db: Session = Depends(get_db),
+    project: ProjectModel = Depends(get_project_by_id),
     current_user=Depends(get_current_user),
 ):
     """Get a specific project by ID."""
-    service = ProjectService(db)
-    project = service.get_project(project_id)
-    if project is None:
-        raise HTTPException(status_code=404, detail="Project not found")
     return project
 
 
 @router.put("/{project_id}", response_model=Project)
 def update_project(
-    project_id: UUID,
-    project: ProjectUpdate,
+    project: ProjectModel = Depends(get_project_by_id),
+    project_update: ProjectUpdate = None,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
     """Update an existing project."""
     service = ProjectService(db)
-    updated = service.update_project(project_id, project)
+    updated = service.update_project(project.id, project_update)
     if updated is None:
         raise HTTPException(status_code=404, detail="Project not found")
     return updated
@@ -96,13 +93,13 @@ def update_project(
 
 @router.delete("/{project_id}")
 def delete_project(
-    project_id: UUID,
+    project: ProjectModel = Depends(get_project_by_id),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
     """Delete a project."""
     service = ProjectService(db)
-    success = service.delete_project(project_id)
+    success = service.delete_project(project.id)
     if not success:
         raise HTTPException(status_code=404, detail="Project not found")
     return {"message": "Project deleted successfully"}
