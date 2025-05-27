@@ -8,14 +8,7 @@ from app.utils.auth import verify_token_dependency
 
 class AuthenticationMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        if request.url.path in [
-            "/health",
-            "/openapi.json",
-            "/docs",
-            "/flower/",
-            "/flower/dashboard",
-            "/flower/flower/dashboard",
-        ]:
+        if request.url.path in ["/health", "/openapi.json", "/docs"]:
             return await call_next(request)
 
         authorization: str = request.headers.get("Authorization")

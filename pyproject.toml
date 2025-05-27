@@ -57,7 +57,6 @@ llama-index-storage-docstore-redis = "^0.3.0"
 llama-index-storage-chat-store-postgres = "^0.2.1"
 fernet = "^1.0.1"
 celery = "^5.5.2"
-flower = "^2.0.1"
 
 [tool.poetry.dependencies.uvicorn]
 extras = [ "standard" ]
