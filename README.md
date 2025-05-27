@@ -60,6 +60,7 @@ Each plugin exposes one or more tools that agents can use — such as `get_invoi
 - **LlamaIndex** — Document ingestion and indexing
 - **LangChain** — Agent reasoning and orchestration
 - **MCP** — Plugin communication protocol (via stdio or HTTP)
+- **Celery** — Asynchronous task processing and background jobs
 
 ## 🔑 Credential Management
 
@@ -75,6 +76,45 @@ This script will:
 3. Provide instructions for secure key management
 
 > **Important**: Keep your credential master key secure and never commit it to version control. For production deployments, set this key through your environment variables or secrets management system.
+
+## 🚀 Running the Application
+
+### Development Setup
+
+1. Install dependencies:
+```bash
+poetry install
+```
+
+2. Start the FastAPI application:
+```bash
+poetry run uvicorn app.main:app --reload
+```
+
+3. Start the Celery worker:
+```bash
+poetry run celery -A app.core.celery_app.celery_app worker --loglevel=info
+```
+
+4. Monitor tasks with Flower (optional):
+```bash
+poetry run celery -A app.core.celery_app.celery_app flower
+```
+
+### Docker Compose
+
+The application can also be run using Docker Compose, which includes all necessary services:
+
+```bash
+docker-compose up
+```
+
+This will start:
+- FastAPI application
+- Celery worker
+- PostgreSQL database
+- Redis (for task queue)
+- Flower dashboard (available at `/flower/dashboard`)
 
 ## 🚧 Status
 

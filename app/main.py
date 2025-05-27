@@ -1,4 +1,3 @@
-from typing import Callable
 from app.middleware.db_session import DBSessionMiddleware
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,13 +13,13 @@ from .routers import (
     plugin,
     credential,
     system,
+    flower,
 )
 from .routers.assistant import assistant_router
 from .ws import status
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from app.telemetry import setup_tracing
 from app.exceptions.handlers import register_exception_handlers
-from llama_index.core.workflow import Workflow
 from app.core.logging_config import get_logger
 
 
@@ -62,6 +61,7 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
     app.include_router(credential.router)
     app.include_router(assistant_router())
     app.include_router(system.router)
+    app.include_router(flower.router)
 
     register_exception_handlers(app)
 

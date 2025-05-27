@@ -11,6 +11,34 @@ services:
     depends_on:
       - db
       - redis
+
+  celery_worker:
+    image: mustela/quore:main
+    pull_policy: always
+    command: celery -A app.core.celery_app.celery_app flower
+    environment:
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/quore
+      - REDIS_URL=redis://redis:6379/0
+    env_file: ".env"
+    depends_on:
+      - db
+      - redis
+      - api
+
+  flower:
+    container_name: flower
+    build: .
+    command: celery -A app.core.celery_app.celery_app flower
+    ports:
+      - "5556:5555"
+    environment:
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+    depends_on:
+      - api
+      - redis
+      - celery_worker
+
   quore-portal:
     image: mustela/quore-portal:main
     pull_policy: always
