@@ -1,7 +1,11 @@
+import logging
 from app.middleware.db_session import DBSessionMiddleware
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
+import rollbar
+from rollbar.contrib.fastapi import ReporterMiddleware as RollbarMiddleware
+from rollbar.logger import RollbarHandler
 
 from .routers import (
     workspace,
@@ -25,6 +29,21 @@ from app.core.logging_config import get_logger
 def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
     logger = get_logger()
     settings = get_settings()
+
+    if settings.is_production:
+        # Initialize Rollbar SDK with your server-side access token
+        rollbar.init(
+            settings.rollbar_access_token,
+            environment=settings.environment,
+            handler="async",
+        )
+
+        # Report ERROR and above to Rollbar
+        rollbar_handler = RollbarHandler()
+        rollbar_handler.setLevel(logging.ERROR)
+
+        # Attach Rollbar handler to the root logger
+        logger.addHandler(rollbar_handler)
 
     app = FastAPI()
 
@@ -77,4 +96,5 @@ if settings.otel_enabled:
 
 @app.get("/")
 def main_route():
+    raise Exception("Test Rollbar")
     return {"message": "Hey, It is me Goku"}

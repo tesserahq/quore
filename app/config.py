@@ -2,7 +2,7 @@ import os
 from pydantic import Field, model_validator
 from typing import Optional
 from pydantic_settings import BaseSettings
-from sqlalchemy.engine.url import make_url
+from sqlalchemy.engine.url import make_url, URL
 
 DEFAULT_DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/quore"
 DEFAULT_TEST_DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/quore_test"
@@ -12,9 +12,12 @@ class Settings(BaseSettings):
     app_name: str = "Quore"
     otel_enabled: bool = Field(default=False, json_schema_extra={"env": "OTEL_ENABLED"})
     database_url: Optional[str] = None  # Will be set dynamically
-    env: str = Field(default="development", json_schema_extra={"env": "ENV"})
+    environment: str = Field(default="development", json_schema_extra={"env": "ENV"})
     log_level: str = Field(default="INFO", json_schema_extra={"env": "LOG_LEVEL"})
     disable_auth: bool = Field(default=False, json_schema_extra={"env": "DISABLE_AUTH"})
+    rollbar_access_token: str = Field(
+        ..., json_schema_extra={"env": "ROLLBAR_ACCESS_TOKEN"}
+    )  # Required field
     credential_master_key: str = Field(
         ..., json_schema_extra={"env": "CREDENTIAL_MASTER_KEY"}
     )  # Required field
@@ -48,9 +51,9 @@ class Settings(BaseSettings):
 
     @model_validator(mode="before")
     def set_database_url(cls, values):
-        """Set the database_url dynamically based on the env field."""
-        env = values.get("env", os.getenv("ENV", "development"))
-        if env == "test":
+        """Set the database_url dynamically based on the environment field."""
+        environment = values.get("environment", os.getenv("ENV", "development"))
+        if environment.lower() == "test":
             values["database_url"] = os.getenv(
                 "TEST_DATABASE_URL", DEFAULT_TEST_DATABASE_URL
             )
@@ -60,8 +63,18 @@ class Settings(BaseSettings):
         return values
 
     @property
-    def database_url_obj(self) -> dict:
-        """Return the database URL as a dictionary using sqlalchemy's make_url."""
+    def is_production(self) -> bool:
+        """Check if the current environment is production."""
+        return self.environment.lower() == "production"
+
+    @property
+    def is_test(self) -> bool:
+        """Check if the current environment is test."""
+        return self.environment.lower() == "test"
+
+    @property
+    def database_url_obj(self) -> URL:
+        """Return the database URL as a URL object using sqlalchemy's make_url."""
         if not self.database_url:
             raise ValueError("Database URL is not set.")
         return make_url(self.database_url)
@@ -73,4 +86,8 @@ class Settings(BaseSettings):
 
 
 def get_settings() -> Settings:
-    return Settings()
+    """Get application settings with required environment variables."""
+    return Settings(
+        rollbar_access_token=os.getenv("ROLLBAR_ACCESS_TOKEN", ""),
+        credential_master_key=os.getenv("CREDENTIAL_MASTER_KEY", ""),
+    )
