@@ -11,3 +11,8 @@ Logo Usage:
 * A symbol-only variant (just the Q) for favicon and app icons.
 * A full logotype reading “Quore” for web and documents.
 * Optional vertical stack or horizontal orientation.
+
+
+Prompt: 
+
+Design a modern, minimalist logo for a company named "Quore". The logo should feature a sleek, sans-serif capital "Q" with a soft pastel blue-to-turquoise gradient. Inside the "Q", place a simple, stylized leaf icon that conveys growth and clarity. Below the "Q", write the brand name "Quore" in a matching gradient, using a clean, rounded sans-serif typeface. The entire design should be centered on a pure white background, evoking calm, intelligence, and modernity.

@@ -1,35 +1,64 @@
-# Use an official lightweight Python image
-FROM python:3.12-slim
+###############################################
+# Base Image
+###############################################
+FROM python:3.12-slim AS python-base
 
-# Install system dependencies and Poetry
-RUN apt-get update && apt-get install -y \
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=off \
+    PIP_DISABLE_PIP_VERSION_CHECK=on \
+    PIP_DEFAULT_TIMEOUT=100 \
+    POETRY_VERSION=2.1.2  \
+    POETRY_HOME="/opt/poetry" \
+    POETRY_VIRTUALENVS_IN_PROJECT=true \
+    POETRY_NO_INTERACTION=1 \
+    PYSETUP_PATH="/code" \
+    VENV_PATH="/code/.venv"
+
+# prepend poetry and venv to path
+ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
+
+###############################################
+# Builder Image
+###############################################
+FROM python-base AS builder-base
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y \
     curl \
-    gcc \
+    build-essential \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    postgresql-client \
     git \
     libffi-dev \
     libpq-dev \
-    postgresql-client \
-    --no-install-recommends && \
-    curl -sSL https://install.python-poetry.org | python3 - && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+    --no-install-recommends
 
-# Set PATH to include Poetry
-ENV PATH="/root/.local/bin:$PATH"
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
-WORKDIR /app
+# install poetry - respects $POETRY_VERSION & $POETRY_HOME
+RUN curl -sSL https://install.python-poetry.org | python3 -
 
-# Copy only the dependency files first (to leverage Docker cache)
-COPY pyproject.toml poetry.lock ./
+# copy project requirement files here to ensure they will be cached.
+WORKDIR $PYSETUP_PATH
+COPY poetry.lock pyproject.toml ./
 
-ENV PYTHONPATH=/app
-ENV PIPENV_VENV_IN_PROJECT=1
+# install runtime deps - uses $POETRY_VIRTUALENVS_IN_PROJECT internally
+RUN poetry install --no-root --only main
 
-# Install dependencies using Poetry
-RUN poetry install --no-root  --only main
+###############################################
+# Production Image
+###############################################
+FROM python-base AS production
+COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
 
-# Copy everything including the Alembic setup + start.sh
-COPY . .
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y \
+    curl
+
+WORKDIR $PYSETUP_PATH
+
+COPY . $PYSETUP_PATH
 
 # Make sure start.sh is executable
 RUN chmod +x ./start.sh
@@ -37,5 +66,4 @@ RUN chmod +x ./start.sh
 # Expose port for FastAPI
 EXPOSE 8000
 
-# Use start.sh as the entrypoint
 CMD ["./start.sh"]
