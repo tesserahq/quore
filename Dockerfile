@@ -54,7 +54,9 @@ COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
 
 RUN apt-get update \
     && apt-get install --no-install-recommends -y \
-    curl
+    curl \
+    libpq-dev \
+    libpq5
 
 WORKDIR $PYSETUP_PATH
 
