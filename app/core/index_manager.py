@@ -87,7 +87,7 @@ class IndexManager:
         """
         default_doc_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-            "docs",
+            "assets",
             "default_index.md",
         )
         with open(default_doc_path, "r") as f:
