@@ -1,5 +1,6 @@
 from llama_index.storage.docstore.redis import RedisDocumentStore
 from app.config import get_settings
+from app.core.ingestor import Ingestor
 from app.models.project import Project
 from llama_index.core import StorageContext
 from llama_index.core import VectorStoreIndex
@@ -51,6 +52,11 @@ class IndexManager:
         self.settings = get_settings()
         self.logger = get_logger()
         self.storage = storage or StorageManager()
+        self.ingestor = Ingestor(
+            embedding_model=self.embedding_model(),
+            vector_store=self.storage.vector_store(self.project),
+            storage=self.storage,
+        )
 
     def get_chat_memory(self, project_id: str, user_id: str) -> ChatMemoryBuffer:
         """Get a chat memory buffer instance for a specific project and user.
@@ -136,7 +142,7 @@ class IndexManager:
         # create (or load) docstore and add nodes
         docstore = self.storage.get_docstore()
 
-        embed_model = self.ingestor.embedding_model()
+        embed_model = self.ingestor.embedding_model
 
         storage_context = StorageContext.from_defaults(
             vector_store=self.storage.vector_store(self.project), docstore=docstore
@@ -179,7 +185,7 @@ class IndexManager:
 
         index = self.load_index()
 
-        query_engine = index.as_query_engine(llm=self.llm)
+        query_engine = index.as_query_engine(llm=self.llm())
 
         return query_engine
 
