@@ -6,6 +6,7 @@ from llama_index.core import MockEmbedding
 from llama_index.llms.openai import OpenAI
 from llama_index.llms.ollama import Ollama
 from llama_index.llms.huggingface import HuggingFaceLLM
+from llama_index.core.llms.mock import MockLLM
 from app.core.logging_config import get_logger
 
 OPENAI_PROVIDER = "openai"
@@ -46,6 +47,7 @@ def get_llm_provider(
         HUGGINGFACE_PROVIDER: lambda: HuggingFaceLLM(
             model=model_name,
         ),
+        MOCK_PROVIDER: lambda: MockLLM(),
     }
     try:
         provider = provider_map[provider_name.lower()]()
