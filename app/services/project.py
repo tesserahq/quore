@@ -6,8 +6,6 @@ from app.models.project import Project
 from app.schemas.project import ProjectCreate, ProjectUpdate, Project as ProjectSchema
 from app.services.workspace import WorkspaceService
 from app.utils.db.filtering import apply_filters
-from app.config import get_settings
-from app.models.project import IngestSettings
 from app.core.index_manager import IndexManager
 from app.models.node import get_node_model
 

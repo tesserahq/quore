@@ -1,12 +1,10 @@
 from app.models.mixins import TimestampMixin
-from sqlalchemy import Column, String, Boolean, ForeignKey, LargeBinary, Enum as SQLEnum
+from sqlalchemy import Column, String, ForeignKey, LargeBinary
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
-from typing import cast
 
 from app.db import Base
-from app.constants.credentials import CredentialType
 
 
 class Credential(Base, TimestampMixin):
@@ -16,7 +14,7 @@ class Credential(Base, TimestampMixin):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(100), nullable=False)
-    type = cast(CredentialType, Column(SQLEnum(CredentialType), nullable=False))
+    type = Column(String(50), nullable=False)
     encrypted_data = Column(
         LargeBinary, nullable=False
     )  # encrypted blob of all secret fields

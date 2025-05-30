@@ -1,7 +1,4 @@
-from pydantic import BaseModel
-from typing import Optional, Dict
-from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.core.storage_manager import StorageManager
@@ -9,7 +6,6 @@ from app.models.project import Project
 from app.schemas.ingest_text_request import IngestTextRequest
 from app.utils.auth import get_current_user
 from app.db import get_db
-from app.services.project import ProjectService
 from app.core.index_manager import IndexManager
 from app.core.ingestor import Ingestor
 from app.utils.dependencies import get_project_by_id

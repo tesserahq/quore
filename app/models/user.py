@@ -4,7 +4,6 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 
 import uuid
-from datetime import datetime
 
 from app.db import Base
 

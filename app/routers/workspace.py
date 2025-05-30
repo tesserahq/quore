@@ -3,13 +3,9 @@ from app.services.project import ProjectService
 from app.utils.auth import get_current_user
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
-from uuid import UUID
 
 from app.db import get_db
 from app.schemas.workspace import Workspace, WorkspaceCreate, WorkspaceUpdate
-from app.schemas.membership import MembershipInDB, MembershipCreate, MembershipUpdate
-from app.services.membership import MembershipService
 from app.services.workspace import WorkspaceService
 from app.schemas.common import ListResponse
 from app.utils.dependencies import get_workspace_by_id
@@ -53,8 +49,7 @@ def update_workspace(
     updated_workspace = WorkspaceService(db).update_workspace(
         workspace.id, workspace_update
     )
-    if updated_workspace is None:
-        raise HTTPException(status_code=404, detail="Workspace not found")
+
     return updated_workspace
 
 

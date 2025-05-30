@@ -1,10 +1,9 @@
 from typing import List, Optional, Dict, Any
 from uuid import UUID
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, and_
 
 from app.models.credential import Credential
-from app.schemas.credential import CredentialCreate, CredentialUpdate, CredentialInfo
+from app.schemas.credential import CredentialCreate, CredentialUpdate
 from app.utils.db.filtering import apply_filters
 from app.core.credentials import (
     validate_credential_fields,

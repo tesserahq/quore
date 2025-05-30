@@ -1,7 +1,7 @@
 import pytest
 from app.services.plugin_registry import PluginRegistryService
 from app.schemas.plugin import PluginCreate
-from uuid import uuid4
+from app.constants.plugin_states import PluginState
 
 
 @pytest.fixture
@@ -26,11 +26,11 @@ def setup_plugin(db, setup_workspace):
         repository_url="https://github.com/test/plugin",
         version="1.0.0",
         commit_hash="abc123",
-        is_active=True,
+        state=PluginState.REGISTERED,
         endpoint_url="http://localhost:8000",
         plugin_metadata={"type": "test"},
         credential_id=None,  # No credential by default
         workspace_id=setup_workspace.id,
     )
-    plugin = PluginRegistryService(db).register_plugin(plugin_data)
+    plugin = PluginRegistryService(db).create_plugin(plugin_data)
     return plugin

@@ -1,14 +1,11 @@
-from llama_index.storage.docstore.redis import RedisDocumentStore
 from app.config import get_settings
-from app.models.project import Project
 from llama_index.core import StorageContext
 from llama_index.core import VectorStoreIndex
-from sqlalchemy.orm import Session
 from llama_index.core.schema import Document
 from llama_index.core.base.embeddings.base import BaseEmbedding
 from typing import Optional
 from llama_index.vector_stores.postgres import PGVectorStore
-from app.core.telemetry import instrument_method, instrument_span
+from app.core.telemetry import instrument_method
 from app.core.storage_manager import StorageManager
 
 

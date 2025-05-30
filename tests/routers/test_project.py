@@ -1,8 +1,3 @@
-import pytest
-from uuid import UUID
-from app.schemas.project import SearchOperator
-
-
 def test_get_project(client, setup_project):
     """Test GET /projects/{project_id} endpoint."""
     project = setup_project
@@ -225,4 +220,4 @@ def test_get_nodes_nonexistent_project(client):
     non_existent_id = "00000000-0000-0000-0000-000000000000"
     response = client.get(f"/projects/{non_existent_id}/nodes")
     assert response.status_code == 404
-    assert response.json()["detail"] == f"Project not found"
+    assert response.json()["detail"] == "Project not found"

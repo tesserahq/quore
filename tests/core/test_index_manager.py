@@ -1,10 +1,6 @@
-import pytest
 from app.core.index_manager import IndexManager
-from app.constants.providers import MOCK_PROVIDER
 from llama_index.core import VectorStoreIndex
 from sqlalchemy import inspect
-from unittest.mock import patch, MagicMock
-from app.models.project import IngestSettings
 
 
 def test_index_manager_initialization(db, setup_project):
@@ -116,13 +112,8 @@ def test_get_query_engine_tool(db, setup_project):
     # Get the query engine tool
     tool = index_manager.get_query_engine_tool()
 
-    # Print available attributes for debugging
-    print("QueryEngineTool attributes:", dir(tool))
-
     # Verify we got a valid tool
     assert tool is not None
-    # assert tool.name == "query_index"  # Commented out until we know the correct attribute
-    # assert "Use this tool to retrieve information" in tool.description
 
 
 def test_embedding_model(db, setup_project):

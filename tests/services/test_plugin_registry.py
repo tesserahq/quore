@@ -1,16 +1,10 @@
 import pytest
-from uuid import UUID, uuid4
-from sqlalchemy.exc import IntegrityError
 from app.services.plugin_registry import PluginRegistryService
 from app.schemas.plugin import PluginCreate, PluginToolCreate
-from app.models.plugin import Plugin
-from app.models.plugin_tool import PluginTool
 from app.models.project_plugin import ProjectPlugin
 from app.models.project_plugin_tool import ProjectPluginTool
-from tests.fixtures.workspace_fixtures import setup_workspace
-from tests.fixtures.project_fixtures import setup_project
-from unittest.mock import patch, MagicMock
-import subprocess
+from app.constants.plugin_states import PluginState
+from unittest.mock import patch
 
 
 # Global fixture to mock PluginManager.clone_repository for all tests
@@ -36,7 +30,7 @@ def sample_plugin_data(setup_workspace):
         repository_url="https://github.com/test/plugin",
         version="1.0.0",
         commit_hash="abc123",
-        is_active=True,
+        state=PluginState.REGISTERED,
         endpoint_url="http://localhost:8000",
         plugin_metadata={"type": "test"},
         credential_id=None,  # No credential by default
@@ -58,7 +52,7 @@ def sample_tool_data():
 
 @pytest.fixture
 def created_plugin(plugin_registry_service, sample_plugin_data):
-    return plugin_registry_service.register_plugin(sample_plugin_data)
+    return plugin_registry_service.create_plugin(sample_plugin_data)
 
 
 @pytest.fixture
@@ -67,47 +61,22 @@ def created_tool(plugin_registry_service, created_plugin, sample_tool_data):
 
 
 class TestPluginRegistryService:
-    def test_register_plugin(self, plugin_registry_service, sample_plugin_data):
+    def test_create_plugin(self, plugin_registry_service, sample_plugin_data):
         """Test registering a plugin and cloning its repository."""
-        with patch(
-            "app.core.plugin_manager.manager.PluginManager.clone_repository"
-        ) as mock_clone:
-            plugin = plugin_registry_service.register_plugin(sample_plugin_data)
 
-            assert plugin is not None
-            assert plugin.name == sample_plugin_data.name
-            assert plugin.description == sample_plugin_data.description
-            assert plugin.repository_url == sample_plugin_data.repository_url
-            assert plugin.version == sample_plugin_data.version
-            assert plugin.commit_hash == sample_plugin_data.commit_hash
-            assert plugin.is_active == sample_plugin_data.is_active
-            assert plugin.endpoint_url == sample_plugin_data.endpoint_url
-            assert plugin.plugin_metadata == sample_plugin_data.plugin_metadata
-            assert plugin.credential_id == sample_plugin_data.credential_id
-            assert plugin.workspace_id == sample_plugin_data.workspace_id
+        plugin = plugin_registry_service.create_plugin(sample_plugin_data)
 
-            # Verify that clone_repository was called
-            mock_clone.assert_called_once()
-
-    def test_register_plugin_clone_failure(
-        self, plugin_registry_service, sample_plugin_data
-    ):
-        """Test that plugin registration is rolled back if repository cloning fails."""
-        with patch(
-            "app.core.plugin_manager.manager.PluginManager.clone_repository"
-        ) as mock_clone:
-            mock_clone.side_effect = RuntimeError("Failed to clone repository")
-
-            # Verify that the error is propagated
-            with pytest.raises(RuntimeError) as exc_info:
-                plugin_registry_service.register_plugin(sample_plugin_data)
-            assert "Failed to clone plugin repository" in str(exc_info.value)
-
-            # Verify that the plugin was not created
-            plugins = plugin_registry_service.get_workspace_plugins(
-                sample_plugin_data.workspace_id
-            )
-            assert len(plugins) == 0
+        assert plugin is not None
+        assert plugin.name == sample_plugin_data.name
+        assert plugin.description == sample_plugin_data.description
+        assert plugin.repository_url == sample_plugin_data.repository_url
+        assert plugin.version == sample_plugin_data.version
+        assert plugin.commit_hash == sample_plugin_data.commit_hash
+        assert plugin.state == PluginState.INITIALIZING
+        assert plugin.endpoint_url == sample_plugin_data.endpoint_url
+        assert plugin.plugin_metadata == sample_plugin_data.plugin_metadata
+        assert plugin.credential_id == sample_plugin_data.credential_id
+        assert plugin.workspace_id == sample_plugin_data.workspace_id
 
     def test_get_plugin(self, plugin_registry_service, created_plugin):
         retrieved_plugin = plugin_registry_service.get_plugin(created_plugin.id)
@@ -123,7 +92,7 @@ class TestPluginRegistryService:
             version="2.0.0",
             repository_url=created_plugin.repository_url,
             commit_hash=created_plugin.commit_hash,
-            is_active=created_plugin.is_active,
+            state=created_plugin.state,
             endpoint_url=created_plugin.endpoint_url,
             plugin_metadata=created_plugin.plugin_metadata,
             credential_id=created_plugin.credential_id,
@@ -140,7 +109,7 @@ class TestPluginRegistryService:
         assert updated_plugin.version == update_data.version
         assert updated_plugin.repository_url == created_plugin.repository_url
         assert updated_plugin.commit_hash == created_plugin.commit_hash
-        assert updated_plugin.is_active == created_plugin.is_active
+        assert updated_plugin.state == created_plugin.state
         assert updated_plugin.endpoint_url == created_plugin.endpoint_url
         assert updated_plugin.plugin_metadata == created_plugin.plugin_metadata
         assert updated_plugin.credential_id == created_plugin.credential_id
@@ -150,7 +119,9 @@ class TestPluginRegistryService:
         result = plugin_registry_service.delete_plugin(created_plugin.id)
 
         assert result is True
-        assert plugin_registry_service.get_plugin(created_plugin.id) is None
+        with pytest.raises(ValueError) as exc_info:
+            plugin_registry_service.get_plugin(created_plugin.id)
+        assert str(exc_info.value) == f"Plugin with ID {created_plugin.id} not found"
 
     def test_register_tool(
         self, plugin_registry_service, created_plugin, sample_tool_data
@@ -242,16 +213,12 @@ class TestPluginRegistryService:
         plugin_registry_service,
         created_plugin,
         created_tool,
-        setup_workspace,
         setup_project,
     ):
-        workspace = setup_workspace
         project = setup_project
 
         # Enable plugin in project
-        project_plugin = plugin_registry_service.enable_plugin_in_project(
-            project.id, created_plugin.id
-        )
+        plugin_registry_service.enable_plugin_in_project(project.id, created_plugin.id)
 
         # Get enabled tools for project
         enabled_tools = plugin_registry_service.get_enabled_tools_for_project(

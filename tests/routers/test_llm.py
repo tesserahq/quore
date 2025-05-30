@@ -1,5 +1,4 @@
 from app.constants.providers import LLM_PROVIDERS, MOCK_PROVIDER
-import pytest
 
 
 def test_get_llm_providers(client):

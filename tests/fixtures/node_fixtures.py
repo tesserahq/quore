@@ -1,7 +1,5 @@
-from app.constants.providers import MOCK_PROVIDER
 import pytest
 from app.models.node import get_node_model
-from app.models.project import Project
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect
 from app.core.index_manager import IndexManager

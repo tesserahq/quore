@@ -18,6 +18,7 @@ pytest_plugins = [
     "tests.fixtures.membership_fixtures",
     "tests.fixtures.node_fixtures",
     "tests.fixtures.credential_fixtures",
+    "tests.fixtures.plugin_fixtures",
 ]
 
 logger = logging.getLogger(__name__)
@@ -164,7 +165,7 @@ def client(db, setup_user):
     test_client = TestClient(app)
 
     # Add default authorization header to all requests
-    test_client.headers.update({"Authorization": f"Bearer mock_token"})
+    test_client.headers.update({"Authorization": "Bearer mock_token"})
 
     yield test_client
 

@@ -87,7 +87,4 @@ class Settings(BaseSettings):
 
 def get_settings() -> Settings:
     """Get application settings with required environment variables."""
-    return Settings(
-        rollbar_access_token=os.getenv("ROLLBAR_ACCESS_TOKEN", ""),
-        credential_master_key=os.getenv("CREDENTIAL_MASTER_KEY", ""),
-    )
+    return Settings()

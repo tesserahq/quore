@@ -1,4 +1,3 @@
-import pytest
 from uuid import uuid4
 from app.constants.credentials import CredentialType
 
@@ -79,7 +78,6 @@ def test_create_credential(client, setup_workspace, test_credential_data):
     response = client.post(
         f"/workspaces/{workspace.id}/credentials", json=test_credential_data
     )
-    print(response.json())
     assert response.status_code == 201
     data = response.json()
     assert data["name"] == test_credential_data["name"]

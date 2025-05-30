@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
 from uuid import UUID
 from datetime import datetime
+from app.constants.plugin_states import PluginState
 
 
 class PluginBase(BaseModel):
@@ -12,7 +13,7 @@ class PluginBase(BaseModel):
     repository_url: str
     version: Optional[str] = None
     commit_hash: Optional[str] = None
-    is_active: bool = True
+    state: Optional[PluginState] = None
     endpoint_url: Optional[str] = None
     plugin_metadata: Optional[Dict[str, Any]] = None
     credential_id: Optional[UUID] = None
@@ -25,6 +26,17 @@ class PluginCreate(PluginBase):
     pass
 
 
+class PluginCreateRequest(BaseModel):
+    """Schema for the request body when creating a plugin."""
+
+    name: str = Field(..., min_length=1, max_length=100)
+    description: Optional[str] = None
+    repository_url: str
+    version: Optional[str] = None
+    credential_id: Optional[UUID] = None
+    workspace_id: Optional[UUID] = None
+
+
 class PluginUpdate(BaseModel):
     """Schema for updating an existing plugin."""
 
@@ -32,7 +44,7 @@ class PluginUpdate(BaseModel):
     description: Optional[str] = None
     version: Optional[str] = None
     commit_hash: Optional[str] = None
-    is_active: Optional[bool] = None
+    state: Optional[PluginState] = None
     endpoint_url: Optional[str] = None
     plugin_metadata: Optional[Dict[str, Any]] = None
     credential_id: Optional[UUID] = None

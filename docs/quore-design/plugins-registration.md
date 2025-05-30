@@ -4,13 +4,13 @@
 
 The Plugin Lifecycle Manager is responsible for downloading plugins and managing their entire execution cycle. It allows a developer to run MCP (Model Context Protocol)-compatible plugin servers locally, even if they are implemented in different programming languages. MCP is an open protocol for extending AI applications with external capabilities ￼. Rather than using containers or orchestration, this design runs plugins as local subprocesses for simplicity, making it suitable for a solo developer environment. Key features include:
 
- * Repository cloning & inspection: Automatically fetch the plugin’s code (e.g. via Git) and examine files to determine how to run it.
- * Language-specific launch heuristics: Decide how to start the plugin based on its language (Node.js, Python, etc.) using conventions and manifest files.
- * Subprocess management: Launch the plugin server in a separate process with captured output and assign it a dynamic port or IPC socket.
- * Readiness monitoring: Detect when the plugin is ready to serve requests (e.g. by polling a health or discovery endpoint) with timeouts and error handling.
- * State tracking: Keep track of each plugin’s process handle, assigned port, and last-used time. Automatically shut down plugins that go idle beyond a threshold.
- * Integration hooks: Provide a call_plugin(name, payload) interface that ensures the plugin is running and proxies calls to its MCP endpoint. This can integrate with frameworks like FastAPI (for web APIs) or LlamaIndex (for LLM agents/tools).
- * Extensibility: Easy to add support for new runtimes (e.g. Rust, Go) by registering new heuristics and launch strategies without heavy refactoring.
+- Repository cloning & inspection: Automatically fetch the plugin’s code (e.g. via Git) and examine files to determine how to run it.
+- Language-specific launch heuristics: Decide how to start the plugin based on its language (Node.js, Python, etc.) using conventions and manifest files.
+- Subprocess management: Launch the plugin server in a separate process with captured output and assign it a dynamic port or IPC socket.
+- Readiness monitoring: Detect when the plugin is ready to serve requests (e.g. by polling a health or discovery endpoint) with timeouts and error handling.
+- State tracking: Keep track of each plugin’s process handle, assigned port, and last-used time. Automatically shut down plugins that go idle beyond a threshold.
+- Integration hooks: Provide a call_plugin(name, payload) interface that ensures the plugin is running and proxies calls to its MCP endpoint. This can integrate with frameworks like FastAPI (for web APIs) or LlamaIndex (for LLM agents/tools).
+- Extensibility: Easy to add support for new runtimes (e.g. Rust, Go) by registering new heuristics and launch strategies without heavy refactoring.
 
 By handling these concerns, the manager abstracts away the details of running multi-language plugin servers and ensures robust, safe operation of each plugin process.
 
@@ -19,11 +19,11 @@ By handling these concerns, the manager abstracts away the details of running mu
 
 A clear module structure will make the system maintainable and extensible. One approach is to separate concerns into different files or classes:
 
- * plugin_manager.py: Main entry point with a PluginManager class that orchestrates everything (cloning, launching, tracking, calling).
- * launchers/ package: Contains launch strategy classes for each runtime or language, e.g. PythonLauncher, NodeLauncher, GoLauncher, RustLauncher. Each provides methods to detect if a plugin is of that type and to start the server.
- * models.py: Data classes or structures for plugin metadata (e.g. PluginInfo with fields like name, process, port, last_used).
- * utils.py: Utility functions, e.g. for finding free ports, reading configuration files, etc.
- * integrations/ (optional): Helper code for integration with FastAPI, LlamaIndex, etc., if needed (though often this can be simple and reside in plugin_manager.py).
+- plugin_manager.py: Main entry point with a PluginManager class that orchestrates everything (cloning, launching, tracking, calling).
+- launchers/ package: Contains launch strategy classes for each runtime or language, e.g. PythonLauncher, NodeLauncher, GoLauncher, RustLauncher. Each provides methods to detect if a plugin is of that type and to start the server.
+- models.py: Data classes or structures for plugin metadata (e.g. PluginInfo with fields like name, process, port, last_used).
+- utils.py: Utility functions, e.g. for finding free ports, reading configuration files, etc.
+- integrations/ (optional): Helper code for integration with FastAPI, LlamaIndex, etc., if needed (though often this can be simple and reside in plugin_manager.py).
 
 For example, the file layout might look like:
 
@@ -43,9 +43,9 @@ launchers/
 
 The first step in managing a plugin is acquiring its code. The manager should support cloning a git repository (using git CLI or a library like GitPython) or downloading an archive. After obtaining the code, the manager inspects the repository structure to infer how to run the plugin server. Key files and indicators to check include:
 
-* Language markers: Check for files that indicate the language/framework. For example, a package.json suggests a Node.js project, while a pyproject.toml or requirements.txt indicates Python. A Cargo.toml would mean Rust, go.mod means Go, etc.
-* Common entry-point files: Within the repo, look for typical server startup files. For Python, this might be main.py or app.py at the root (or under a folder if it’s a package). For Node.js, look for a server.js, index.js, or scripts defined in package.json.
-* Manifest or config files: If the repository provides its own plugin manifest (for example, a custom .quore/plugin.yaml or plugin.yml), parse it to get the start command or runtime info. Such a manifest might specify the language, environment variables, or the exact command to run the server.
+- Language markers: Check for files that indicate the language/framework. For example, a package.json suggests a Node.js project, while a pyproject.toml or requirements.txt indicates Python. A Cargo.toml would mean Rust, go.mod means Go, etc.
+- Common entry-point files: Within the repo, look for typical server startup files. For Python, this might be main.py or app.py at the root (or under a folder if it’s a package). For Node.js, look for a server.js, index.js, or scripts defined in package.json.
+- Manifest or config files: If the repository provides its own plugin manifest (for example, a custom .quore/plugin.yaml or plugin.yml), parse it to get the start command or runtime info. Such a manifest might specify the language, environment variables, or the exact command to run the server.
 
 The inspection logic can be implemented in the detect() method of each launcher strategy. For instance, a simplified version of detection logic might look like:
 
@@ -69,24 +69,24 @@ class PythonLauncher(LauncherStrategy):
         return False
     # ...
 ```
-Additionally, reading the contents of key files can refine detection. For example, if a package.json exists, one can load it (as JSON) and see if a "scripts": { "start": ... } is defined, which indicates how to start the Node server. Similarly, a pyproject.toml could be parsed to see if it uses a specific framework or defines console scripts. By structuring detection this way, the manager can decide which launcher strategy to use for the next step.
 
+Additionally, reading the contents of key files can refine detection. For example, if a package.json exists, one can load it (as JSON) and see if a "scripts": { "start": ... } is defined, which indicates how to start the Node server. Similarly, a pyproject.toml could be parsed to see if it uses a specific framework or defines console scripts. By structuring detection this way, the manager can decide which launcher strategy to use for the next step.
 
 ## Language-Specific Launch Heuristics
 
 Once the plugin’s language is identified, the manager uses language-specific heuristics to determine the correct startup procedure. Here are strategies for common runtimes:
 
-* Node.js (TypeScript/JavaScript): If a package.json is present and contains a start script, use npm or yarn to run it. For example, if "scripts": { "start": "node index.js" } is defined, the manager can execute npm start. The "start" script is special in Node – running npm start will invoke it without needing to explicitly name the script ￼. The manager should likely do an npm install first to ensure dependencies are installed, then launch the server. If no start script is found but there’s an entry like "main": "server.js" in package.json, the manager could default to running node server.js.
+- Node.js (TypeScript/JavaScript): If a package.json is present and contains a start script, use npm or yarn to run it. For example, if "scripts": { "start": "node index.js" } is defined, the manager can execute npm start. The "start" script is special in Node – running npm start will invoke it without needing to explicitly name the script ￼. The manager should likely do an npm install first to ensure dependencies are installed, then launch the server. If no start script is found but there’s an entry like "main": "server.js" in package.json, the manager could default to running node server.js.
 
-* Python: If a pyproject.toml exists (especially if using Poetry or similar), the manager might first install the package (pip install . or poetry install) to ensure dependencies. Otherwise, if there is a requirements.txt, run pip install -r requirements.txt. After setup, the manager looks for an entry point. Common conventions: if main.py or app.py exists, run that (e.g. python main.py). These files often contain the server startup code (for instance, many Flask/FastAPI apps use app.py or main.py). If the project is structured as a package, check for a __main__.py or console_scripts in setup – but for simplicity, we assume plugins provide a runnable script.
+- Python: If a pyproject.toml exists (especially if using Poetry or similar), the manager might first install the package (pip install . or poetry install) to ensure dependencies. Otherwise, if there is a requirements.txt, run pip install -r requirements.txt. After setup, the manager looks for an entry point. Common conventions: if main.py or app.py exists, run that (e.g. python main.py). These files often contain the server startup code (for instance, many Flask/FastAPI apps use app.py or main.py). If the project is structured as a package, check for a __main__.py or console_scripts in setup – but for simplicity, we assume plugins provide a runnable script.
 
-* Rust: If a Cargo.toml is found, it’s a Rust project. The heuristic could be to run cargo run --release in that directory. This will build and run the binary. The manager might also allow a debug mode (cargo run without --release) based on config. Ensure cargo is installed and available in PATH.
+- Rust: If a Cargo.toml is found, it’s a Rust project. The heuristic could be to run cargo run --release in that directory. This will build and run the binary. The manager might also allow a debug mode (cargo run without --release) based on config. Ensure cargo is installed and available in PATH.
 
-* Go: If a go.mod file is present or .go files, treat it as a Go module. The typical command would be go run . (which builds and runs the main package in the current directory), or compile first with go build. Running directly with go run is simpler for development.
+- Go: If a go.mod file is present or .go files, treat it as a Go module. The typical command would be go run . (which builds and runs the main package in the current directory), or compile first with go build. Running directly with go run is simpler for development.
 
-* Other Languages: Additional heuristics can be added in the future. For example, for Java (if a pom.xml or build.gradle is present, perhaps run via Maven or Gradle), or C# (if a .csproj, use dotnet run). These are outside the initial scope but the system should be designed to accommodate them by adding new launcher classes.
+- Other Languages: Additional heuristics can be added in the future. For example, for Java (if a pom.xml or build.gradle is present, perhaps run via Maven or Gradle), or C# (if a .csproj, use dotnet run). These are outside the initial scope but the system should be designed to accommodate them by adding new launcher classes.
 
-* Fallback via Manifest: If the above heuristics don’t find a clear way to run the plugin, a manifest file like .quore/plugin.yaml can provide explicit instructions. For instance, the YAML might specify a command: ./run_plugin.sh or indicate the language and main file. The manager can read such a file and construct the command accordingly. Example plugin.yaml:
+- Fallback via Manifest: If the above heuristics don’t find a clear way to run the plugin, a manifest file like .quore/plugin.yaml can provide explicit instructions. For instance, the YAML might specify a command: ./run_plugin.sh or indicate the language and main file. The manager can read such a file and construct the command accordingly. Example plugin.yaml:
 
 ```python
 runtime: "go"
@@ -102,13 +102,13 @@ If no manifest is present, the manager could also have some hardcoded fallbacks 
 
 After determining the appropriate start command, the manager launches the plugin server as a subprocess. This is done initially with Python’s subprocess. Popen for flexibility (later could be adapted to use asyncio’s create_subprocess, but using Popen is straightforward). Key considerations when launching:
 
-* Command construction: The command should be an array of executable and arguments, e.g. ["npm", "start"] or ["python", "main.py"]. Avoid invoking via shell unless necessary, to prevent shell injection issues (since we trust the plugin code, shell injection is less a concern, but using list form is still cleaner). If using a manifest-provided command string, you might use shell=True or parse it into args manually.
+- Command construction: The command should be an array of executable and arguments, e.g. ["npm", "start"] or ["python", "main.py"]. Avoid invoking via shell unless necessary, to prevent shell injection issues (since we trust the plugin code, shell injection is less a concern, but using list form is still cleaner). If using a manifest-provided command string, you might use shell=True or parse it into args manually.
 
-* Working directory: Set cwd to the plugin’s repository directory. This ensures the process runs in the context of its files (for example, Node will look at local node_modules, Python might have relative imports or files).
+- Working directory: Set cwd to the plugin’s repository directory. This ensures the process runs in the context of its files (for example, Node will look at local node_modules, Python might have relative imports or files).
 
-* Environment variables: If a dynamic port or other config is needed, prepare an env dict. For example, choose an available port and set env["PORT"] = "12345". Also merge in the current environment (so that PATH and other necessary vars are inherited). If the plugin manifest or configuration requires specific env vars (like API keys or secrets), those should be provided here as well.
+- Environment variables: If a dynamic port or other config is needed, prepare an env dict. For example, choose an available port and set env["PORT"] = "12345". Also merge in the current environment (so that PATH and other necessary vars are inherited). If the plugin manifest or configuration requires specific env vars (like API keys or secrets), those should be provided here as well.
 
-* Dynamic port selection: It’s important to avoid port collisions. The manager can request a free TCP port from the OS by binding to port 0 on localhost and letting the OS pick one, then using that port for the plugin ￼. For example:
+- Dynamic port selection: It’s important to avoid port collisions. The manager can request a free TCP port from the OS by binding to port 0 on localhost and letting the OS pick one, then using that port for the plugin ￼. For example:
 
 ```python
 import socket
@@ -123,8 +123,8 @@ env["PORT"] = str(port)
 This ensures the port is free when we launch the plugin. (We close the temporary socket immediately so the plugin can use it.) The plugin needs to be written to honor the PORT environment variable or similar; most servers do (for instance, many Node frameworks use process.env.PORT). If not, the manager might have to pass the port as an argument (e.g., npm start -- --port 12345 or python main.py --port 12345 depending on how the plugin accepts config).
 
 
-* Process group & termination: To manage the subprocess robustly, create it in a new process group or session. In Python’s Popen, you can use start_new_session=True which on POSIX systems calls setsid() for the child process ￼. This means the plugin process (and any children it spawns) are in a separate group, and we can terminate the whole group easily if needed. Using start_new_session=True is safer than the older preexec_fn=os.setsid approach, which has thread-safety issues ￼. On Windows, an analogous approach is to use creationflags=subprocess.CREATE_NEW_PROCESS_GROUP. Setting up the process in its own group prevents stray child processes from lingering after termination.
-* Capturing output: Initialize the subprocess with stdout=subprocess.PIPE and stderr=subprocess.PIPE (or perhaps merge stderr to stdout) so that we can capture logs. This helps in debugging plugin startup failures – we can read from these pipes and log the output. For a long-running process, consider reading these streams asynchronously or in a separate thread to avoid blocking or filling the buffer. Initially, one might just read after process ends or have a simple logger thread printing plugin output to console.
+- Process group & termination: To manage the subprocess robustly, create it in a new process group or session. In Python’s Popen, you can use start_new_session=True which on POSIX systems calls setsid() for the child process ￼. This means the plugin process (and any children it spawns) are in a separate group, and we can terminate the whole group easily if needed. Using start_new_session=True is safer than the older preexec_fn=os.setsid approach, which has thread-safety issues ￼. On Windows, an analogous approach is to use creationflags=subprocess.CREATE_NEW_PROCESS_GROUP. Setting up the process in its own group prevents stray child processes from lingering after termination.
+- Capturing output: Initialize the subprocess with stdout=subprocess.PIPE and stderr=subprocess.PIPE (or perhaps merge stderr to stdout) so that we can capture logs. This helps in debugging plugin startup failures – we can read from these pipes and log the output. For a long-running process, consider reading these streams asynchronously or in a separate thread to avoid blocking or filling the buffer. Initially, one might just read after process ends or have a simple logger thread printing plugin output to console.
 
 
 Here is a simplified code example for launching a plugin (synchronous example for illustration):
@@ -157,13 +157,13 @@ The PluginInfo data structure would hold the process and port (and we’d set la
 
 After launching the subprocess, the manager should verify that the plugin server actually starts and is ready to accept requests. There are a few ways to detect readiness:
 
-* Polling a health endpoint: If the MCP server exposes an HTTP endpoint (which is likely for an OpenAPI-based plugin), the manager can periodically attempt an HTTP request to it. A common approach is to ping the root URL or a known discovery endpoint (for example, some MCP servers might expose GET / or /healthz or the OpenAPI JSON at /openapi.json). If the request succeeds (or returns expected data) then the server is ready. Using a small timeout for each request (e.g. 1 second) and retrying until a global timeout (like 10-30 seconds) is reached is prudent.
+- Polling a health endpoint: If the MCP server exposes an HTTP endpoint (which is likely for an OpenAPI-based plugin), the manager can periodically attempt an HTTP request to it. A common approach is to ping the root URL or a known discovery endpoint (for example, some MCP servers might expose GET / or /healthz or the OpenAPI JSON at /openapi.json). If the request succeeds (or returns expected data) then the server is ready. Using a small timeout for each request (e.g. 1 second) and retrying until a global timeout (like 10-30 seconds) is reached is prudent.
 
-* Checking process output: In addition to or instead of HTTP polling, the manager can watch the stdout of the process for a specific log line that indicates readiness. For example, many servers print a message like “Listening on port 12345” or “Server started”. The manager could read from process.stdout asynchronously and look for such a cue. This can sometimes detect readiness earlier than an HTTP poll, and also catch errors if the server fails to start (by reading error output).
+- Checking process output: In addition to or instead of HTTP polling, the manager can watch the stdout of the process for a specific log line that indicates readiness. For example, many servers print a message like “Listening on port 12345” or “Server started”. The manager could read from process.stdout asynchronously and look for such a cue. This can sometimes detect readiness earlier than an HTTP poll, and also catch errors if the server fails to start (by reading error output).
 
-* Process exit check: Continuously check if the process has exited (using process.poll()). If it exits before becoming ready, it likely crashed or terminated, so the manager should capture the stderr output, log an error (or surface it), and not mark it as running.
+- Process exit check: Continuously check if the process has exited (using process.poll()). If it exits before becoming ready, it likely crashed or terminated, so the manager should capture the stderr output, log an error (or surface it), and not mark it as running.
 
-* Timeout: If neither a successful poll nor a readiness log is seen within a reasonable timeframe (say 30 seconds), the manager should assume the startup failed or hung. In that case, it should terminate the process (send a kill signal) and report a failure to start. This prevents orphaned processes that never became ready.
+- Timeout: If neither a successful poll nor a readiness log is seen within a reasonable timeframe (say 30 seconds), the manager should assume the startup failed or hung. In that case, it should terminate the process (send a kill signal) and report a failure to start. This prevents orphaned processes that never became ready.
 
 An example flow using polling might be:
 
@@ -171,7 +171,7 @@ An example flow using polling might be:
 import requests, time
 
 ready = False
-for _ in range(60):  # up to ~30 seconds (60 * 0.5s)
+for _ in range(60):  # up to ~30 seconds (60- 0.5s)
     # Check if process died
     if process.poll() is not None:
         break  # process exited, break out to handle error
@@ -203,10 +203,10 @@ If the plugin becomes ready (the loop breaks with ready=True), the manager can p
 
 The manager maintains state for each running plugin in a structure, for example a dict: self.active_plugins: Dict[str, PluginInfo]. The PluginInfo contains:
 
-* process: the Popen object (or process ID)
-* port: the network port (or socket path) it’s using
-* last_used: timestamp of when it was last accessed via call_plugin
-* (Optional: any other metadata like plugin name, path, etc.)
+- process: the Popen object (or process ID)
+- port: the network port (or socket path) it’s using
+- last_used: timestamp of when it was last accessed via call_plugin
+- (Optional: any other metadata like plugin name, path, etc.)
 
 By updating and monitoring these, the manager can implement idle shutdown: automatically stopping a plugin that hasn’t been used in a while. This is important to conserve resources, especially if many plugins could be run but only a few are needed at a time. For a solo developer environment, you might not run dozens at once, but it’s good practice to clean up.
 
@@ -243,7 +243,7 @@ By tracking state, the manager can also prevent duplicate startups. If the user 
 
 The manager exposes a function (or method) call_plugin(name, payload) that acts as a unified way to invoke a plugin’s functionality. Under the hood, this function will: ensure the plugin process is running (starting it if necessary), then forward the request to the plugin and return the result. This design allows easy integration with both web frameworks like FastAPI and AI frameworks like LlamaIndex:
 
-* FastAPI Integration: You can create a FastAPI endpoint that simply passes the request to the plugin. For example:
+- FastAPI Integration: You can create a FastAPI endpoint that simply passes the request to the plugin. For example:
 
   ```python
   from fastapi import FastAPI, Request
@@ -258,7 +258,7 @@ The manager exposes a function (or method) call_plugin(name, payload) that acts 
 
 In this snippet, a POST to /plugins/foo will call call_plugin("foo", payload) and return whatever the plugin responded. The plugin manager abstracts whether “foo” is a Python or Node or other plugin – it just works if available. (In a real app, you’d probably add auth, or restrict which plugins can be called, etc.)
 
-* LlamaIndex (LlamaHub) Integration: LlamaIndex allows defining tools or functions that an LLM can call. You could wrap call_plugin in a Tool interface. For instance, if using an agent that can execute tools, you might register something like:
+- LlamaIndex (LlamaHub) Integration: LlamaIndex allows defining tools or functions that an LLM can call. You could wrap call_plugin in a Tool interface. For instance, if using an agent that can execute tools, you might register something like:
 
 ```python
 from llama_index import Tool
@@ -343,25 +343,25 @@ When starting a plugin, the manager iterates through self.launchers and uses the
 Each launcher can also handle any special setup. For instance, a NodeLauncher might check for a package-lock.json or yarn.lock and decide whether to use npm or yarn. It could also run npm install automatically if needed. A PythonLauncher could create a virtual environment or ensure dependencies are installed (though that adds complexity – initially, we might assume the environment already has needed packages, or we just do a pip install globally).
 
 Extensibility considerations:
-* Configuration: Perhaps allow the developer to configure some behavior without changing code. For instance, the idle timeout duration, or a mapping of plugin name to a specific startup command (overriding detection). This could be done via a config file or environment variables.
-* Multiple instances or scaling: In the future, one might want to run multiple instances of the same plugin for load balancing, or run plugins in isolated environments (containers). The current design is single-instance per plugin name, running on localhost. This is fine for now and much simpler.
-* Security: Running arbitrary plugin code in subprocesses has risks (it’s effectively arbitrary code execution on your machine). In a solo dev scenario it’s usually fine, but an extension could be to run plugins under restricted users or sandboxes. The design should be compatible with that (for instance, you could have a launcher that uses subprocess.Popen with lower privileges or even launches a Docker container in the future, while still conforming to the same interface).
+- Configuration: Perhaps allow the developer to configure some behavior without changing code. For instance, the idle timeout duration, or a mapping of plugin name to a specific startup command (overriding detection). This could be done via a config file or environment variables.
+- Multiple instances or scaling: In the future, one might want to run multiple instances of the same plugin for load balancing, or run plugins in isolated environments (containers). The current design is single-instance per plugin name, running on localhost. This is fine for now and much simpler.
+- Security: Running arbitrary plugin code in subprocesses has risks (it’s effectively arbitrary code execution on your machine). In a solo dev scenario it’s usually fine, but an extension could be to run plugins under restricted users or sandboxes. The design should be compatible with that (for instance, you could have a launcher that uses subprocess.Popen with lower privileges or even launches a Docker container in the future, while still conforming to the same interface).
 
 Overall, adding a new language is as easy as writing a new launcher plugin and adding it to the list. This adheres to the Open/Closed Principle: the manager’s core doesn’t need modification for new languages, just extension.
 
 ### Robustness and Safety Best Practices
 
 To make the plugin manager reliable and safe, we should follow some best practices:
-* Isolate plugin processes: Use separate process groups or sessions for subprocesses so they can be killed cleanly. For example, using start_new_session=True in Python’s Popen ensures the spawned process is in a new session ￼. This way, if a plugin spawns children (e.g., a Node server might spawn worker processes), our manager can terminate the entire group, preventing orphaned processes. Always ensure processes are terminated on shutdown of the manager (e.g., in an exit handler, iterate through active plugins and kill them).
-* Resource cleanup: Besides process termination, clean up other resources. For instance, if using temporary directories or sockets, remove them. Avoid port leaks by always closing sockets (as shown when selecting a free port). Use finally blocks or context managers during startup to handle exceptions (e.g., if startup fails mid-way, ensure the process is killed).
-* Port management: Using ephemeral ports assigned by OS (bind to 0) avoids conflicts ￼. It’s safer than picking a random port or using a fixed range which might collide if multiple plugins start quickly. The manager could keep track of ports in use in active_plugins to avoid reusing them until freed. In rare cases, a process might not release a port immediately upon termination (TIME_WAIT state), so it’s good that we choose new ports each time.
-* Timeouts and error handling: Always use timeouts for external interactions – plugin startup, HTTP requests to plugins, etc. This prevents a hung plugin from hanging the entire system. For example, when calling requests.post to the plugin, set a timeout so a non-responsive plugin doesn’t block forever. Wrap calls in try/except and handle exceptions gracefully (perhaps marking the plugin as failed).
-* Capture and log outputs: Since plugin code is third-party (or at least separate), treat its output as logs that could be useful for debugging. You might integrate the plugin’s logs into your own logging system. For instance, you could spawn a thread to read process.stdout line by line and use Python’s logging module to log them with a prefix indicating which plugin they came from. This way, if a plugin crashes or misbehaves, you have a record of what happened.
-* Avoiding blocking calls: If integrating into an async framework (like FastAPI’s event loop), launching and monitoring the subprocess might need to be done in background threads or using asyncio.create_subprocess_exec. Our design used blocking calls for simplicity, but to not block the main thread, one could offload start_plugin to a thread or use asyncio. The principle remains the same, just the implementation changes (e.g., using await process.wait() in asyncio, etc.).
-* Prerequisites check: Ensure that required runtime executables are present. For example, if a Node plugin is to be launched, check that node (and possibly npm or yarn) is available. Similarly for Python plugins, ensure the correct Python interpreter or environment. The manager could perform a simple check like shutil.which("node") and give a clear error if not found. The Microsoft Semantic Kernel docs highlight that you must have tools like npx or docker installed to run local MCP servers ￼ – similarly, our manager should document or check such prerequisites.
-* Security considerations: In a solo developer context, you likely trust the plugins you run. However, if running untrusted plugins, consider running them with least privilege. For example, run as a non-privileged user account, or in a restricted environment. Also sanitize any external input that goes into constructing the command (though typically it’s fixed by the plugin’s own config). Keep the plugins on localhost interface so they aren’t exposed to the network (most servers bind to 0.0.0.0 by default; to improve safety you might force binding to 127.0.0.1 via plugin config if possible). Using a socket file (IPC) instead of a TCP port is another option for containment, though it may require plugin support.
-* Fallback and overrides: Provide a way to override the auto-detection. Maybe a developer knows a plugin needs a special command; a config could allow specifying startup_command for a given plugin, bypassing heuristics. This manual override acts as a safety valve when automation fails. Similarly, if one heuristic fails (plugin didn’t start), have fallback logic or clear error messages so the developer can fix the plugin or update the manager’s heuristics.
-* Testing each launcher: It’s a good practice to test the launch process for each type of plugin in isolation. E.g., create a dummy Node plugin and see that the manager can start and stop it; do the same for Python, etc. This will catch issues early (like missing dependency installation or incorrect path assumptions).
+- Isolate plugin processes: Use separate process groups or sessions for subprocesses so they can be killed cleanly. For example, using start_new_session=True in Python’s Popen ensures the spawned process is in a new session ￼. This way, if a plugin spawns children (e.g., a Node server might spawn worker processes), our manager can terminate the entire group, preventing orphaned processes. Always ensure processes are terminated on shutdown of the manager (e.g., in an exit handler, iterate through active plugins and kill them).
+- Resource cleanup: Besides process termination, clean up other resources. For instance, if using temporary directories or sockets, remove them. Avoid port leaks by always closing sockets (as shown when selecting a free port). Use finally blocks or context managers during startup to handle exceptions (e.g., if startup fails mid-way, ensure the process is killed).
+- Port management: Using ephemeral ports assigned by OS (bind to 0) avoids conflicts ￼. It’s safer than picking a random port or using a fixed range which might collide if multiple plugins start quickly. The manager could keep track of ports in use in active_plugins to avoid reusing them until freed. In rare cases, a process might not release a port immediately upon termination (TIME_WAIT state), so it’s good that we choose new ports each time.
+- Timeouts and error handling: Always use timeouts for external interactions – plugin startup, HTTP requests to plugins, etc. This prevents a hung plugin from hanging the entire system. For example, when calling requests.post to the plugin, set a timeout so a non-responsive plugin doesn’t block forever. Wrap calls in try/except and handle exceptions gracefully (perhaps marking the plugin as failed).
+- Capture and log outputs: Since plugin code is third-party (or at least separate), treat its output as logs that could be useful for debugging. You might integrate the plugin’s logs into your own logging system. For instance, you could spawn a thread to read process.stdout line by line and use Python’s logging module to log them with a prefix indicating which plugin they came from. This way, if a plugin crashes or misbehaves, you have a record of what happened.
+- Avoiding blocking calls: If integrating into an async framework (like FastAPI’s event loop), launching and monitoring the subprocess might need to be done in background threads or using asyncio.create_subprocess_exec. Our design used blocking calls for simplicity, but to not block the main thread, one could offload start_plugin to a thread or use asyncio. The principle remains the same, just the implementation changes (e.g., using await process.wait() in asyncio, etc.).
+- Prerequisites check: Ensure that required runtime executables are present. For example, if a Node plugin is to be launched, check that node (and possibly npm or yarn) is available. Similarly for Python plugins, ensure the correct Python interpreter or environment. The manager could perform a simple check like shutil.which("node") and give a clear error if not found. The Microsoft Semantic Kernel docs highlight that you must have tools like npx or docker installed to run local MCP servers ￼ – similarly, our manager should document or check such prerequisites.
+- Security considerations: In a solo developer context, you likely trust the plugins you run. However, if running untrusted plugins, consider running them with least privilege. For example, run as a non-privileged user account, or in a restricted environment. Also sanitize any external input that goes into constructing the command (though typically it’s fixed by the plugin’s own config). Keep the plugins on localhost interface so they aren’t exposed to the network (most servers bind to 0.0.0.0 by default; to improve safety you might force binding to 127.0.0.1 via plugin config if possible). Using a socket file (IPC) instead of a TCP port is another option for containment, though it may require plugin support.
+- Fallback and overrides: Provide a way to override the auto-detection. Maybe a developer knows a plugin needs a special command; a config could allow specifying startup_command for a given plugin, bypassing heuristics. This manual override acts as a safety valve when automation fails. Similarly, if one heuristic fails (plugin didn’t start), have fallback logic or clear error messages so the developer can fix the plugin or update the manager’s heuristics.
+- Testing each launcher: It’s a good practice to test the launch process for each type of plugin in isolation. E.g., create a dummy Node plugin and see that the manager can start and stop it; do the same for Python, etc. This will catch issues early (like missing dependency installation or incorrect path assumptions).
 
 By adhering to these practices, the plugin lifecycle manager remains robust against crashes, errors, and edge cases, while safely managing external processes. This design avoids heavy solutions like Docker containers initially, yet still provides isolation and control over plugin processes. As needs grow, one can gradually evolve it (for example, add DockerLauncher for running a plugin in a container, reusing a lot of the same scaffolding for monitoring and integration).
 

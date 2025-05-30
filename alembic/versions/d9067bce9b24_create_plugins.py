@@ -81,7 +81,6 @@ def upgrade() -> None:
         ),
         sa.Column("credential_id", sa.UUID(), nullable=True),
         sa.Column("workspace_id", sa.UUID(), nullable=False),
-        sa.Column("credentials_id", sa.UUID(), nullable=True),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(
@@ -89,7 +88,7 @@ def upgrade() -> None:
             ["workspaces.id"],
         ),
         sa.ForeignKeyConstraint(
-            ["credentials_id"],
+            ["credential_id"],
             ["credentials.id"],
         ),
         sa.PrimaryKeyConstraint("id"),

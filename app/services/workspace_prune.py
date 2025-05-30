@@ -1,10 +1,7 @@
 import os
 import shutil
-from typing import Optional
 from uuid import UUID
 from sqlalchemy.orm import Session
-from app.models.workspace import Workspace
-from app.config import get_settings
 from app.core.logging_config import get_logger
 from app.core.path_manager import PathManager
 

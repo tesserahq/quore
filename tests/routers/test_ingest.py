@@ -1,7 +1,5 @@
-import pytest
 from uuid import uuid4
-from unittest.mock import patch, MagicMock
-from app.schemas.ingest_text_request import IngestTextRequest
+from unittest.mock import patch
 
 
 def test_ingest_text_success(client, setup_project):

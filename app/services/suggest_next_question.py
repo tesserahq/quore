@@ -1,10 +1,8 @@
-import logging
 import os
 import re
 from typing import List, Optional, Union
 
 from llama_index.core.prompts import PromptTemplate
-from llama_index.core.settings import Settings
 from app.core.index_manager import IndexManager
 from app.models.project import Project
 from app.schemas.ai_schemas.chat.chat_api_message import ChatAPIMessage
