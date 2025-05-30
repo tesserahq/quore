@@ -1,7 +1,6 @@
-from typing import Optional, Dict, Any, List
+from typing import Optional, List
 from sqlalchemy import Column, BigInteger, String, JSON
 from sqlalchemy.dialects.postgresql import TSVECTOR
-from sqlalchemy.dialects.postgresql import ARRAY, FLOAT
 from pgvector.sqlalchemy import Vector
 from app.db import Base
 from app.models.project import Project

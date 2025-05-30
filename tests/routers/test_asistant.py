@@ -1,13 +1,8 @@
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 from llama_index.core.workflow import Workflow
 from llama_index.core.types import MessageRole
-from app.schemas.ai_schemas.chat.chat_request import ChatRequest
-from app.schemas.ai_schemas.chat.chat_api_message import ChatAPIMessage
-from app.schemas.ai_schemas.chat.chat_config import ChatConfig
-from app.routers.assistant import assistant_router
-import logging
 from typing import Dict, Any
 
 

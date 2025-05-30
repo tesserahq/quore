@@ -1,4 +1,3 @@
-import os
 import re
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config
@@ -8,7 +7,6 @@ from app.db import Base
 from app.config import Settings
 
 # Import all models so they are registered with Base.metadata
-from app.models import User, Workspace, Membership, Project, AppSetting
 
 # Manually create a fresh, uncached Settings instance
 settings = Settings()

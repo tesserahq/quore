@@ -1,4 +1,3 @@
-from llama_index.storage.docstore.redis import RedisDocumentStore
 from app.config import get_settings
 from app.core.ingestor import Ingestor
 from app.models.project import Project
@@ -17,11 +16,9 @@ from llama_index.core.tools.query_engine import QueryEngineTool
 from llama_index.core.base.base_query_engine import BaseQueryEngine
 from typing import Any
 import os
-from llama_index.llms.openai import OpenAI
 from app.core.logging_config import get_logger
 from llama_index.storage.chat_store.postgres import PostgresChatStore
 from llama_index.core.memory import ChatMemoryBuffer
-from llama_index.vector_stores.postgres import PGVectorStore
 from app.core.telemetry import instrument_method, instrument_span
 from app.core.storage_manager import StorageManager
 
@@ -243,7 +240,7 @@ class IndexManager:
         if self.project.llm_provider != OPENAI_PROVIDER:
             return None
 
-        if self.ingest_settings.has_key("openai_api_key") == False:
+        if not self.ingest_settings.has_key("openai_api_key"):
             return self.settings.openai_api_key
 
         return self.ingest_settings.get("openai_api_key")

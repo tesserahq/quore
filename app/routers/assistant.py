@@ -1,7 +1,6 @@
 import asyncio
 import logging
 from typing import AsyncGenerator, Union
-from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -11,7 +10,7 @@ from llama_index.core.agent.workflow.workflow_events import (
     AgentSetup,
     AgentStream,
 )
-from llama_index.core.workflow import StopEvent, Workflow
+from llama_index.core.workflow import StopEvent
 from app.core.callbacks import (
     EventCallback,
     SourceNodesFromToolCall,
@@ -21,9 +20,7 @@ from app.core.callbacks.stream_handler import StreamHandler
 from app.core.workflow_manager import WorkflowManager
 from app.core.logging_config import get_logger
 from app.db import get_db
-from app.exceptions.resource_not_found_error import ResourceNotFoundError
 from app.schemas.ai_schemas.chat.chat_request import ChatRequest
-from app.services.project import ProjectService
 from app.utils.auth import get_current_user
 from app.utils.vercel_stream import VercelStreamResponse
 from sqlalchemy.orm import Session

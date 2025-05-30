@@ -19,9 +19,6 @@ class UserService:
         return self.db.query(User).filter(User.email == email).first()
 
     def get_user_by_external_id(self, external_id: str) -> Optional[User]:
-        print(f"Fetching user with external_id: {external_id}")
-        print(self.db)
-
         return self.db.query(User).filter(User.external_id == external_id).first()
 
     def get_user_by_username(self, username: str) -> Optional[User]:

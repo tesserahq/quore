@@ -1,14 +1,12 @@
-from typing import List, Optional, Dict, Any, Set
+from typing import List, Optional, Dict, Any
 from uuid import UUID
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, not_
-from sqlalchemy.exc import IntegrityError
+from app.constants.plugin_states import PluginState
 from app.models.plugin import Plugin
 from app.models.plugin_tool import PluginTool
 from app.models.project_plugin import ProjectPlugin
 from app.models.project_plugin_tool import ProjectPluginTool
 from app.models.project import Project
-from app.models.workspace import Workspace
 from app.schemas.plugin import PluginCreate, PluginUpdate, PluginToolCreate
 
 
@@ -18,53 +16,52 @@ class PluginRegistryService:
     def __init__(self, db: Session):
         self.db = db
 
-    # Plugin Management
-    def register_plugin(self, plugin_data: PluginCreate) -> Plugin:
+    def update_state(self, plugin_id: UUID, state: PluginState) -> Plugin:
+        """Update the state of a plugin."""
+        plugin = self.get_plugin(plugin_id)
+        plugin.state = state
+        self.db.commit()
+        self.db.refresh(plugin)
+        return plugin
+
+    def create_plugin(self, plugin_data: PluginCreate) -> Plugin:
         """Register a new plugin in the system."""
+        # Create plugin with INITIALIZING state
         plugin = Plugin(**plugin_data.model_dump())
+        plugin.state = PluginState.INITIALIZING
         self.db.add(plugin)
         self.db.commit()
         self.db.refresh(plugin)
 
-        # Clone the repository
-        from app.core.plugin_manager.manager import PluginManager
-
-        try:
-            plugin_manager = PluginManager(self.db, UUID(str(plugin.id)))
-            plugin_manager.clone_repository()
-        except Exception as e:
-            # If cloning fails, delete the plugin and re-raise the error
-            self.db.delete(plugin)
-            self.db.commit()
-            raise RuntimeError(f"Failed to clone plugin repository: {str(e)}")
-
         return plugin
 
-    def get_plugin(self, plugin_id: UUID) -> Optional[Plugin]:
-        """Get a plugin by ID."""
+    def find_plugin(self, plugin_id: UUID) -> Optional[Plugin]:
+        """Find a plugin by ID. Returns None if not found."""
         return self.db.query(Plugin).filter(Plugin.id == plugin_id).first()
 
-    def update_plugin(
-        self, plugin_id: UUID, plugin_data: PluginUpdate
-    ) -> Optional[Plugin]:
+    def get_plugin(self, plugin_id: UUID) -> Plugin:
+        """Get a plugin by ID. Raises ValueError if not found."""
+        plugin = self.find_plugin(plugin_id)
+        if plugin is None:
+            raise ValueError(f"Plugin with ID {plugin_id} not found")
+        return plugin
+
+    def update_plugin(self, plugin_id: UUID, plugin_data: PluginUpdate) -> Plugin:
         """Update plugin metadata."""
         plugin = self.get_plugin(plugin_id)
-        if plugin:
-            update_data = plugin_data.model_dump(exclude_unset=True)
-            for key, value in update_data.items():
-                setattr(plugin, key, value)
-            self.db.commit()
-            self.db.refresh(plugin)
+        update_data = plugin_data.model_dump(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(plugin, key, value)
+        self.db.commit()
+        self.db.refresh(plugin)
         return plugin
 
     def delete_plugin(self, plugin_id: UUID) -> bool:
         """Delete a plugin and all its configurations."""
         plugin = self.get_plugin(plugin_id)
-        if plugin:
-            self.db.delete(plugin)
-            self.db.commit()
-            return True
-        return False
+        self.db.delete(plugin)
+        self.db.commit()
+        return True
 
     # Tool Management
     def register_tool(self, plugin_id: UUID, tool_data: PluginToolCreate) -> PluginTool:
@@ -151,9 +148,7 @@ class PluginRegistryService:
         # Get project-specific plugin configurations
         project_plugins = (
             self.db.query(ProjectPlugin)
-            .filter(
-                ProjectPlugin.project_id == project_id, ProjectPlugin.is_enabled == True
-            )
+            .filter(ProjectPlugin.project_id == project_id, ProjectPlugin.is_enabled)
             .all()
         )
 
@@ -168,14 +163,12 @@ class PluginRegistryService:
             return []
 
         # Get all plugins from the project's workspace
-        workspace_plugins = self.get_workspace_plugins(project.workspace_id)
+        self.get_workspace_plugins(project.workspace_id)
 
         # Get project-specific plugin configurations
         project_plugins = (
             self.db.query(ProjectPlugin)
-            .filter(
-                ProjectPlugin.project_id == project_id, ProjectPlugin.is_enabled == True
-            )
+            .filter(ProjectPlugin.project_id == project_id, ProjectPlugin.is_enabled)
             .all()
         )
 
@@ -185,7 +178,7 @@ class PluginRegistryService:
             self.db.query(PluginTool)
             .filter(
                 PluginTool.plugin_id.in_(enabled_plugin_ids),
-                PluginTool.is_active == True,
+                PluginTool.is_active,
             )
             .all()
         )
@@ -201,7 +194,7 @@ class PluginRegistryService:
             self.db.query(PluginTool)
             .filter(
                 PluginTool.plugin_id.in_(workspace_plugin_ids),
-                PluginTool.is_active == True,
+                PluginTool.is_active,
             )
             .all()
         )
@@ -235,9 +228,7 @@ class PluginRegistryService:
         """Enable a tool in a project by creating a ProjectPluginTool record."""
         project_plugin = (
             self.db.query(ProjectPlugin)
-            .filter(
-                ProjectPlugin.project_id == project_id, ProjectPlugin.is_enabled == True
-            )
+            .filter(ProjectPlugin.project_id == project_id, ProjectPlugin.is_enabled)
             .first()
         )
         if not project_plugin:

@@ -1,10 +1,11 @@
 from app.models.mixins import TimestampMixin
-from sqlalchemy import Column, String, Boolean, ForeignKey, JSON
+from sqlalchemy import Column, String, ForeignKey, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 import uuid
 
 from app.db import Base
+from app.constants.plugin_states import PluginState
 
 
 class Plugin(Base, TimestampMixin):
@@ -20,7 +21,8 @@ class Plugin(Base, TimestampMixin):
     commit_hash = Column(
         String(50), nullable=True
     )  # Specific commit hash if version is a tag
-    is_active = Column(Boolean, default=True)
+    # state: Mapped[PluginState] = Column(SQLEnum(PluginState), nullable=False, default=PluginState.REGISTERED)
+    state = Column(SQLEnum(PluginState), nullable=False, default=PluginState.REGISTERED)
     endpoint_url = Column(
         String, nullable=True
     )  # Runtime endpoint (e.g. http://localhost:5001)
@@ -45,4 +47,4 @@ class Plugin(Base, TimestampMixin):
     )
 
     def __repr__(self):
-        return f"<Plugin(id={self.id}, name={self.name}, workspace_id={self.workspace_id})>"
+        return f"<Plugin(id={self.id}, name={self.name}, workspace_id={self.workspace_id}, state={self.state})>"

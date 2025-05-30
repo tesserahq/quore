@@ -1,5 +1,4 @@
-import pytest
-from uuid import UUID, uuid4
+from uuid import uuid4
 from app.services.credential import CredentialService
 from app.schemas.credential import CredentialUpdate
 
@@ -63,7 +62,7 @@ def test_get_workspace_credentials(db, setup_credential):
 def test_get_user_credentials(db, setup_credential, setup_user):
     """Test retrieving credentials created by a specific user."""
     service = CredentialService(db)
-    credential = setup_credential
+    _credential = setup_credential
     credentials = service.get_user_credentials(user_id=setup_user.id, skip=0, limit=10)
 
     assert len(credentials) > 0

@@ -33,6 +33,18 @@ services:
       - redis_data:/data
     command: redis-server --appendonly yes
 
+  flower:
+    container_name: flower
+    image: mher/flower
+    pull_policy: always
+    ports:
+      - "5555:5555"
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+
   grafana:
     image: grafana/grafana:12.0.0
     depends_on:

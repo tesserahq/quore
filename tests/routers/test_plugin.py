@@ -1,12 +1,6 @@
 import pytest
-from uuid import uuid4
 from app.services.plugin_registry import PluginRegistryService
-from app.schemas.plugin import PluginCreate, PluginToolCreate
-from app.models.plugin import Plugin
 from app.models.project_plugin import ProjectPlugin
-from tests.fixtures.workspace_fixtures import setup_workspace
-from tests.fixtures.project_fixtures import setup_project
-from tests.fixtures.plugin_fixtures import sample_plugin_data, setup_plugin
 from unittest.mock import patch
 
 

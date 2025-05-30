@@ -4,7 +4,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 import rollbar
-from rollbar.contrib.fastapi import ReporterMiddleware as RollbarMiddleware
 from rollbar.logger import RollbarHandler
 
 from .routers import (

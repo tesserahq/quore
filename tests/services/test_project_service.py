@@ -1,6 +1,5 @@
 from app.config import get_settings
 from app.constants.providers import MOCK_PROVIDER
-import pytest
 from uuid import uuid4
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect

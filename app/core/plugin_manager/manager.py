@@ -1,16 +1,10 @@
 import os
-import tempfile
 import subprocess
 from typing import Optional, cast
 from uuid import UUID
 from sqlalchemy.orm import Session
-import json
-from urllib.parse import urlparse
 
-from app.models.plugin import Plugin
-from app.models.credential import Credential
-from app.core.credentials import decrypt_value, apply_git_credentials
-from app.services.plugin_registry import PluginRegistryService
+from app.core.credentials import apply_git_credentials
 from app.services.credential import CredentialService
 from app.config import get_settings
 from app.core.path_manager import PathManager
@@ -22,6 +16,8 @@ class PluginManager:
     def __init__(self, db: Session, plugin_id: UUID):
         """Initialize the plugin manager with a database session and plugin ID."""
         self.db = db
+        from app.services.plugin_registry import PluginRegistryService
+
         plugin_service = PluginRegistryService(db)
         plugin = plugin_service.get_plugin(plugin_id)
         if not plugin:

@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 
 from app.db import get_db
+from app.models.plugin import Plugin
+from app.services.plugin_registry import PluginRegistryService
 from app.services.workspace import WorkspaceService
 from app.models.workspace import Workspace
 from app.services.project import ProjectService
@@ -51,3 +53,25 @@ def get_project_by_id(
     if project is None:
         raise HTTPException(status_code=404, detail="Project not found")
     return project
+
+
+def get_plugin_by_id(
+    plugin_id: UUID,
+    db: Session = Depends(get_db),
+) -> Plugin:
+    """FastAPI dependency to get a plugin by ID.
+
+    Args:
+        plugin_id: The UUID of the plugin to retrieve
+        db: Database session dependency
+
+    Returns:
+        Plugin: The retrieved plugin
+
+    Raises:
+        HTTPException: If the plugin is not found
+    """
+    plugin = PluginRegistryService(db).get_plugin(plugin_id)
+    if plugin is None:
+        raise HTTPException(status_code=404, detail="Plugin not found")
+    return plugin

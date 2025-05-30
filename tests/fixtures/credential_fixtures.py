@@ -1,6 +1,4 @@
 import pytest
-from uuid import UUID
-from app.models.credential import Credential
 from app.schemas.credential import CredentialCreate
 
 

@@ -1,7 +1,7 @@
 from app.utils.auth import get_current_user
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import Optional
 from uuid import UUID
 
 from app.db import get_db

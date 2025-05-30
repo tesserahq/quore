@@ -1,4 +1,3 @@
-import pytest
 from app.models.project import Project
 from app.config import get_settings
 
