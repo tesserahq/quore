@@ -1,7 +1,14 @@
 import pytest
+from app.models.workspace import Workspace
 from app.services.plugin_registry import PluginRegistryService
 from app.models.project_plugin import ProjectPlugin
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
+from app.main import app
+from app.models.plugin import Plugin
+from app.core.mcp_client import MCPClient
 
 
 # Global fixture to mock PluginManager.clone_repository for all tests
@@ -12,6 +19,61 @@ def mock_plugin_manager_clone_repository():
     ) as mock_clone:
         mock_clone.return_value = None  # Simulate success
         yield mock_clone
+
+
+# Sample tools response
+SAMPLE_TOOLS_RESPONSE = [
+    {
+        "name": "list_accounts",
+        "description": "List all accounts",
+        "inputSchema": {"properties": {}, "type": "object"},
+        "annotations": None,
+    },
+    {
+        "name": "create_account",
+        "description": "Create a new account",
+        "inputSchema": {
+            "properties": {
+                "name": {"title": "Name", "type": "string"},
+                "description": {
+                    "anyOf": [{"type": "string"}, {"type": "null"}],
+                    "default": None,
+                    "title": "Description",
+                },
+            },
+            "required": ["name"],
+            "type": "object",
+        },
+        "annotations": None,
+    },
+]
+
+
+@pytest.fixture
+def mock_plugin(db: Session):
+    """Create a test plugin in the database."""
+    plugin = Plugin(
+        name="Test Plugin",
+        description="A test plugin",
+        endpoint_url="http://test-plugin.example.com",
+    )
+    db.add(plugin)
+    db.commit()
+    db.refresh(plugin)
+    return plugin
+
+
+@pytest.fixture
+def mock_mcp_client():
+    """Mock the MCPClient for testing."""
+    with patch("app.routers.plugin.MCPClient") as mock_client:
+        # Create a mock instance
+        mock_instance = AsyncMock()
+        # Set up the context manager
+        mock_client.return_value.__aenter__.return_value = mock_instance
+        # Set up the list_tools method
+        mock_instance.list_tools.return_value = SAMPLE_TOOLS_RESPONSE
+        yield mock_client
 
 
 def test_list_workspace_plugins(client, db, setup_workspace, setup_plugin):
@@ -100,3 +162,40 @@ def test_enable_project_plugin(
     assert project_plugin is not None
     assert project_plugin.is_enabled is True
     assert project_plugin.config == {"config": config}
+
+
+def test_inspect_tools_plugin_success(
+    client: TestClient, setup_plugin: Plugin, mock_mcp_client
+):
+    """Test successful retrieval of plugin tools."""
+    plugin = setup_plugin
+    response = client.get(f"/plugins/{plugin.id}/inspect/tools")
+
+    assert response.status_code == 200
+    assert response.json() == SAMPLE_TOOLS_RESPONSE
+
+    # Verify the mock was called correctly
+    mock_mcp_client.assert_called_once_with(plugin.endpoint_url)
+    mock_instance = mock_mcp_client.return_value.__aenter__.return_value
+    mock_instance.list_tools.assert_called_once()
+
+
+def test_inspect_tools_plugin_no_endpoint(
+    client: TestClient, setup_workspace: Workspace, db: Session
+):
+    """Test error when plugin has no endpoint URL."""
+    workspace = setup_workspace
+    # Create a plugin without an endpoint URL
+    plugin = Plugin(
+        name="No Endpoint Plugin",
+        description="A plugin without an endpoint",
+        workspace_id=workspace.id,
+    )
+    db.add(plugin)
+    db.commit()
+    db.refresh(plugin)
+
+    response = client.get(f"/plugins/{plugin.id}/inspect/tools")
+
+    assert response.status_code == 422
+    assert "Plugin endpoint URL is not set" in response.json()["detail"]

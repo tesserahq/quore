@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional, Dict, Any
 from uuid import UUID
@@ -21,6 +21,7 @@ from app.utils.dependencies import (
     get_project_by_id,
     get_plugin_by_id,
 )
+from app.core.mcp_client import MCPClient
 
 router = APIRouter(tags=["plugins"])
 
@@ -88,3 +89,42 @@ def update_plugin(
     service = PluginRegistryService(db)
     plugin = service.update_plugin(UUID(str(plugin.id)), plugin_data)
     return plugin
+
+
+@router.get("/plugins/{plugin_id}/inspect/tools")
+async def inspect_tools_plugin(
+    plugin: Plugin = Depends(get_plugin_by_id),
+    db: Session = Depends(get_db),
+):
+    """Get plugins tools directly from the MCP server."""
+    if not plugin.endpoint_url:
+        raise HTTPException(status_code=422, detail="Plugin endpoint URL is not set")
+
+    async with MCPClient(plugin.endpoint_url) as client:
+        return await client.list_tools()
+
+
+@router.get("/plugins/{plugin_id}/inspect/prompts")
+async def inspect_prompts_plugin(
+    plugin: Plugin = Depends(get_plugin_by_id),
+    db: Session = Depends(get_db),
+):
+    """Get plugins prompts directly from the MCP server."""
+    if not plugin.endpoint_url:
+        raise HTTPException(status_code=422, detail="Plugin endpoint URL is not set")
+
+    async with MCPClient(plugin.endpoint_url) as client:
+        return await client.list_prompts()
+
+
+@router.get("/plugins/{plugin_id}/inspect/resources")
+async def inspect_resources_plugin(
+    plugin: Plugin = Depends(get_plugin_by_id),
+    db: Session = Depends(get_db),
+):
+    """Get plugins resources directly from the MCP server."""
+    if not plugin.endpoint_url:
+        raise HTTPException(status_code=422, detail="Plugin endpoint URL is not set")
+
+    async with MCPClient(plugin.endpoint_url) as client:
+        return await client.list_resources()

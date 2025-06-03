@@ -8,6 +8,7 @@ from app.services.plugin_registry import PluginRegistryService
 def initialize_plugin_command(db: Session, plugin_data: PluginCreate) -> Plugin:
     plugin = PluginRegistryService(db).create_plugin(plugin_data)
 
-    clone_repository.delay(plugin.id)
+    # if plugin.repository_url:
+    #     clone_repository.delay(plugin.id)
 
     return plugin

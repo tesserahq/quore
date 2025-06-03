@@ -270,3 +270,34 @@ class TestPluginRegistryService:
             .first()
         )
         assert project_tool.config == new_config
+
+    def test_create_plugin_with_null_repository_url(
+        self, plugin_registry_service, setup_workspace
+    ):
+        """Test creating a plugin with a null repository URL."""
+        plugin_data = PluginCreate(
+            name="Null Repo Plugin",
+            description="A plugin without a repository URL",
+            repository_url=None,
+            version="1.0.0",
+            commit_hash=None,
+            state=PluginState.REGISTERED,
+            endpoint_url="http://localhost:8000",
+            plugin_metadata={"type": "test"},
+            credential_id=None,
+            workspace_id=setup_workspace.id,
+        )
+
+        plugin = plugin_registry_service.create_plugin(plugin_data)
+
+        assert plugin is not None
+        assert plugin.name == plugin_data.name
+        assert plugin.description == plugin_data.description
+        assert plugin.repository_url is None
+        assert plugin.version == plugin_data.version
+        assert plugin.commit_hash is None
+        assert plugin.state == PluginState.INITIALIZING
+        assert plugin.endpoint_url == plugin_data.endpoint_url
+        assert plugin.plugin_metadata == plugin_data.plugin_metadata
+        assert plugin.credential_id is None
+        assert plugin.workspace_id == setup_workspace.id

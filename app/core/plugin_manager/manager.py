@@ -1,13 +1,17 @@
 import os
 import subprocess
-from typing import Optional, cast
+import asyncio
+from typing import Optional, cast, Dict, Any
 from uuid import UUID
 from sqlalchemy.orm import Session
+from fastmcp import Client
 
 from app.core.credentials import apply_git_credentials
 from app.services.credential import CredentialService
 from app.config import get_settings
 from app.core.path_manager import PathManager
+from app.services.plugin_registry import PluginRegistryService
+from app.constants.plugin_states import PluginState
 
 
 class PluginManager:
@@ -89,8 +93,47 @@ class PluginManager:
 
     def inspect(self) -> None:
         """Inspect the plugin to determine its type and requirements."""
-        # TODO: Implement plugin inspection
-        pass
+        if not self.plugin.endpoint_url:
+            raise ValueError("Plugin endpoint URL is not set")
+
+        async def inspect_plugin():
+            # Create FastMCP client for the plugin's endpoint
+            client = Client(self.plugin.endpoint_url)
+
+            try:
+                async with client:
+                    # Get available tools from the plugin
+                    tools = await client.list_tools()
+
+                    # Register each tool with the plugin
+                    plugin_service = PluginRegistryService(self.db)
+                    for tool in tools:
+                        # Convert FastMCP tool to PluginToolCreate schema
+                        tool_data = {
+                            "name": tool.name,
+                            "description": tool.description,
+                            "is_active": True,
+                            "input_schema": tool.input_schema,
+                            "output_schema": tool.output_schema,
+                            "tool_metadata": {
+                                "mcp_version": "2.0",
+                                "transport": "streamable-http",
+                            },
+                        }
+                        plugin_service.register_tool(self.plugin.id, tool_data)
+
+                    # Update plugin state to indicate successful inspection
+                    self.plugin.state = PluginState.READY
+                    self.db.commit()
+
+            except Exception as e:
+                # Update plugin state to indicate inspection failure
+                self.plugin.state = PluginState.ERROR
+                self.db.commit()
+                raise RuntimeError(f"Failed to inspect plugin: {str(e)}")
+
+        # Run the async inspection
+        asyncio.run(inspect_plugin())
 
     def start(self) -> None:
         """Start the plugin server."""

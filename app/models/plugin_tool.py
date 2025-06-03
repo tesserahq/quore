@@ -1,5 +1,5 @@
 from app.models.mixins import TimestampMixin
-from sqlalchemy import Column, String, Boolean, ForeignKey
+from sqlalchemy import Column, String, Boolean, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 import uuid
@@ -26,6 +26,9 @@ class PluginTool(Base, TimestampMixin):
     project_tools = relationship(
         "ProjectPluginTool", back_populates="tool", cascade="all, delete-orphan"
     )
+
+    # Unique constraint to ensure a plugin can only be installed once per project
+    __table_args__ = (UniqueConstraint("plugin_id", "name", name="uq_plugin_tool"),)
 
     def __repr__(self):
         return (
