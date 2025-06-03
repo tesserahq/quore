@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from fastmcp import Client
 
 from app.core.credentials import apply_git_credentials
+from app.core.mcp_client import MCPClient
 from app.services.credential import CredentialService
 from app.config import get_settings
 from app.core.path_manager import PathManager
@@ -98,7 +99,7 @@ class PluginManager:
 
         async def inspect_plugin():
             # Create FastMCP client for the plugin's endpoint
-            client = Client(self.plugin.endpoint_url)
+            client = MCPClient(self.plugin.endpoint_url)
 
             try:
                 async with client:
@@ -115,21 +116,10 @@ class PluginManager:
                             "is_active": True,
                             "input_schema": tool.input_schema,
                             "output_schema": tool.output_schema,
-                            "tool_metadata": {
-                                "mcp_version": "2.0",
-                                "transport": "streamable-http",
-                            },
                         }
                         plugin_service.register_tool(self.plugin.id, tool_data)
 
-                    # Update plugin state to indicate successful inspection
-                    self.plugin.state = PluginState.READY
-                    self.db.commit()
-
             except Exception as e:
-                # Update plugin state to indicate inspection failure
-                self.plugin.state = PluginState.ERROR
-                self.db.commit()
                 raise RuntimeError(f"Failed to inspect plugin: {str(e)}")
 
         # Run the async inspection

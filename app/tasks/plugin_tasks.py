@@ -27,3 +27,26 @@ def clone_repository(plugin_id: str) -> None:
             db.commit()
     finally:
         db.close()
+
+
+@celery_app.task
+def inspect_plugin(plugin_id: str) -> None:
+    """
+    Inspect a plugin by listing its tools, prompts, and resources.
+    This is an async task that runs in the background.
+    """
+    db = SessionLocal()
+    try:
+        plugin_manager = PluginManager(db, UUID(str(plugin_id)))
+        plugin_service = PluginRegistryService(db)
+
+        try:
+            plugin_manager.inspect()
+            plugin_service.update_state(UUID(str(plugin_id)), PluginState.RUNNING)
+        except Exception as e:
+            plugin_service.update_state(UUID(str(plugin_id)), PluginState.ERROR)
+            raise RuntimeError(f"Failed to initialize plugin: {str(e)}")
+        finally:
+            db.commit()
+    finally:
+        db.close()
