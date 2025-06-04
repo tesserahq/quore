@@ -101,3 +101,12 @@ class PluginResponse(PluginBase):
 
     class Config:
         from_attributes = True
+
+
+class PluginStatesResponse(BaseModel):
+    """Schema for listing available plugin states."""
+
+    states: List[Dict[str, str]] = Field(
+        ...,
+        description="List of available plugin states with their values and descriptions",
+    )

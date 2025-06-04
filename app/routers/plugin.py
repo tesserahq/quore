@@ -11,6 +11,7 @@ from app.schemas.plugin import (
     PluginResponse,
     PluginCreate,
     PluginUpdate,
+    PluginStatesResponse,
 )
 from app.services.plugin_registry import PluginRegistryService
 from app.schemas.common import ListResponse
@@ -22,6 +23,7 @@ from app.utils.dependencies import (
     get_plugin_by_id,
 )
 from app.core.mcp_client import MCPClient
+from app.constants.plugin_states import PluginState
 
 router = APIRouter(tags=["plugins"])
 
@@ -128,3 +130,13 @@ async def inspect_resources_plugin(
 
     async with MCPClient(plugin.endpoint_url) as client:
         return await client.list_resources()
+
+
+@router.get("/plugins/states", response_model=PluginStatesResponse)
+def list_plugin_states():
+    """Get a list of all available plugin states with their descriptions."""
+    states = [
+        {"value": state.value, "description": state.__doc__ or state.value}
+        for state in PluginState
+    ]
+    return PluginStatesResponse(states=states)
