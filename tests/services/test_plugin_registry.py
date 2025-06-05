@@ -1,5 +1,5 @@
 import pytest
-from app.services.plugin_registry import PluginRegistryService
+from app.services.plugin import PluginService
 from app.schemas.plugin import PluginCreate, PluginToolCreate
 from app.models.project_plugin import ProjectPlugin
 from app.models.project_plugin_tool import ProjectPluginTool
@@ -8,8 +8,8 @@ from unittest.mock import patch
 
 
 @pytest.fixture
-def plugin_registry_service(db):
-    return PluginRegistryService(db)
+def plugin_service(db):
+    return PluginService(db)
 
 
 @pytest.fixture
@@ -39,20 +39,20 @@ def sample_tool_data():
 
 
 @pytest.fixture
-def created_plugin(plugin_registry_service, sample_plugin_data):
-    return plugin_registry_service.create_plugin(sample_plugin_data)
+def created_plugin(plugin_service, sample_plugin_data):
+    return plugin_service.create_plugin(sample_plugin_data)
 
 
 @pytest.fixture
-def created_tool(plugin_registry_service, created_plugin, sample_tool_data):
-    return plugin_registry_service.register_tool(created_plugin.id, sample_tool_data)
+def created_tool(plugin_service, created_plugin, sample_tool_data):
+    return plugin_service.register_tool(created_plugin.id, sample_tool_data)
 
 
-class TestPluginRegistryService:
-    def test_create_plugin(self, plugin_registry_service, sample_plugin_data):
+class TestPluginService:
+    def test_create_plugin(self, plugin_service, sample_plugin_data):
         """Test registering a plugin."""
 
-        plugin = plugin_registry_service.create_plugin(sample_plugin_data)
+        plugin = plugin_service.create_plugin(sample_plugin_data)
 
         assert plugin is not None
         assert plugin.name == sample_plugin_data.name
@@ -64,14 +64,14 @@ class TestPluginRegistryService:
         assert plugin.credential_id == sample_plugin_data.credential_id
         assert plugin.workspace_id == sample_plugin_data.workspace_id
 
-    def test_get_plugin(self, plugin_registry_service, created_plugin):
-        retrieved_plugin = plugin_registry_service.get_plugin(created_plugin.id)
+    def test_get_plugin(self, plugin_service, created_plugin):
+        retrieved_plugin = plugin_service.get_plugin(created_plugin.id)
 
         assert retrieved_plugin is not None
         assert retrieved_plugin.id == created_plugin.id
         assert retrieved_plugin.name == created_plugin.name
 
-    def test_update_plugin(self, plugin_registry_service, created_plugin):
+    def test_update_plugin(self, plugin_service, created_plugin):
         update_data = PluginCreate(
             name="Updated Plugin",
             description="Updated description",
@@ -83,9 +83,7 @@ class TestPluginRegistryService:
             workspace_id=created_plugin.workspace_id,
         )
 
-        updated_plugin = plugin_registry_service.update_plugin(
-            created_plugin.id, update_data
-        )
+        updated_plugin = plugin_service.update_plugin(created_plugin.id, update_data)
 
         assert updated_plugin is not None
         assert updated_plugin.name == update_data.name
@@ -97,20 +95,16 @@ class TestPluginRegistryService:
         assert updated_plugin.credential_id == created_plugin.credential_id
         assert updated_plugin.workspace_id == created_plugin.workspace_id
 
-    def test_delete_plugin(self, plugin_registry_service, created_plugin):
-        result = plugin_registry_service.delete_plugin(created_plugin.id)
+    def test_delete_plugin(self, plugin_service, created_plugin):
+        result = plugin_service.delete_plugin(created_plugin.id)
 
         assert result is True
         with pytest.raises(ValueError) as exc_info:
-            plugin_registry_service.get_plugin(created_plugin.id)
+            plugin_service.get_plugin(created_plugin.id)
         assert str(exc_info.value) == f"Plugin with ID {created_plugin.id} not found"
 
-    def test_register_tool(
-        self, plugin_registry_service, created_plugin, sample_tool_data
-    ):
-        tool = plugin_registry_service.register_tool(
-            created_plugin.id, sample_tool_data
-        )
+    def test_register_tool(self, plugin_service, created_plugin, sample_tool_data):
+        tool = plugin_service.register_tool(created_plugin.id, sample_tool_data)
 
         assert tool is not None
         assert tool.name == sample_tool_data.name
@@ -120,22 +114,20 @@ class TestPluginRegistryService:
         assert tool.output_schema == sample_tool_data.output_schema
         assert tool.tool_metadata == sample_tool_data.tool_metadata
 
-    def test_get_plugin_tools(
-        self, plugin_registry_service, created_plugin, created_tool
-    ):
-        tools = plugin_registry_service.get_plugin_tools(created_plugin.id)
+    def test_get_plugin_tools(self, plugin_service, created_plugin, created_tool):
+        tools = plugin_service.get_plugin_tools(created_plugin.id)
 
         assert len(tools) == 1
         assert tools[0].id == created_tool.id
         assert tools[0].name == created_tool.name
 
     def test_enable_plugin_in_project(
-        self, plugin_registry_service, created_plugin, setup_project
+        self, plugin_service, created_plugin, setup_project
     ):
         project = setup_project
         config = {"project_specific": "config"}
 
-        project_plugin = plugin_registry_service.enable_plugin_in_project(
+        project_plugin = plugin_service.enable_plugin_in_project(
             project.id, created_plugin.id, config
         )
 
@@ -146,19 +138,19 @@ class TestPluginRegistryService:
         assert project_plugin.config == config
 
     def test_enable_plugin_in_project_twice(
-        self, plugin_registry_service, created_plugin, setup_project
+        self, plugin_service, created_plugin, setup_project
     ):
         project = setup_project
         initial_config = {"initial": "config"}
         updated_config = {"updated": "config"}
 
         # First enable
-        project_plugin = plugin_registry_service.enable_plugin_in_project(
+        project_plugin = plugin_service.enable_plugin_in_project(
             project.id, created_plugin.id, initial_config
         )
 
         # Second enable with new config
-        updated_project_plugin = plugin_registry_service.enable_plugin_in_project(
+        updated_project_plugin = plugin_service.enable_plugin_in_project(
             project.id, created_plugin.id, updated_config
         )
 
@@ -168,20 +160,18 @@ class TestPluginRegistryService:
         assert updated_project_plugin.config == updated_config
 
     def test_disable_plugin_in_project(
-        self, plugin_registry_service, created_plugin, setup_project
+        self, plugin_service, created_plugin, setup_project
     ):
         project = setup_project
-        project_plugin = plugin_registry_service.enable_plugin_in_project(
+        project_plugin = plugin_service.enable_plugin_in_project(
             project.id, created_plugin.id
         )
 
-        result = plugin_registry_service.disable_plugin_in_project(
-            project.id, created_plugin.id
-        )
+        result = plugin_service.disable_plugin_in_project(project.id, created_plugin.id)
 
         assert result is True
         project_plugin = (
-            plugin_registry_service.db.query(ProjectPlugin)
+            plugin_service.db.query(ProjectPlugin)
             .filter(
                 ProjectPlugin.project_id == project.id,
                 ProjectPlugin.plugin_id == created_plugin.id,
@@ -192,7 +182,7 @@ class TestPluginRegistryService:
 
     def test_get_enabled_tools_for_project(
         self,
-        plugin_registry_service,
+        plugin_service,
         created_plugin,
         created_tool,
         setup_project,
@@ -200,51 +190,47 @@ class TestPluginRegistryService:
         project = setup_project
 
         # Enable plugin in project
-        plugin_registry_service.enable_plugin_in_project(project.id, created_plugin.id)
+        plugin_service.enable_plugin_in_project(project.id, created_plugin.id)
 
         # Get enabled tools for project
-        enabled_tools = plugin_registry_service.get_enabled_tools_for_project(
-            project.id
-        )
+        enabled_tools = plugin_service.get_enabled_tools_for_project(project.id)
 
         assert len(enabled_tools) == 1
         assert enabled_tools[0].id == created_tool.id
 
     def test_get_enabled_tools_for_workspace(
-        self, plugin_registry_service, setup_workspace, created_plugin, created_tool
+        self, plugin_service, setup_workspace, created_plugin, created_tool
     ):
         workspace = setup_workspace
 
         # Get enabled tools for workspace
-        enabled_tools = plugin_registry_service.get_enabled_tools_for_workspace(
-            workspace.id
-        )
+        enabled_tools = plugin_service.get_enabled_tools_for_workspace(workspace.id)
 
         assert len(enabled_tools) == 1
         assert enabled_tools[0].id == created_tool.id
 
     def test_update_tool_config(
-        self, plugin_registry_service, created_plugin, created_tool, setup_project
+        self, plugin_service, created_plugin, created_tool, setup_project
     ):
         project = setup_project
 
         # Enable plugin in project
-        project_plugin = plugin_registry_service.enable_plugin_in_project(
+        project_plugin = plugin_service.enable_plugin_in_project(
             project.id, created_plugin.id
         )
 
         # Enable tool in project
-        plugin_registry_service.enable_tool_in_project(project.id, created_tool.id)
+        plugin_service.enable_tool_in_project(project.id, created_tool.id)
 
         # Update project tool config
         new_config = {"updated": "config"}
-        result = plugin_registry_service.update_tool_config(
+        result = plugin_service.update_tool_config(
             created_tool.id, project_id=project.id, config=new_config
         )
 
         assert result is True
         project_tool = (
-            plugin_registry_service.db.query(ProjectPluginTool)
+            plugin_service.db.query(ProjectPluginTool)
             .filter(
                 ProjectPluginTool.project_plugin_id == project_plugin.id,
                 ProjectPluginTool.tool_id == created_tool.id,

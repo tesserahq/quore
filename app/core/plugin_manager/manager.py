@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.mcp_client import MCPClient
 from app.services.credential import CredentialService
 from app.config import get_settings
-from app.services.plugin_registry import PluginRegistryService
+from app.services.plugin import PluginService
 from app.constants.plugin_states import PluginState
 
 
@@ -16,9 +16,9 @@ class PluginManager:
     def __init__(self, db: Session, plugin_id: UUID):
         """Initialize the plugin manager with a database session and plugin ID."""
         self.db = db
-        from app.services.plugin_registry import PluginRegistryService
+        from app.services.plugin import PluginService
 
-        plugin_service = PluginRegistryService(db)
+        plugin_service = PluginService(db)
         plugin = plugin_service.get_plugin(plugin_id)
         if not plugin:
             raise ValueError(f"Plugin with ID {plugin_id} not found")
@@ -54,7 +54,7 @@ class PluginManager:
                     tools = await client.list_tools()
 
                     # Register each tool with the plugin
-                    plugin_service = PluginRegistryService(self.db)
+                    plugin_service = PluginService(self.db)
                     for tool in tools:
                         # Convert FastMCP tool to PluginToolCreate schema
                         tool_data = {

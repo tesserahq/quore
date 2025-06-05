@@ -10,7 +10,7 @@ from app.models.project import Project
 from app.schemas.plugin import PluginCreate, PluginUpdate, PluginToolCreate
 
 
-class PluginRegistryService:
+class PluginService:
     """Service for managing plugin registration and configuration."""
 
     def __init__(self, db: Session):

@@ -1,6 +1,6 @@
 import pytest
 from app.models.workspace import Workspace
-from app.services.plugin_registry import PluginRegistryService
+from app.services.plugin import PluginService
 from app.models.project_plugin import ProjectPlugin
 from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
@@ -97,7 +97,7 @@ def test_create_workspace_plugin(client, db, setup_workspace):
     assert data["workspace_id"] == str(workspace.id)
 
     # Verify plugin was created in database
-    plugin = PluginRegistryService(db).get_plugin(data["id"])
+    plugin = PluginService(db).get_plugin(data["id"])
     assert plugin is not None
     assert plugin.name == "New Plugin"
     assert plugin.workspace_id == workspace.id
@@ -108,7 +108,7 @@ def test_list_project_plugins(client, db, setup_project, setup_plugin):
     project = setup_project
     plugin = setup_plugin
     # Enable the plugin in the project
-    PluginRegistryService(db).enable_plugin_in_project(project.id, plugin.id)
+    PluginService(db).enable_plugin_in_project(project.id, plugin.id)
 
     response = client.get(f"/projects/{project.id}/plugins")
     assert response.status_code == 200

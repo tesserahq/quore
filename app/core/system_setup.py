@@ -12,10 +12,6 @@ class SystemSetup:
         """Perform all system-level validations and return their status."""
         steps: List[ValidationStep] = []
 
-        # Validate plugin environment
-        plugin_step = SystemSetup._validate_plugin_environment()
-        steps.append(plugin_step)
-
         # Validate credential master key
         credential_step = SystemSetup._validate_credential_master_key()
         steps.append(credential_step)
@@ -30,37 +26,6 @@ class SystemSetup:
         # etc.
 
         return steps
-
-    @staticmethod
-    def _validate_plugin_environment() -> ValidationStep:
-        """Validate and setup the plugin environment."""
-        settings = get_settings()
-        plugins_dir = settings.plugins_dir
-
-        try:
-            # Only create directory if it doesn't exist
-            if not os.path.exists(plugins_dir):
-                os.makedirs(plugins_dir)
-
-            # Ensure the directory is writable
-            if not os.access(plugins_dir, os.W_OK):
-                return ValidationStep(
-                    name="Plugin Environment",
-                    status=ValidationStatus.ERROR,
-                    message=f"Plugin directory {plugins_dir} is not writable",
-                )
-
-            return ValidationStep(
-                name="Plugin Environment",
-                status=ValidationStatus.OK,
-                message=f"Plugin directory {plugins_dir} validated successfully",
-            )
-        except Exception as e:
-            return ValidationStep(
-                name="Plugin Environment",
-                status=ValidationStatus.ERROR,
-                message=f"Failed to validate plugin environment: {str(e)}",
-            )
 
     @staticmethod
     def _validate_credential_master_key() -> ValidationStep:

@@ -4,7 +4,7 @@ from uuid import UUID
 
 from app.db import get_db
 from app.models.plugin import Plugin
-from app.services.plugin_registry import PluginRegistryService
+from app.services.plugin import PluginService
 from app.services.workspace import WorkspaceService
 from app.models.workspace import Workspace
 from app.services.project import ProjectService
@@ -71,7 +71,7 @@ def get_plugin_by_id(
     Raises:
         HTTPException: If the plugin is not found
     """
-    plugin = PluginRegistryService(db).get_plugin(plugin_id)
+    plugin = PluginService(db).get_plugin(plugin_id)
     if plugin is None:
         raise HTTPException(status_code=404, detail="Plugin not found")
     return plugin

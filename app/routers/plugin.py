@@ -13,7 +13,7 @@ from app.schemas.plugin import (
     PluginUpdate,
     PluginStatesResponse,
 )
-from app.services.plugin_registry import PluginRegistryService
+from app.services.plugin import PluginService
 from app.schemas.common import ListResponse
 from app.models.workspace import Workspace
 from app.models.project import Project
@@ -36,7 +36,7 @@ def list_workspace_plugins(
     db: Session = Depends(get_db),
 ):
     """List all plugins available for a workspace (both system plugins and workspace-specific plugins)."""
-    plugins = PluginRegistryService(db).get_workspace_plugins(UUID(str(workspace.id)))
+    plugins = PluginService(db).get_workspace_plugins(UUID(str(workspace.id)))
     return ListResponse(data=plugins)
 
 
@@ -60,7 +60,7 @@ def list_project_plugins(
     db: Session = Depends(get_db),
 ):
     """List all enabled plugins for a project."""
-    plugins = PluginRegistryService(db).get_project_plugins(UUID(str(project.id)))
+    plugins = PluginService(db).get_project_plugins(UUID(str(project.id)))
     return ListResponse(data=plugins)
 
 
@@ -74,7 +74,7 @@ def enable_project_plugin(
     db: Session = Depends(get_db),
 ):
     """Enable a plugin in a project."""
-    service = PluginRegistryService(db)
+    service = PluginService(db)
     service.enable_plugin_in_project(
         UUID(str(project.id)), UUID(str(plugin.id)), config
     )
@@ -88,7 +88,7 @@ def update_plugin(
     db: Session = Depends(get_db),
 ):
     """Update a plugin's metadata."""
-    service = PluginRegistryService(db)
+    service = PluginService(db)
     plugin = service.update_plugin(UUID(str(plugin.id)), plugin_data)
     return plugin
 
