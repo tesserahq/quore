@@ -45,9 +45,6 @@ class Settings(BaseSettings):
     redis_namespace: str = Field(
         default="llama_index", json_schema_extra={"env": "REDIS_NAMESPACE"}
     )
-    plugins_dir: str = Field(
-        default="/plugins", json_schema_extra={"env": "PLUGINS_DIR"}
-    )
 
     @model_validator(mode="before")
     def set_database_url(cls, values):

@@ -9,18 +9,6 @@ from app.constants.plugin_states import PluginState
 
 from app.main import app
 from app.models.plugin import Plugin
-from app.core.mcp_client import MCPClient
-
-
-# Global fixture to mock PluginManager.clone_repository for all tests
-@pytest.fixture(autouse=True)
-def mock_plugin_manager_clone_repository():
-    with patch(
-        "app.core.plugin_manager.manager.PluginManager.clone_repository"
-    ) as mock_clone:
-        mock_clone.return_value = None  # Simulate success
-        yield mock_clone
-
 
 # Sample tools response
 SAMPLE_TOOLS_RESPONSE = [
@@ -100,7 +88,6 @@ def test_create_workspace_plugin(client, db, setup_workspace):
         "version": "1.0.0",
         "author": "Test Author",
         "plugin_metadata": {"type": "test"},
-        "repository_url": "https://github.com/test/plugin",
     }
 
     response = client.post(f"/workspaces/{workspace.id}/plugins", json=plugin_data)
@@ -205,19 +192,19 @@ def test_inspect_tools_plugin_no_endpoint(
 def test_list_plugin_states(client: TestClient):
     """Test retrieving the list of available plugin states."""
     response = client.get("/plugins/states")
-    
+
     assert response.status_code == 200
     data = response.json()
     assert "states" in data
     assert isinstance(data["states"], list)
-    
+
     # Convert response to a dict for easier comparison
     states_dict = {state["value"]: state["description"] for state in data["states"]}
-    
+
     # Verify each state from the enum is present with correct description
     for state in PluginState:
         assert state.value in states_dict
         assert states_dict[state.value] == (state.__doc__ or state.value)
-    
+
     # Verify no extra states were added
     assert len(states_dict) == len(PluginState)

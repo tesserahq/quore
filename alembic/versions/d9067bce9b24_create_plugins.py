@@ -71,9 +71,7 @@ def upgrade() -> None:
         sa.Column("id", sa.UUID(), nullable=False),
         sa.Column("name", sa.String(length=100), nullable=False),
         sa.Column("description", sa.String(), nullable=True),
-        sa.Column("repository_url", sa.String(), nullable=True),
         sa.Column("version", sa.String(length=50), nullable=True),
-        sa.Column("commit_hash", sa.String(length=50), nullable=True),
         sa.Column("is_active", sa.Boolean(), nullable=True),
         sa.Column("endpoint_url", sa.String(), nullable=True),
         sa.Column(

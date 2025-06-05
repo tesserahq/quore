@@ -95,5 +95,4 @@ if settings.otel_enabled:
 
 @app.get("/")
 def main_route():
-    raise Exception("Test Rollbar")
     return {"message": "Hey, It is me Goku"}

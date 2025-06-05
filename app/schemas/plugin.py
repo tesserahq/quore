@@ -10,9 +10,7 @@ class PluginBase(BaseModel):
 
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
-    repository_url: Optional[str] = None
     version: Optional[str] = None
-    commit_hash: Optional[str] = None
     state: Optional[PluginState] = None
     endpoint_url: Optional[str] = None
     plugin_metadata: Optional[Dict[str, Any]] = None
@@ -31,7 +29,6 @@ class PluginCreateRequest(BaseModel):
 
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
-    repository_url: Optional[str] = None
     endpoint_url: Optional[str] = None
     version: Optional[str] = None
     credential_id: Optional[UUID] = None
@@ -44,7 +41,6 @@ class PluginUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
     version: Optional[str] = None
-    commit_hash: Optional[str] = None
     state: Optional[PluginState] = None
     endpoint_url: Optional[str] = None
     plugin_metadata: Optional[Dict[str, Any]] = None

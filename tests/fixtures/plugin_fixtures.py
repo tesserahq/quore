@@ -12,7 +12,6 @@ def sample_plugin_data():
         "version": "1.0.0",
         "author": "Test Author",
         "metadata_": {"type": "test"},
-        "repository_url": "https://github.com/test/plugin",
         "credential_id": None,  # No credential by default
     }
 
@@ -23,9 +22,7 @@ def setup_plugin(db, setup_workspace):
     plugin_data = PluginCreate(
         name="Test Plugin",
         description="A test plugin",
-        repository_url="https://github.com/test/plugin",
         version="1.0.0",
-        commit_hash="abc123",
         state=PluginState.REGISTERED,
         endpoint_url="http://localhost:8000",
         plugin_metadata={"type": "test"},

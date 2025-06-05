@@ -7,16 +7,6 @@ from app.constants.plugin_states import PluginState
 from unittest.mock import patch
 
 
-# Global fixture to mock PluginManager.clone_repository for all tests
-@pytest.fixture(autouse=True)
-def mock_plugin_manager_clone_repository():
-    with patch(
-        "app.core.plugin_manager.manager.PluginManager.clone_repository"
-    ) as mock_clone:
-        mock_clone.return_value = None  # Simulate success
-        yield mock_clone
-
-
 @pytest.fixture
 def plugin_registry_service(db):
     return PluginRegistryService(db)
@@ -27,9 +17,7 @@ def sample_plugin_data(setup_workspace):
     return PluginCreate(
         name="Test Plugin",
         description="A test plugin",
-        repository_url="https://github.com/test/plugin",
         version="1.0.0",
-        commit_hash="abc123",
         state=PluginState.REGISTERED,
         endpoint_url="http://localhost:8000",
         plugin_metadata={"type": "test"},
@@ -62,16 +50,14 @@ def created_tool(plugin_registry_service, created_plugin, sample_tool_data):
 
 class TestPluginRegistryService:
     def test_create_plugin(self, plugin_registry_service, sample_plugin_data):
-        """Test registering a plugin and cloning its repository."""
+        """Test registering a plugin."""
 
         plugin = plugin_registry_service.create_plugin(sample_plugin_data)
 
         assert plugin is not None
         assert plugin.name == sample_plugin_data.name
         assert plugin.description == sample_plugin_data.description
-        assert plugin.repository_url == sample_plugin_data.repository_url
         assert plugin.version == sample_plugin_data.version
-        assert plugin.commit_hash == sample_plugin_data.commit_hash
         assert plugin.state == PluginState.INITIALIZING
         assert plugin.endpoint_url == sample_plugin_data.endpoint_url
         assert plugin.plugin_metadata == sample_plugin_data.plugin_metadata
@@ -90,8 +76,6 @@ class TestPluginRegistryService:
             name="Updated Plugin",
             description="Updated description",
             version="2.0.0",
-            repository_url=created_plugin.repository_url,
-            commit_hash=created_plugin.commit_hash,
             state=created_plugin.state,
             endpoint_url=created_plugin.endpoint_url,
             plugin_metadata=created_plugin.plugin_metadata,
@@ -107,8 +91,6 @@ class TestPluginRegistryService:
         assert updated_plugin.name == update_data.name
         assert updated_plugin.description == update_data.description
         assert updated_plugin.version == update_data.version
-        assert updated_plugin.repository_url == created_plugin.repository_url
-        assert updated_plugin.commit_hash == created_plugin.commit_hash
         assert updated_plugin.state == created_plugin.state
         assert updated_plugin.endpoint_url == created_plugin.endpoint_url
         assert updated_plugin.plugin_metadata == created_plugin.plugin_metadata
@@ -270,34 +252,3 @@ class TestPluginRegistryService:
             .first()
         )
         assert project_tool.config == new_config
-
-    def test_create_plugin_with_null_repository_url(
-        self, plugin_registry_service, setup_workspace
-    ):
-        """Test creating a plugin with a null repository URL."""
-        plugin_data = PluginCreate(
-            name="Null Repo Plugin",
-            description="A plugin without a repository URL",
-            repository_url=None,
-            version="1.0.0",
-            commit_hash=None,
-            state=PluginState.REGISTERED,
-            endpoint_url="http://localhost:8000",
-            plugin_metadata={"type": "test"},
-            credential_id=None,
-            workspace_id=setup_workspace.id,
-        )
-
-        plugin = plugin_registry_service.create_plugin(plugin_data)
-
-        assert plugin is not None
-        assert plugin.name == plugin_data.name
-        assert plugin.description == plugin_data.description
-        assert plugin.repository_url is None
-        assert plugin.version == plugin_data.version
-        assert plugin.commit_hash is None
-        assert plugin.state == PluginState.INITIALIZING
-        assert plugin.endpoint_url == plugin_data.endpoint_url
-        assert plugin.plugin_metadata == plugin_data.plugin_metadata
-        assert plugin.credential_id is None
-        assert plugin.workspace_id == setup_workspace.id

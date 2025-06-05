@@ -16,12 +16,7 @@ class Plugin(Base, TimestampMixin):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(100), nullable=False)
     description = Column(String, nullable=True)
-    repository_url = Column(String, nullable=True)
     version = Column(String(50), nullable=True)  # Git tag or commit hash
-    commit_hash = Column(
-        String(50), nullable=True
-    )  # Specific commit hash if version is a tag
-    # state: Mapped[PluginState] = Column(SQLEnum(PluginState), nullable=False, default=PluginState.REGISTERED)
     state = Column(SQLEnum(PluginState), nullable=False, default=PluginState.REGISTERED)
     endpoint_url = Column(
         String, nullable=True
