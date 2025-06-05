@@ -94,16 +94,16 @@ def update_plugin(
     return plugin
 
 
-@router.post("/plugins/{plugin_id}/reset", response_model=PluginResponse)
-async def reset_plugin(
+@router.post("/plugins/{plugin_id}/refresh", response_model=PluginResponse)
+async def refresh_plugin(
     plugin: Plugin = Depends(get_plugin_by_id),
     db: Session = Depends(get_db),
 ):
-    """Reset and refresh all plugin components (tools, resources, prompts) and reset plugin state."""
-    # Create plugin manager and reset plugin
+    """Refresh and refresh all plugin components (tools, resources, prompts) and refresh plugin state."""
+    # Create plugin manager and refresh plugin
     manager = PluginManager(db, plugin.id)
 
-    return await manager.reset()
+    return await manager.refresh()
 
 
 @router.get("/plugins/{plugin_id}/inspect/tools")
@@ -151,3 +151,14 @@ def list_plugin_states():
         for state in PluginState
     ]
     return PluginStatesResponse(states=states)
+
+
+@router.delete("/plugins/{plugin_id}")
+def delete_plugin(
+    plugin: Plugin = Depends(get_plugin_by_id),
+    db: Session = Depends(get_db),
+):
+    """Delete a plugin and all its configurations."""
+    service = PluginService(db)
+    service.delete_plugin(UUID(str(plugin.id)))
+    return {"message": "Plugin deleted successfully"}
