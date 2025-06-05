@@ -1,6 +1,4 @@
-import pytest
-from app.core.system_setup import SystemSetup
-from app.schemas.system import ValidationStatus, ValidationStep
+from app.schemas.system import ValidationStatus
 
 
 def test_system_setup_success(client):

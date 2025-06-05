@@ -3,11 +3,9 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 from app.constants.plugin_states import PluginState
 from app.models.plugin import Plugin
-from app.models.plugin_tool import PluginTool
 from app.models.project_plugin import ProjectPlugin
-from app.models.project_plugin_tool import ProjectPluginTool
 from app.models.project import Project
-from app.schemas.plugin import PluginCreate, PluginUpdate, PluginToolCreate
+from app.schemas.plugin import PluginCreate, PluginUpdate
 
 
 class PluginService:
@@ -62,19 +60,6 @@ class PluginService:
         self.db.delete(plugin)
         self.db.commit()
         return True
-
-    # Tool Management
-    def register_tool(self, plugin_id: UUID, tool_data: PluginToolCreate) -> PluginTool:
-        """Register a new tool for a plugin."""
-        tool = PluginTool(plugin_id=plugin_id, **tool_data.model_dump())
-        self.db.add(tool)
-        self.db.commit()
-        self.db.refresh(tool)
-        return tool
-
-    def get_plugin_tools(self, plugin_id: UUID) -> List[PluginTool]:
-        """Get all tools for a plugin."""
-        return self.db.query(PluginTool).filter(PluginTool.plugin_id == plugin_id).all()
 
     # Workspace Plugin Management
     def get_workspace_plugins(self, workspace_id: UUID) -> List[Plugin]:
@@ -148,6 +133,7 @@ class PluginService:
         # Get project-specific plugin configurations
         project_plugins = (
             self.db.query(ProjectPlugin)
+            .join(Plugin, ProjectPlugin.plugin_id == Plugin.id)
             .filter(ProjectPlugin.project_id == project_id, ProjectPlugin.is_enabled)
             .all()
         )
@@ -155,91 +141,3 @@ class PluginService:
         # Filter to only include enabled plugins
         enabled_plugin_ids = {pp.plugin_id for pp in project_plugins}
         return [p for p in workspace_plugins if p.id in enabled_plugin_ids]
-
-    def get_enabled_tools_for_project(self, project_id: UUID) -> List[PluginTool]:
-        """Get all enabled tools for a project."""
-        project = self.db.query(Project).filter(Project.id == project_id).first()
-        if not project:
-            return []
-
-        # Get all plugins from the project's workspace
-        self.get_workspace_plugins(project.workspace_id)
-
-        # Get project-specific plugin configurations
-        project_plugins = (
-            self.db.query(ProjectPlugin)
-            .filter(ProjectPlugin.project_id == project_id, ProjectPlugin.is_enabled)
-            .all()
-        )
-
-        # Get all tools from enabled plugins
-        enabled_plugin_ids = {pp.plugin_id for pp in project_plugins}
-        return (
-            self.db.query(PluginTool)
-            .filter(
-                PluginTool.plugin_id.in_(enabled_plugin_ids),
-                PluginTool.is_active,
-            )
-            .all()
-        )
-
-    def get_enabled_tools_for_workspace(self, workspace_id: UUID) -> List[PluginTool]:
-        """Get all enabled tools for a workspace."""
-        # Get all plugins from the workspace
-        workspace_plugins = self.get_workspace_plugins(workspace_id)
-
-        # Get all tools from workspace plugins
-        workspace_plugin_ids = {p.id for p in workspace_plugins}
-        return (
-            self.db.query(PluginTool)
-            .filter(
-                PluginTool.plugin_id.in_(workspace_plugin_ids),
-                PluginTool.is_active,
-            )
-            .all()
-        )
-
-    def update_tool_config(
-        self, tool_id: UUID, config: Dict[str, Any], project_id: Optional[UUID] = None
-    ) -> bool:
-        """Update tool configuration for a project."""
-        if project_id:
-            project_tool = (
-                self.db.query(ProjectPluginTool)
-                .filter(
-                    ProjectPluginTool.tool_id == tool_id,
-                    ProjectPluginTool.project_plugin_id.in_(
-                        self.db.query(ProjectPlugin.id).filter(
-                            ProjectPlugin.project_id == project_id
-                        )
-                    ),
-                )
-                .first()
-            )
-            if project_tool:
-                project_tool.config = config
-                self.db.commit()
-                return True
-        return False
-
-    def enable_tool_in_project(
-        self, project_id: UUID, tool_id: UUID
-    ) -> ProjectPluginTool:
-        """Enable a tool in a project by creating a ProjectPluginTool record."""
-        project_plugin = (
-            self.db.query(ProjectPlugin)
-            .filter(ProjectPlugin.project_id == project_id, ProjectPlugin.is_enabled)
-            .first()
-        )
-        if not project_plugin:
-            raise ValueError("Project plugin not found or not enabled")
-        project_tool = ProjectPluginTool(
-            project_plugin_id=project_plugin.id,
-            tool_id=tool_id,
-            is_enabled=True,
-            config={},
-        )
-        self.db.add(project_tool)
-        self.db.commit()
-        self.db.refresh(project_tool)
-        return project_tool

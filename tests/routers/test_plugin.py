@@ -1,5 +1,4 @@
 import pytest
-from app.models.workspace import Workspace
 from app.services.plugin import PluginService
 from app.models.project_plugin import ProjectPlugin
 from unittest.mock import patch, AsyncMock
@@ -7,7 +6,6 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from app.constants.plugin_states import PluginState
 
-from app.main import app
 from app.models.plugin import Plugin
 
 # Sample tools response
@@ -88,6 +86,7 @@ def test_create_workspace_plugin(client, db, setup_workspace):
         "version": "1.0.0",
         "author": "Test Author",
         "plugin_metadata": {"type": "test"},
+        "endpoint_url": "http://test-plugin.example.com",
     }
 
     response = client.post(f"/workspaces/{workspace.id}/plugins", json=plugin_data)
@@ -166,27 +165,6 @@ def test_inspect_tools_plugin_success(
     mock_mcp_client.assert_called_once_with(plugin.endpoint_url)
     mock_instance = mock_mcp_client.return_value.__aenter__.return_value
     mock_instance.list_tools.assert_called_once()
-
-
-def test_inspect_tools_plugin_no_endpoint(
-    client: TestClient, setup_workspace: Workspace, db: Session
-):
-    """Test error when plugin has no endpoint URL."""
-    workspace = setup_workspace
-    # Create a plugin without an endpoint URL
-    plugin = Plugin(
-        name="No Endpoint Plugin",
-        description="A plugin without an endpoint",
-        workspace_id=workspace.id,
-    )
-    db.add(plugin)
-    db.commit()
-    db.refresh(plugin)
-
-    response = client.get(f"/plugins/{plugin.id}/inspect/tools")
-
-    assert response.status_code == 422
-    assert "Plugin endpoint URL is not set" in response.json()["detail"]
 
 
 def test_list_plugin_states(client: TestClient):

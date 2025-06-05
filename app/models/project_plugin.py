@@ -17,6 +17,9 @@ class ProjectPlugin(Base, TimestampMixin):
     plugin_id = Column(UUID(as_uuid=True), ForeignKey("plugins.id"), nullable=False)
     is_enabled = Column(Boolean, default=True)
     config = Column(JSONB, nullable=True)  # Project-specific plugin configuration
+    tools = Column(JSONB, nullable=True)
+    resources = Column(JSONB, nullable=True)
+    prompts = Column(JSONB, nullable=True)
 
     # Unique constraint to ensure a plugin can only be installed once per project
     __table_args__ = (
@@ -26,11 +29,6 @@ class ProjectPlugin(Base, TimestampMixin):
     # Relationships
     project = relationship("Project", back_populates="plugins")
     plugin = relationship("Plugin", back_populates="project_plugins")
-    enabled_tools = relationship(
-        "ProjectPluginTool",
-        back_populates="project_plugin",
-        cascade="all, delete-orphan",
-    )
 
     def __repr__(self):
         return (

@@ -1,3 +1,4 @@
+import asyncio
 from uuid import UUID
 from app.core.plugin_manager.manager import PluginManager
 from app.constants.plugin_states import PluginState
@@ -18,8 +19,7 @@ def inspect_plugin(plugin_id: str) -> None:
         plugin_service = PluginService(db)
 
         try:
-            plugin_manager.inspect()
-            plugin_service.update_state(UUID(str(plugin_id)), PluginState.RUNNING)
+            asyncio.run(plugin_manager.refresh())
         except Exception as e:
             plugin_service.update_state(UUID(str(plugin_id)), PluginState.ERROR)
             raise RuntimeError(f"Failed to initialize plugin: {str(e)}")
