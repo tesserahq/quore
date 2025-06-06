@@ -1,4 +1,3 @@
-import os
 from typing import List
 from app.config import get_settings
 from app.schemas.system import ValidationStep, ValidationStatus

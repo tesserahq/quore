@@ -17,7 +17,7 @@ services:
     image: mustela/estate-buddy-mcp-server:main
     pull_policy: always
     ports:
-      - "8005:8000"
+      - "8006:8000"
     env_file: ".env"
 
   celery_worker:

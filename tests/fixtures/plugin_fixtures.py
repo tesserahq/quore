@@ -23,7 +23,7 @@ def setup_plugin(db, setup_workspace):
         name="Test Plugin",
         description="A test plugin",
         version="1.0.0",
-        state=PluginState.REGISTERED,
+        state=PluginState.INITIALIZING,
         endpoint_url="http://localhost:8000",
         plugin_metadata={"type": "test"},
         credential_id=None,  # No credential by default

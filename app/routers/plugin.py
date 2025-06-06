@@ -24,6 +24,7 @@ from app.utils.dependencies import (
 )
 from app.core.mcp_client import MCPClient
 from app.constants.plugin_states import PluginState
+from app.core.plugin_manager.manager import PluginManager
 
 router = APIRouter(tags=["plugins"])
 
@@ -93,14 +94,24 @@ def update_plugin(
     return plugin
 
 
+@router.post("/plugins/{plugin_id}/reset", response_model=PluginResponse)
+async def reset_plugin(
+    plugin: Plugin = Depends(get_plugin_by_id),
+    db: Session = Depends(get_db),
+):
+    """Reset and refresh all plugin components (tools, resources, prompts) and reset plugin state."""
+    # Create plugin manager and reset plugin
+    manager = PluginManager(db, plugin.id)
+
+    return await manager.reset()
+
+
 @router.get("/plugins/{plugin_id}/inspect/tools")
 async def inspect_tools_plugin(
     plugin: Plugin = Depends(get_plugin_by_id),
     db: Session = Depends(get_db),
 ):
     """Get plugins tools directly from the MCP server."""
-    if not plugin.endpoint_url:
-        raise HTTPException(status_code=422, detail="Plugin endpoint URL is not set")
 
     async with MCPClient(plugin.endpoint_url) as client:
         return await client.list_tools()

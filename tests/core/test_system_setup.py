@@ -1,4 +1,3 @@
-import os
 import pytest
 from unittest import mock
 from app.core.system_setup import SystemSetup

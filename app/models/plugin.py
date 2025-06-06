@@ -1,3 +1,4 @@
+from sqlalchemy_json import mutable_json_type
 from app.models.mixins import TimestampMixin
 from sqlalchemy import Column, String, ForeignKey, Enum as SQLEnum
 from sqlalchemy.orm import relationship
@@ -18,8 +19,9 @@ class Plugin(Base, TimestampMixin):
     description = Column(String, nullable=True)
     version = Column(String(50), nullable=True)  # Git tag or commit hash
     state = Column(SQLEnum(PluginState), nullable=False, default=PluginState.REGISTERED)
+    state_description = Column(String, nullable=True)
     endpoint_url = Column(
-        String, nullable=True
+        String, nullable=False
     )  # Runtime endpoint (e.g. http://localhost:5001)
     plugin_metadata = Column(
         JSONB, nullable=True
@@ -34,8 +36,14 @@ class Plugin(Base, TimestampMixin):
     # Relationships
     workspace = relationship("Workspace", back_populates="plugins")
     credential = relationship("Credential", back_populates="plugins")
-    tools = relationship(
-        "PluginTool", back_populates="plugin", cascade="all, delete-orphan"
+    tools: Column[list] = Column(
+        mutable_json_type(dbtype=JSONB, nested=True), default=list
+    )
+    resources: Column[list] = Column(
+        mutable_json_type(dbtype=JSONB, nested=True), default=list
+    )
+    prompts: Column[list] = Column(
+        mutable_json_type(dbtype=JSONB, nested=True), default=list
     )
     project_plugins = relationship(
         "ProjectPlugin", back_populates="plugin", cascade="all, delete-orphan"
