@@ -36,7 +36,6 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/quore_test
       CREDENTIAL_MASTER_KEY: "test"
-      PLUGINS_DIR: /tmp/plugins
       ENV: test
       ROLLBAR_ACCESS_TOKEN: 7cd9dd0b5df9462b8ebdfb522af61cd2
     steps:

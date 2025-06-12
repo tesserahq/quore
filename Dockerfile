@@ -29,7 +29,6 @@ RUN apt-get update \
     libcurl4-openssl-dev \
     libssl-dev \
     postgresql-client \
-    git \
     libffi-dev \
     libpq-dev \
     --no-install-recommends

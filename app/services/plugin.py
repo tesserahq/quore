@@ -141,3 +141,8 @@ class PluginService:
         # Filter to only include enabled plugins
         enabled_plugin_ids = {pp.plugin_id for pp in project_plugins}
         return [p for p in workspace_plugins if p.id in enabled_plugin_ids]
+
+    def get_project_tools(self, project_id: UUID) -> Any:
+        """Get all enabled plugins for a project."""
+        plugins = self.get_project_plugins(project_id)
+        return [p.tools for p in plugins]

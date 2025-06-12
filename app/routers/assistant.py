@@ -1,8 +1,9 @@
 import asyncio
 import logging
-from typing import AsyncGenerator, Union
+from typing import Annotated, AsyncGenerator, Union
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
 from llama_index.core.agent.workflow.workflow_events import (
@@ -34,15 +35,16 @@ def assistant_router() -> APIRouter:
     @router.post("")
     async def chat(
         request: ChatRequest,
-        background_tasks: BackgroundTasks,
         project: Project = Depends(get_project_by_id),
         db_session: Session = Depends(get_db),
         current_user=Depends(get_current_user),
+        token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
     ) -> StreamingResponse:
         logger = get_logger()
+
         logger.debug(f"Chat route: Starting chat request for project {project.id}")
 
-        workflow_manager = WorkflowManager(db_session, project)
+        workflow_manager = WorkflowManager(db_session, project, token)
 
         try:
             user_message = request.messages[-1].to_llamaindex_message()
@@ -54,7 +56,7 @@ def assistant_router() -> APIRouter:
             )
 
             # TODO: review why we are passing the request object here
-            workflow = workflow_manager.create_workflow(chat_request=request)
+            workflow = await workflow_manager.create_workflow(chat_request=request)
             logger.debug("Chat route: Created workflow successfully")
 
             workflow_handler = workflow.run(

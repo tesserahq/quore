@@ -186,3 +186,18 @@ def test_list_plugin_states(client: TestClient):
 
     # Verify no extra states were added
     assert len(states_dict) == len(PluginState)
+
+
+def test_delete_plugin(client, db, setup_plugin):
+    """Test deleting a plugin."""
+    plugin = setup_plugin
+
+    # Delete the plugin
+    response = client.delete(f"/plugins/{plugin.id}")
+    assert response.status_code == 200
+    assert response.json() == {"message": "Plugin deleted successfully"}
+
+    # Verify plugin was deleted from database
+    with pytest.raises(ValueError) as exc_info:
+        PluginService(db).get_plugin(plugin.id)
+    assert str(exc_info.value) == f"Plugin with ID {plugin.id} not found"
