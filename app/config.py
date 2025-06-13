@@ -10,17 +10,21 @@ DEFAULT_TEST_DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/quore
 
 class Settings(BaseSettings):
     app_name: str = "Quore"
+    vaulta_api_url: str = Field(
+        default="http://localhost:8004", json_schema_extra={"env": "VAULTA_API_URL"}
+    )
     otel_enabled: bool = Field(default=False, json_schema_extra={"env": "OTEL_ENABLED"})
     database_url: Optional[str] = None  # Will be set dynamically
     environment: str = Field(default="development", json_schema_extra={"env": "ENV"})
     log_level: str = Field(default="INFO", json_schema_extra={"env": "LOG_LEVEL"})
     disable_auth: bool = Field(default=False, json_schema_extra={"env": "DISABLE_AUTH"})
-    rollbar_access_token: str = Field(
-        ..., json_schema_extra={"env": "ROLLBAR_ACCESS_TOKEN"}
-    )  # Required field
-    credential_master_key: str = Field(
-        ..., json_schema_extra={"env": "CREDENTIAL_MASTER_KEY"}
-    )  # Required field
+    rollbar_access_token: Optional[str] = Field(
+        default=None, json_schema_extra={"env": "ROLLBAR_ACCESS_TOKEN"}
+    )  # Optional field
+
+    credential_master_key: Optional[str] = Field(
+        default=None, json_schema_extra={"env": "CREDENTIAL_MASTER_KEY"}
+    )  # Optional field
     oidc_domain: str = "test.oidc.com"
     oidc_api_audience: str = "https://test-api"
     oidc_issuer: str = "https://test.oidc.com/"

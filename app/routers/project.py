@@ -1,6 +1,10 @@
 from app.utils.auth import get_current_user
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, File, UploadFile, Form
+from fastapi.responses import JSONResponse
+import httpx
 from sqlalchemy.orm import Session
+from typing import Optional, List
+import json
 
 from app.db import get_db
 from app.schemas.project import (
@@ -14,6 +18,7 @@ from app.schemas.project import (
 from app.services.project import ProjectService
 from app.models.project import Project as ProjectModel
 from app.utils.dependencies import get_project_by_id
+from app.config import get_settings
 
 router = APIRouter(prefix="/projects", tags=["workspace-projects"])
 
@@ -102,3 +107,73 @@ def delete_project(
     if not success:
         raise HTTPException(status_code=404, detail="Project not found")
     return {"message": "Project deleted successfully"}
+
+
+@router.post("/{project_id}/documents")
+async def create_project_document(
+    file: UploadFile = File(description="The file to upload"),
+    project: ProjectModel = Depends(get_project_by_id),
+    request: Request = None,
+    name: Optional[str] = Form(None),
+    labels: Optional[str] = Form(None),
+    current_user=Depends(get_current_user),
+):
+    """
+    Forward document upload request to Vaulta service
+    """
+    settings = get_settings()
+
+    # Prepare the files and form data for forwarding
+    files = {"file": (file.filename, file.file, file.content_type)}
+
+    # Parse existing labels and add project/workspace IDs
+    custom_labels = {
+        "project_id": str(project.id),
+        "workspace_id": str(project.workspace_id),
+        "user_id": str(current_user.id),
+    }
+
+    if labels:
+        labels = json.loads(labels)
+        labels.update(custom_labels)
+    else:
+        labels = custom_labels
+
+    data = {"labels": json.dumps(labels)}
+    if name:
+        data["name"] = name
+
+    # Forward the request to Vaulta
+    async with httpx.AsyncClient() as client:
+        print(data)
+        response = await client.post(
+            f"{settings.vaulta_api_url}/documents",
+            files=files,
+            data=data,
+            headers={"authorization": request.headers.get("authorization")},
+        )
+        return JSONResponse(content=response.json(), status_code=response.status_code)
+
+
+@router.post("/{project_id}/documents/search")
+async def search_project_documents(
+    project: ProjectModel = Depends(get_project_by_id),
+    request: Request = None,
+    current_user=Depends(get_current_user),
+):
+    """
+    Search documents from a project by querying Vaulta service
+    """
+    settings = get_settings()
+
+    # Create the query to find documents with this project_id
+    query = {"labels": {"project_id": str(project.id)}}
+
+    # Forward the request to Vaulta
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{settings.vaulta_api_url}/documents/search",
+            json={"query": query},
+            headers={"authorization": request.headers.get("authorization")},
+        )
+        return JSONResponse(content=response.json(), status_code=response.status_code)

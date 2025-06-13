@@ -10,6 +10,17 @@ services:
       - db
       - redis
       - celery_worker
+      - vaulta
+
+  vaulta:
+    image: mustela/vaulta:main
+    pull_policy: always
+    environment:
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/vaulta
+      - REDIS_URL=redis://redis:6379/0
+    env_file: ".vaulta.env"
+    depends_on:
+      - db
 
   estate-buddy-api:
     image: mustela/estate-buddy-api:main
