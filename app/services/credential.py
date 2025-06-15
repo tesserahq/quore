@@ -3,12 +3,13 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models.credential import Credential
-from app.schemas.credential import CredentialCreate, CredentialUpdate
+from app.schemas.credential import CredentialCreate, CredentialUpdate, CredentialInfo
 from app.utils.db.filtering import apply_filters
 from app.core.credentials import (
     validate_credential_fields,
     encrypt_credential_fields,
     decrypt_credential_fields,
+    credential_registry,
 )
 
 
@@ -136,3 +137,36 @@ class CredentialService:
             return decrypt_credential_fields(encrypted_data)
         except Exception:
             return None
+
+    def to_credential_info(self, credential: Credential) -> CredentialInfo:
+        """Convert a Credential model to CredentialInfo with field information."""
+        # Get the field definitions from the credential type
+        type_info = credential_registry.get(credential.type)
+        fields = {}
+
+        if type_info:
+            # Get the decrypted fields
+            decrypted_fields = self.get_credential_fields(credential.id)
+
+            if decrypted_fields:
+                # Include all fields, but obfuscate sensitive ones
+                fields = {
+                    field.name: (
+                        "[OBFUSCATED]"
+                        if field.input_type in ["password", "textarea"]
+                        else decrypted_fields.get(field.name)
+                    )
+                    for field in type_info.fields
+                }
+
+        # Create CredentialInfo with the fields
+        return CredentialInfo(
+            id=credential.id,
+            name=credential.name,
+            type=credential.type,
+            workspace_id=credential.workspace_id,
+            created_by=credential.created_by,
+            created_at=credential.created_at,
+            updated_at=credential.updated_at,
+            fields=fields,
+        )

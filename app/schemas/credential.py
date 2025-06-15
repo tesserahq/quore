@@ -4,6 +4,7 @@ from uuid import UUID
 from datetime import datetime
 
 from app.constants.credentials import CredentialType
+from app.schemas.user import User
 
 
 class CredentialField(BaseModel):
@@ -58,12 +59,45 @@ class CredentialInfo(CredentialBase):
     """Schema for credential information (non-sensitive)."""
 
     id: UUID
-    created_by_id: UUID
+    created_by: User
     created_at: datetime
     updated_at: datetime
+    fields: Dict[str, Any] = {}  # Field values with sensitive ones obfuscated
 
     class Config:
         from_attributes = True
+
+    @classmethod
+    def from_orm(cls, obj):
+        """Custom from_orm to extract field values with sensitive ones obfuscated."""
+        # Get the base model data
+        data = super().from_orm(obj)
+
+        # Get the field definitions from the credential type
+        from app.core.credentials import credential_registry
+
+        type_info = credential_registry.get(obj.type)
+        if type_info:
+            # Get the decrypted fields
+            from app.services.credential import CredentialService
+            from app.db import get_db
+
+            db = next(get_db())
+            credential_service = CredentialService(db)
+            decrypted_fields = credential_service.get_credential_fields(obj.id)
+
+            if decrypted_fields:
+                # Include all fields, but obfuscate sensitive ones
+                data.fields = {
+                    field.name: (
+                        "[OBFUSCATED]"
+                        if field.input_type in ["password", "textarea"]
+                        else decrypted_fields.get(field.name)
+                    )
+                    for field in type_info.fields
+                }
+
+        return data
 
 
 # Example credential type models

@@ -80,7 +80,8 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
     app.include_router(status.router)
     app.include_router(llm.router)
     app.include_router(plugin.router)
-    app.include_router(credential.router)
+    app.include_router(credential.workspace_router)
+    app.include_router(credential.credential_router)
     app.include_router(assistant_router())
     app.include_router(system.router)
 

@@ -53,7 +53,7 @@ def test_list_credentials(client, setup_credential, setup_workspace):
     assert data["data"][0]["name"] == credential.name
     assert data["data"][0]["type"] == credential.type
     assert data["data"][0]["workspace_id"] == str(workspace.id)
-    assert data["data"][0]["created_by_id"] == str(credential.created_by_id)
+    assert data["data"][0]["created_by"]["id"] == str(credential.created_by_id)
 
 
 def test_get_credential(client, setup_credential, setup_workspace):
@@ -68,7 +68,7 @@ def test_get_credential(client, setup_credential, setup_workspace):
     assert data["name"] == credential.name
     assert data["type"] == credential.type
     assert data["workspace_id"] == str(workspace.id)
-    assert data["created_by_id"] == str(credential.created_by_id)
+    assert data["created_by"]["id"] == str(credential.created_by_id)
 
 
 def test_create_credential(client, setup_workspace, test_credential_data):
