@@ -114,7 +114,11 @@ def create_workspace_credential(
     credential = CredentialCreate(
         **credential_request.model_dump(), workspace_id=UUID(str(workspace.id))
     )
-    return CredentialService(db).create_credential(credential, current_user.id)
+    credential_service = CredentialService(db)
+    created_credential = credential_service.create_credential(
+        credential, current_user.id
+    )
+    return credential_service.to_credential_info(created_credential)
 
 
 @workspace_router.get("/{credential_id}", response_model=CredentialInfo)
@@ -187,3 +191,30 @@ def delete_credential(
     if not success:
         raise HTTPException(status_code=404, detail="Credential not found")
     return {"message": "Credential deleted successfully"}
+
+
+@credential_router.post(
+    "", response_model=CredentialInfo, status_code=status.HTTP_201_CREATED
+)
+def create_credential(
+    credential_request: CredentialCreateRequest,
+    workspace_id: UUID,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Create a new credential."""
+    # Check if user has access to the workspace
+    if not any(m.workspace_id == workspace_id for m in current_user.memberships):
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorized to create credentials in this workspace",
+        )
+
+    credential = CredentialCreate(
+        **credential_request.model_dump(), workspace_id=workspace_id
+    )
+    credential_service = CredentialService(db)
+    created_credential = credential_service.create_credential(
+        credential, current_user.id
+    )
+    return credential_service.to_credential_info(created_credential)
