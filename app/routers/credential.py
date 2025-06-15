@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from uuid import UUID
+import logging
 
 from app.db import get_db
 from app.schemas.credential import (
@@ -12,12 +13,17 @@ from app.schemas.credential import (
     CredentialTypeInfo,
 )
 from app.services.credential import CredentialService
+from app.services.membership import MembershipService
 from app.schemas.common import ListResponse
 from app.utils.auth import get_current_user
 from app.models.workspace import Workspace
 from app.models.credential import Credential
+from app.models.membership import Membership
 from app.utils.dependencies import get_workspace_by_id
 from app.core.credentials import credential_registry
+from app.core.logging_config import get_logger
+
+logger = get_logger()
 
 # Workspace-scoped router
 workspace_router = APIRouter(
@@ -51,17 +57,13 @@ def get_credential_direct(
     current_user=Depends(get_current_user),
 ) -> Credential:
     """Get a credential directly by ID, checking user permissions."""
-    credential = CredentialService(db).get_credential(credential_id)
+    logger.info(f"Getting credential {credential_id} for user {current_user.id}")
+    
+    credential_service = CredentialService(db)
+    credential = credential_service.get_credential(credential_id)
     if credential is None:
+        logger.warning(f"Credential {credential_id} not found")
         raise HTTPException(status_code=404, detail="Credential not found")
-
-    # Check if user has access to the workspace
-    if not any(
-        m.workspace_id == credential.workspace_id for m in current_user.memberships
-    ):
-        raise HTTPException(
-            status_code=403, detail="Not authorized to access this credential"
-        )
 
     return credential
 

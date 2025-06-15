@@ -1,6 +1,7 @@
 from typing import List, Optional, Dict, Any
 from uuid import UUID
 from sqlalchemy.orm import Session
+import logging
 
 from app.models.credential import Credential
 from app.schemas.credential import CredentialCreate, CredentialUpdate, CredentialInfo
@@ -11,6 +12,9 @@ from app.core.credentials import (
     decrypt_credential_fields,
     credential_registry,
 )
+from app.core.logging_config import get_logger
+
+logger = get_logger()
 
 
 class CredentialService:
@@ -19,7 +23,13 @@ class CredentialService:
 
     def get_credential(self, credential_id: UUID) -> Optional[Credential]:
         """Get a credential by its ID."""
-        return self.db.query(Credential).filter(Credential.id == credential_id).first()
+        logger.info(f"Looking up credential {credential_id}")
+        credential = self.db.query(Credential).filter(Credential.id == credential_id).first()
+        if credential:
+            logger.info(f"Found credential {credential_id} in workspace {credential.workspace_id}")
+        else:
+            logger.warning(f"Credential {credential_id} not found")
+        return credential
 
     def get_credentials(self, skip: int = 0, limit: int = 100) -> List[Credential]:
         """Get all credentials with pagination."""
