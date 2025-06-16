@@ -12,6 +12,7 @@ from app.core.credentials import (
     decrypt_credential_fields,
     credential_registry,
 )
+from app.constants.credentials import CredentialType
 from app.core.logging_config import get_logger
 
 logger = get_logger()
@@ -24,9 +25,13 @@ class CredentialService:
     def get_credential(self, credential_id: UUID) -> Optional[Credential]:
         """Get a credential by its ID."""
         logger.info(f"Looking up credential {credential_id}")
-        credential = self.db.query(Credential).filter(Credential.id == credential_id).first()
+        credential = (
+            self.db.query(Credential).filter(Credential.id == credential_id).first()
+        )
         if credential:
-            logger.info(f"Found credential {credential_id} in workspace {credential.workspace_id}")
+            logger.info(
+                f"Found credential {credential_id} in workspace {credential.workspace_id}"
+            )
         else:
             logger.warning(f"Credential {credential_id} not found")
         return credential
@@ -180,3 +185,74 @@ class CredentialService:
             updated_at=credential.updated_at,
             fields=fields,
         )
+
+    def apply_credentials(
+        self,
+        credential_id: UUID,
+        headers: Optional[Dict[str, str]] = None,
+    ) -> Dict[str, str]:
+        """
+        Apply credentials to headers based on the credential type.
+
+        Args:
+            credential_id: The UUID of the credential to apply
+            headers: Optional existing headers to merge with
+
+        Returns:
+            Dictionary of headers with authentication applied
+
+        Raises:
+            ValueError: If the credential type is not supported or required fields are missing
+        """
+        # Get the credential from the database
+        credential = self.get_credential(credential_id)
+        if not credential:
+            raise ValueError(f"Credential with ID {credential_id} not found")
+
+        # Get the decrypted fields
+        credential_fields = self.get_credential_fields(credential_id)
+        if not credential_fields:
+            raise ValueError(
+                f"Could not retrieve fields for credential {credential_id}"
+            )
+
+        if headers is None:
+            headers = {}
+
+        headers = headers.copy()  # Create a copy to avoid modifying the input
+
+        if credential.type == CredentialType.BEARER_AUTH:
+            if "token" not in credential_fields:
+                raise ValueError("Bearer auth requires a token field")
+            headers["Authorization"] = f"Bearer {credential_fields['token']}"
+
+        elif credential.type == CredentialType.BASIC_AUTH:
+            if (
+                "username" not in credential_fields
+                or "password" not in credential_fields
+            ):
+                raise ValueError(
+                    "Basic auth requires both username and password fields"
+                )
+            import base64
+
+            auth_str = (
+                f"{credential_fields['username']}:{credential_fields['password']}"
+            )
+            auth_bytes = auth_str.encode("ascii")
+            base64_bytes = base64.b64encode(auth_bytes)
+            headers["Authorization"] = f"Basic {base64_bytes.decode('ascii')}"
+
+        elif credential.type == CredentialType.GITHUB_PAT:
+            if "token" not in credential_fields:
+                raise ValueError("GitHub PAT requires a token field")
+            headers["Authorization"] = f"Bearer {credential_fields['token']}"
+
+        elif credential.type == CredentialType.GITLAB_PAT:
+            if "token" not in credential_fields:
+                raise ValueError("GitLab PAT requires a token field")
+            headers["Authorization"] = f"Bearer {credential_fields['token']}"
+
+        # SSH_KEY type is not applicable for HTTP headers
+
+        return headers

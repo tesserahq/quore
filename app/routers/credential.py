@@ -58,7 +58,7 @@ def get_credential_direct(
 ) -> Credential:
     """Get a credential directly by ID, checking user permissions."""
     logger.info(f"Getting credential {credential_id} for user {current_user.id}")
-    
+
     credential_service = CredentialService(db)
     credential = credential_service.get_credential(credential_id)
     if credential is None:

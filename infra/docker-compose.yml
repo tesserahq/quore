@@ -32,6 +32,11 @@ services:
     depends_on:
       - db
 
+  github-mcp-server:
+    image: mcp/github-mcp-server
+    pull_policy: always
+    env_file: ".github-mcp-server.env"
+
   estate-buddy-mcp-server:
     image: mustela/estate-buddy-mcp-server:main
     pull_policy: always

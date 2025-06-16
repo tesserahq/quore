@@ -7,3 +7,5 @@ class CredentialType(str, Enum):
     GITHUB_PAT = "github_pat"
     GITLAB_PAT = "gitlab_pat"
     SSH_KEY = "ssh_key"
+    BEARER_AUTH = "bearer_auth"
+    BASIC_AUTH = "basic_auth"

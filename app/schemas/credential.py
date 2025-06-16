@@ -140,3 +140,28 @@ class SSHKeyModel(BaseModel):
     passphrase: Optional[SecretStr] = Field(
         None, title="Key Passphrase", description="Passphrase for the SSH key"
     )
+
+
+class BearerAuthModel(BaseModel):
+    """Model for Bearer Authentication credentials."""
+
+    token: SecretStr = Field(
+        ...,
+        title="Bearer Token",
+        description="Bearer token for API authentication",
+    )
+
+
+class BasicAuthModel(BaseModel):
+    """Model for Basic Authentication credentials."""
+
+    username: str = Field(
+        ...,
+        title="Username",
+        description="Username for basic authentication",
+    )
+    password: SecretStr = Field(
+        ...,
+        title="Password",
+        description="Password for basic authentication",
+    )
