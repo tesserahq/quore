@@ -66,8 +66,15 @@ def mock_mcp_client():
 
         # Set up the async context manager
         mock_client.return_value = AsyncMock()
-        mock_client.return_value.__aenter__ = AsyncMock(return_value=mock_instance)
+        mock_client.return_value.__aenter__.return_value = mock_instance
         mock_client.return_value.__aexit__ = AsyncMock()
+
+        # Make the mock accept any arguments and return the same instance
+        def create_mock(*args, **kwargs):
+            print(f"MCPClient called with args: {args}, kwargs: {kwargs}")
+            return mock_client.return_value
+
+        mock_client.side_effect = create_mock
 
         yield mock_client
 
@@ -76,11 +83,14 @@ def mock_mcp_client():
 class TestPluginManager:
     async def test_refresh_success(self, db, setup_plugin, mock_mcp_client):
         """Test successful plugin refresh."""
+        print(f"Initial plugin state: {setup_plugin.state}")
         plugin_manager = PluginManager(db, setup_plugin.id)
         await plugin_manager.refresh()
 
         # Verify plugin was updated
         updated_plugin = PluginService(db).get_plugin(setup_plugin.id)
+        print(f"Updated plugin state: {updated_plugin.state}")
+        print(f"Updated plugin state description: {updated_plugin.state_description}")
         assert updated_plugin.state == PluginState.RUNNING
         assert [Tool(**tool) for tool in updated_plugin.tools] == SAMPLE_TOOLS
         assert [

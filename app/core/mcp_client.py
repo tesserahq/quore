@@ -1,18 +1,21 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from fastmcp import Client as FastMCPClient
 
 
 class MCPClient:
     """A wrapper around the FastMCP client to provide a clean interface and allow for future implementation changes."""
 
-    def __init__(self, endpoint_url: str):
+    def __init__(self, endpoint_url: str, headers: Optional[Dict[str, str]] = None):
         """Initialize the MCP client with the given endpoint URL.
 
         Args:
             endpoint_url (str): The URL of the MCP server endpoint
+            headers (Optional[Dict[str, str]]): Optional headers to pass to the client
         """
         self.endpoint_url = endpoint_url
-        self._client = FastMCPClient(endpoint_url)
+        self._client: FastMCPClient = FastMCPClient(
+            endpoint_url, auth=headers.get("Authorization") if headers else None
+        )
 
     async def __aenter__(self):
         """Context manager entry."""

@@ -35,7 +35,15 @@ class PluginManager:
     async def refresh(self) -> Plugin:
         """Refresh and update all plugin components (tools, resources, prompts) from the MCP server."""
         try:
-            async with MCPClient(str(self.plugin.endpoint_url)) as client:
+            # Apply credentials to the plugin
+            headers = None
+            if self.plugin.credential_id:
+                headers = self.credential_service.apply_credentials(
+                    cast(UUID, self.plugin.credential_id)
+                )
+            async with MCPClient(
+                str(self.plugin.endpoint_url), headers=headers
+            ) as client:
                 tools = await client.list_tools()
                 resources = await client.list_resources()
                 prompts = await client.list_prompts()
