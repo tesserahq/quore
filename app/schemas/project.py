@@ -139,3 +139,16 @@ class NodeResponse(BaseModel):
 
 class NodeListResponse(BaseModel):
     data: List[NodeResponse] = Field(..., description="List of nodes in the project")
+
+
+class EnablePluginRequest(BaseModel):
+    is_enabled: bool = Field(..., description="Whether the plugin is enabled")
+    tools: Optional[List[Dict[str, Any]]] = Field(
+        None, description="Optional list of tools to enable"
+    )
+    resources: Optional[List[Dict[str, Any]]] = Field(
+        None, description="Optional list of resources to enable"
+    )
+    prompts: Optional[List[Dict[str, Any]]] = Field(
+        None, description="Optional list of prompts to enable"
+    )

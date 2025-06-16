@@ -17,9 +17,9 @@ class ProjectPlugin(Base, TimestampMixin):
     plugin_id = Column(UUID(as_uuid=True), ForeignKey("plugins.id"), nullable=False)
     is_enabled = Column(Boolean, default=True)
     config = Column(JSONB, nullable=True)  # Project-specific plugin configuration
-    tools = Column(JSONB, nullable=True)
-    resources = Column(JSONB, nullable=True)
-    prompts = Column(JSONB, nullable=True)
+    tools = Column(JSONB, nullable=True, server_default="[]")
+    resources = Column(JSONB, nullable=True, server_default="[]")
+    prompts = Column(JSONB, nullable=True, server_default="[]")
 
     # Unique constraint to ensure a plugin can only be installed once per project
     __table_args__ = (

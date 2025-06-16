@@ -121,6 +121,8 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.Column("tools", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column("resources", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column("prompts", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.ForeignKeyConstraint(
             ["plugin_id"],
             ["plugins.id"],

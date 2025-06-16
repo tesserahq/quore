@@ -13,6 +13,7 @@ from app.schemas.plugin import (
     PluginUpdate,
     PluginStatesResponse,
 )
+from app.schemas.project import EnablePluginRequest
 from app.services.plugin import PluginService
 from app.schemas.common import ListResponse
 from app.models.workspace import Workspace
@@ -23,7 +24,7 @@ from app.utils.dependencies import (
     get_plugin_by_id,
 )
 from app.core.mcp_client import MCPClient
-from app.constants.plugin_states import PluginState
+from app.constants.plugin_states import PluginState, PLUGIN_STATE_DESCRIPTIONS
 from app.core.plugin_manager.manager import PluginManager
 
 router = APIRouter(tags=["plugins"])
@@ -65,20 +66,38 @@ def list_project_plugins(
     return ListResponse(data=plugins)
 
 
-@router.post(
-    "/projects/{project_id}/plugins/{plugin_id}", response_model=PluginResponse
-)
+@router.put("/projects/{project_id}/plugins/{plugin_id}", response_model=PluginResponse)
 def enable_project_plugin(
+    plugin_data: EnablePluginRequest,
     project: Project = Depends(get_project_by_id),
     plugin: Plugin = Depends(get_plugin_by_id),
-    config: Optional[Dict[str, Any]] = None,
     db: Session = Depends(get_db),
 ):
     """Enable a plugin in a project."""
     service = PluginService(db)
     service.enable_plugin_in_project(
-        UUID(str(project.id)), UUID(str(plugin.id)), config
+        UUID(str(project.id)), UUID(str(plugin.id)), **plugin_data.model_dump()
     )
+    return service.get_plugin(UUID(str(plugin.id)))
+
+
+@router.get("/plugins/states", response_model=PluginStatesResponse)
+def list_plugin_states():
+    """Get a list of all available plugin states with their descriptions."""
+    states = [
+        {"value": state.value, "description": PLUGIN_STATE_DESCRIPTIONS[state.value]}
+        for state in PluginState
+    ]
+    return PluginStatesResponse(states=states)
+
+
+@router.get("/plugins/{plugin_id}", response_model=PluginResponse)
+def get_plugin(
+    plugin: Plugin = Depends(get_plugin_by_id),
+    db: Session = Depends(get_db),
+):
+    """Get a single plugin by ID."""
+    service = PluginService(db)
     return service.get_plugin(UUID(str(plugin.id)))
 
 
@@ -141,16 +160,6 @@ async def inspect_resources_plugin(
 
     async with MCPClient(plugin.endpoint_url) as client:
         return await client.list_resources()
-
-
-@router.get("/plugins/states", response_model=PluginStatesResponse)
-def list_plugin_states():
-    """Get a list of all available plugin states with their descriptions."""
-    states = [
-        {"value": state.value, "description": state.__doc__ or state.value}
-        for state in PluginState
-    ]
-    return PluginStatesResponse(states=states)
 
 
 @router.delete("/plugins/{plugin_id}")

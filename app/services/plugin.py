@@ -68,7 +68,13 @@ class PluginService:
 
     # Project Plugin Management
     def enable_plugin_in_project(
-        self, project_id: UUID, plugin_id: UUID, config: Optional[Dict[str, Any]] = None
+        self,
+        project_id: UUID,
+        plugin_id: UUID,
+        is_enabled: bool,
+        tools: List[Dict[str, Any]],
+        resources: List[Dict[str, Any]],
+        prompts: List[Dict[str, Any]],
     ) -> ProjectPlugin:
         """
         Enable a plugin in a project.
@@ -86,9 +92,13 @@ class PluginService:
 
         if project_plugin:
             # Update existing plugin
-            project_plugin.is_enabled = True
-            if config is not None:
-                project_plugin.config = config
+            project_plugin.is_enabled = is_enabled
+            if tools is not None:
+                project_plugin.tools = tools
+            if resources is not None:
+                project_plugin.resources = resources
+            if prompts is not None:
+                project_plugin.prompts = prompts
             self.db.commit()
             self.db.refresh(project_plugin)
             return project_plugin
@@ -97,8 +107,10 @@ class PluginService:
         project_plugin = ProjectPlugin(
             project_id=project_id,
             plugin_id=plugin_id,
-            is_enabled=True,
-            config=config or {},
+            is_enabled=is_enabled,
+            tools=tools or [],
+            resources=resources or [],
+            prompts=prompts or [],
         )
         self.db.add(project_plugin)
         self.db.commit()
@@ -142,7 +154,12 @@ class PluginService:
         enabled_plugin_ids = {pp.plugin_id for pp in project_plugins}
         return [p for p in workspace_plugins if p.id in enabled_plugin_ids]
 
-    def get_project_tools(self, project_id: UUID) -> Any:
+    def get_project_tools(self, project_id: UUID) -> List[Dict[str, Any]]:
         """Get all enabled plugins for a project."""
         plugins = self.get_project_plugins(project_id)
-        return [p.tools for p in plugins]
+        # Flatten the list of tools from all plugins, handling None values
+        all_tools: List[Dict[str, Any]] = []
+        for plugin in plugins:
+            if plugin.tools is not None:
+                all_tools.extend(plugin.tools)
+        return all_tools
