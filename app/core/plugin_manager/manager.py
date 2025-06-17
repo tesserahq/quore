@@ -12,13 +12,21 @@ from app.constants.plugin_states import PluginState
 class PluginManager:
     """Manages plugin lifecycle including downloading, inspecting, starting, and stopping."""
 
-    def __init__(self, db: Session, plugin_id: UUID):
+    def __init__(
+        self,
+        db: Session,
+        plugin_id: Optional[UUID] = None,
+        plugin: Optional[Plugin] = None,
+    ):
         """Initialize the plugin manager with a database session and plugin ID."""
         self.db = db
         from app.services.plugin import PluginService
 
         self.plugin_service = PluginService(db)
-        self.plugin = self.plugin_service.get_plugin(plugin_id)
+        if plugin_id:
+            self.plugin = self.plugin_service.get_plugin(plugin_id)
+        elif plugin:
+            self.plugin = plugin
 
         # Initialize services
         self.credential_service = CredentialService(db)
@@ -32,21 +40,31 @@ class PluginManager:
             cast(UUID, self.plugin.credential_id)
         )
 
+    async def _build_mcp_client(self) -> MCPClient:
+        """Build and return an MCP client with appropriate credentials."""
+        headers = None
+        if self.plugin.credential_id:
+            headers = self.credential_service.apply_credentials(
+                cast(UUID, self.plugin.credential_id)
+            )
+
+        return MCPClient(str(self.plugin.endpoint_url), headers=headers)
+
     async def refresh(self) -> Plugin:
         """Refresh and update all plugin components (tools, resources, prompts) from the MCP server."""
         try:
-            # Apply credentials to the plugin
-            headers = None
-            if self.plugin.credential_id:
-                headers = self.credential_service.apply_credentials(
-                    cast(UUID, self.plugin.credential_id)
-                )
-            async with MCPClient(
-                str(self.plugin.endpoint_url), headers=headers
-            ) as client:
-                tools = await client.list_tools()
-                resources = await client.list_resources()
-                prompts = await client.list_prompts()
+            async with await self._build_mcp_client() as client:
+                tools = []
+                if client.tools_enabled():
+                    tools = await client.list_tools()
+
+                resources = []
+                if client.resource_enabled():
+                    resources = await client.list_resources()
+
+                prompts = []
+                if client.prompt_enabled():
+                    prompts = await client.list_prompts()
 
             # Convert Tool objects to dictionaries
             tools_dicts = [tool.__dict__ for tool in tools]
@@ -57,10 +75,10 @@ class PluginManager:
                 cast(UUID, self.plugin.id),
                 PluginUpdate(
                     name=str(self.plugin.name),
+                    state=PluginState.RUNNING,
                     tools=tools_dicts,
                     resources=resources_dicts,
                     prompts=prompts_dicts,
-                    state=PluginState.RUNNING,
                     state_description="Plugin components refreshed successfully",
                 ),
             )
@@ -69,7 +87,21 @@ class PluginManager:
                 cast(UUID, self.plugin.id),
                 PluginUpdate(
                     name=str(self.plugin.name),
-                    state=PluginState.ERROR,
                     state_description=f"Failed to refresh plugin components: {str(e)}",
                 ),
             )
+
+    async def get_tools(self):
+        """Get the tools for the plugin."""
+        async with await self._build_mcp_client() as client:
+            return await client.list_tools()
+
+    async def get_resources(self):
+        """Get the resources for the plugin."""
+        async with await self._build_mcp_client() as client:
+            return await client.list_resources()
+
+    async def get_prompts(self):
+        """Get the prompts for the plugin."""
+        async with await self._build_mcp_client() as client:
+            return await client.list_prompts()

@@ -107,7 +107,9 @@ def test_list_project_plugins(client, db, setup_project, setup_plugin):
     project = setup_project
     plugin = setup_plugin
     # Enable the plugin in the project
-    PluginService(db).enable_plugin_in_project(project.id, plugin.id)
+    PluginService(db).enable_plugin_in_project(
+        project.id, plugin.id, is_enabled=True, tools=[], resources=[], prompts=[]
+    )
 
     response = client.get(f"/projects/{project.id}/plugins")
     assert response.status_code == 200
@@ -126,10 +128,9 @@ def test_enable_project_plugin(
     workspace = setup_workspace
     project = setup_project
     plugin = setup_plugin
-    config = {"setting": "value"}
-    response = client.post(
+    response = client.put(
         f"/projects/{project.id}/plugins/{plugin.id}",
-        json={"config": config},
+        json={"is_enabled": True, "tools": [], "resources": [], "prompts": []},
     )
     assert response.status_code == 200
     data = response.json()
@@ -148,7 +149,6 @@ def test_enable_project_plugin(
     )
     assert project_plugin is not None
     assert project_plugin.is_enabled is True
-    assert project_plugin.config == {"config": config}
 
 
 def test_inspect_tools_plugin_success(
@@ -176,16 +176,31 @@ def test_list_plugin_states(client: TestClient):
     assert "states" in data
     assert isinstance(data["states"], list)
 
+    # Verify each state from the enum is present
+    expected_states = {
+        "registered": "Plugin is registered but not yet started",
+        "initializing": "Plugin is being initialized (cloning, setup, etc.)",
+        "starting": "Plugin is in the process of starting up",
+        "running": "Plugin is running and ready to accept requests",
+        "stopped": "Plugin was stopped (either manually or due to error)",
+        "error": "Plugin encountered an error during startup or runtime",
+        "idle": "Plugin is running but hasn't been used for a while",
+    }
+
     # Convert response to a dict for easier comparison
     states_dict = {state["value"]: state["description"] for state in data["states"]}
 
-    # Verify each state from the enum is present with correct description
-    for state in PluginState:
-        assert state.value in states_dict
-        assert states_dict[state.value] == (state.__doc__ or state.value)
+    # Verify each expected state is present with correct description
+    for state_value, expected_description in expected_states.items():
+        assert state_value in states_dict, f"State {state_value} not found in response"
+        assert (
+            states_dict[state_value] == expected_description
+        ), f"Description for state {state_value} does not match. Expected: {expected_description}, Got: {states_dict[state_value]}"
 
     # Verify no extra states were added
-    assert len(states_dict) == len(PluginState)
+    assert len(states_dict) == len(
+        expected_states
+    ), f"Expected {len(expected_states)} states, got {len(states_dict)}"
 
 
 def test_delete_plugin(client, db, setup_plugin):
