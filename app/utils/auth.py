@@ -89,10 +89,10 @@ class VerifyToken:
 
         # Extract user ID from JWT payload
         user_id = payload["sub"]
-        
+
         # User not in cache or cache was invalid, check database
         user = self.user_service.get_user_by_external_id(user_id)
-        
+
         if user:
             # User exists in database, cache the existence
             return user
