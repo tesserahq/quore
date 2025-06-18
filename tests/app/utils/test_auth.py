@@ -34,6 +34,7 @@ def test_verify_token_success(verifier, mock_jwks_client):
     with patch("app.utils.auth.UserService") as mock_user_service_class:
         mock_user_service = Mock()
         mock_user_service_class.return_value = mock_user_service
+
         # Mock JWT decode
         mock_payload = {"sub": MOCK_USER_ID}
         with patch("jwt.decode", return_value=mock_payload):
@@ -77,6 +78,7 @@ def test_verify_token_new_user(verifier, mock_jwks_client):
     with patch("app.utils.auth.UserService") as mock_user_service_class:
         mock_user_service = Mock()
         mock_user_service_class.return_value = mock_user_service
+
         # Mock JWT decode
         mock_payload = {"sub": MOCK_USER_ID}
         with patch("jwt.decode", return_value=mock_payload):
@@ -144,9 +146,13 @@ def test_verify_token_userinfo_failure(verifier, mock_jwks_client):
     with patch("app.utils.auth.UserService") as mock_user_service_class:
         mock_user_service = Mock()
         mock_user_service_class.return_value = mock_user_service
+
         # Mock JWT decode
         mock_payload = {"sub": MOCK_USER_ID}
         with patch("jwt.decode", return_value=mock_payload):
+            # Mock user service to return None (user doesn't exist)
+            mock_user_service.get_user_by_external_id.return_value = None
+
             # Mock failed userinfo response
             with patch("requests.get") as mock_get:
                 mock_response = Mock()

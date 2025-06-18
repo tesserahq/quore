@@ -87,11 +87,20 @@ class VerifyToken:
         except Exception as error:
             raise UnauthorizedException(str(error))
 
-        # Call the helper function to fetch user info and handle onboarding
-        userinfo = self.fetch_user_info_from_oidc(token)
-        user = self.handle_user_onboarding(payload, userinfo)
+        # Extract user ID from JWT payload
+        user_id = payload["sub"]
 
-        return user
+        # User not in cache or cache was invalid, check database
+        user = self.user_service.get_user_by_external_id(user_id)
+
+        if user:
+            # User exists in database, cache the existence
+            return user
+        else:
+            # User doesn't exist, cache the non-existence and fetch from OIDC
+            userinfo = self.fetch_user_info_from_oidc(token)
+            user = self.handle_user_onboarding(payload, userinfo)
+            return user
 
     def fetch_user_info_from_oidc(self, access_token: str) -> dict:
         """Fetch user information from the oidc userinfo endpoint."""
@@ -116,19 +125,15 @@ class VerifyToken:
         last_name = name[1]
         avatar_url = userinfo.get("picture")
 
-        # Check if the user exists locally
-        user = self.user_service.get_user_by_external_id(user_id)
-
-        if not user:
-            # Onboard the user locally
-            user = self.user_service.onboard_user(
-                UserOnboard(
-                    external_id=user_id,
-                    email=email,
-                    first_name=first_name,
-                    last_name=last_name,
-                    avatar_url=avatar_url,
-                )
+        # Onboard the user locally
+        user = self.user_service.onboard_user(
+            UserOnboard(
+                external_id=user_id,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                avatar_url=avatar_url,
             )
+        )
 
         return user
