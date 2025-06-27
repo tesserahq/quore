@@ -48,7 +48,7 @@ class StorageManager:
             port=self.settings.database_url_obj.port,
             user=self.settings.database_url_obj.username,
             table_name=project.vector_index_name(),
-            embed_dim=ingest_settings.embed_dim,
+            embed_dim=project.embed_dim,
             hybrid_search=True,
             hnsw_kwargs={
                 "hnsw_m": ingest_settings.hnsw_m,

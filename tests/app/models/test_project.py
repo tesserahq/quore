@@ -13,11 +13,11 @@ def test_project_default_attributes():
     # Verify default attributes are set correctly
     assert project.llm_provider == settings.default_llm_provider
     assert project.embed_model == settings.default_embed_model
+    assert project.embed_dim == settings.default_embed_dim
     assert project.llm == settings.default_llm
 
     # Verify ingest settings are set with defaults
     assert project.ingest_settings["data_dir"] == settings.default_data_dir
-    assert project.ingest_settings["embed_dim"] == settings.default_embed_dim
     assert project.ingest_settings["hnsw_m"] == settings.default_hnsw_m
     assert (
         project.ingest_settings["hnsw_ef_construction"]
@@ -33,7 +33,6 @@ def test_project_custom_ingest_settings():
     # Create a project with custom ingest settings
     custom_settings = {
         "data_dir": "/custom/path",
-        "embed_dim": 512,
         "hnsw_m": 32,
         "hnsw_ef_construction": 200,
         "hnsw_ef_search": 100,
@@ -48,7 +47,6 @@ def test_project_custom_ingest_settings():
 
     # Verify custom settings are preserved
     assert project.ingest_settings["data_dir"] == "/custom/path"
-    assert project.ingest_settings["embed_dim"] == 512
     assert project.ingest_settings["hnsw_m"] == 32
     assert project.ingest_settings["hnsw_ef_construction"] == 200
     assert project.ingest_settings["hnsw_ef_search"] == 100

@@ -13,10 +13,6 @@ def test_index_manager_initialization(db, setup_project):
     assert (
         index_manager.ingest_settings.data_dir == project.ingest_settings_obj().data_dir
     )
-    assert (
-        index_manager.ingest_settings.embed_dim
-        == project.ingest_settings_obj().embed_dim
-    )
     assert index_manager.ingest_settings.hnsw_m == project.ingest_settings_obj().hnsw_m
     assert (
         index_manager.ingest_settings.hnsw_ef_construction
@@ -160,9 +156,9 @@ def test_llm_api_key_without_project_key(db, setup_project):
     """Test getting the LLM API key when project has no key."""
     project = setup_project
     project.llm_provider = "openai"  # Ensure we're using OpenAI provider
+    project.embed_dim = 1536
     project.ingest_settings = {
         "data_dir": project.ingest_settings.get("data_dir", ""),
-        "embed_dim": project.ingest_settings.get("embed_dim", 1536),
         "hnsw_m": project.ingest_settings.get("hnsw_m", 16),
         "hnsw_ef_construction": project.ingest_settings.get(
             "hnsw_ef_construction", 200

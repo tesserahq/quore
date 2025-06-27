@@ -22,13 +22,13 @@ services:
     depends_on:
       - db
 
-  estate-buddy-api:
-    image: mustela/estate-buddy-api:main
+  linden-api:
+    image: mustela/linden-api:main
     pull_policy: always
     environment:
-      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/estate_buddy
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/linden
       - REDIS_URL=redis://redis:6379/0
-    env_file: ".estate-buddy.env"
+    env_file: ".linden.env"
     depends_on:
       - db
 
@@ -81,7 +81,7 @@ services:
     depends_on:
       - quore-portal
       - quore-api
-      - estate-buddy-api
+      - linden-api
   db:
     image: pgvector/pgvector:pg17
     env_file: ".env"

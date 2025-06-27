@@ -1,5 +1,5 @@
 from app.models.mixins import TimestampMixin
-from sqlalchemy import Column, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy_json import mutable_json_type
@@ -17,8 +17,6 @@ class IngestSettings:
     # Map keys to their expected types
     _schema = {
         "data_dir": str,
-        "llm": str,
-        "embed_dim": int,
         "hnsw_m": int,
         "hnsw_ef_construction": int,
         "hnsw_ef_search": int,
@@ -80,6 +78,7 @@ class Project(Base, TimestampMixin):
     logo = Column(String, nullable=True)  # We'll handle file uploads separately
     llm_provider = Column(String, nullable=False)
     embed_model = Column(String, nullable=False)
+    embed_dim = Column(Integer, nullable=False)
     system_prompt = Column(String, nullable=True)
     llm = Column(String, nullable=False)
     workspace_id = Column(
@@ -111,7 +110,6 @@ class Project(Base, TimestampMixin):
 
         default_ingest = {
             "data_dir": settings.default_data_dir,
-            "embed_dim": settings.default_embed_dim,
             "hnsw_m": settings.default_hnsw_m,
             "hnsw_ef_construction": settings.default_hnsw_ef_construction,
             "hnsw_ef_search": settings.default_hnsw_ef_search,
@@ -127,5 +125,6 @@ class Project(Base, TimestampMixin):
         kwargs.setdefault("ingest_settings", ingest_data)
         kwargs.setdefault("llm_provider", settings.default_llm_provider)
         kwargs.setdefault("embed_model", settings.default_embed_model)
+        kwargs.setdefault("embed_dim", settings.default_embed_dim)
         kwargs.setdefault("llm", settings.default_llm)
         super().__init__(**kwargs)

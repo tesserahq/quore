@@ -15,6 +15,7 @@ def setup_project(db: Session, setup_workspace, faker):
         "workspace_id": workspace.id,
         "llm_provider": MOCK_PROVIDER,
         "embed_model": "mock",
+        "embed_dim": 1536,
         "llm": "mock",
     }
 

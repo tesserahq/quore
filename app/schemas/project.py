@@ -9,7 +9,6 @@ from app.config import get_settings
 
 class IngestSettings(BaseModel):
     data_dir: str = Field(..., description="Directory path for data storage.")
-    embed_dim: int = Field(..., description="Dimension of the embedding vectors.")
     hnsw_m: int = Field(
         ...,
         description="HNSW graph M parameter for approximate nearest neighbor search.",
@@ -50,6 +49,10 @@ class ProjectBase(BaseModel):
     embed_model: str = Field(
         default_factory=lambda: get_settings().default_embed_model,
         description="The embedding model to use for vector embeddings. Defaults to the system's default embedding model.",
+    )
+    embed_dim: int = Field(
+        default_factory=lambda: get_settings().default_embed_dim,
+        description="The dimension of the embedding vectors. Defaults to the system's default embedding dimension.",
     )
     llm: str = Field(
         default_factory=lambda: get_settings().default_llm,

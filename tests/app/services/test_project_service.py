@@ -19,6 +19,7 @@ def test_create_project(db: Session, setup_workspace):
         description="My first project",
         llm_provider=MOCK_PROVIDER,
         embed_model="mock",
+        embed_dim=1536,
         llm="mock",
     )
 
@@ -31,6 +32,7 @@ def test_create_project(db: Session, setup_workspace):
     assert project.ingest_settings is not None
     assert project.llm_provider == MOCK_PROVIDER
     assert project.embed_model == "mock"
+    assert project.embed_dim == 1536
     assert project.llm == "mock"
 
     ingest_settings_obj = project.ingest_settings_obj()
@@ -42,7 +44,6 @@ def test_create_project(db: Session, setup_workspace):
     )
     assert ingest_settings_obj.hnsw_ef_search == settings.default_hnsw_ef_search
     assert ingest_settings_obj.hnsw_dist_method == settings.default_hnsw_dist_method
-    assert isinstance(ingest_settings_obj.embed_dim, int)
 
     inspector = inspect(db.get_bind())
     assert inspector.has_table(project.vector_llama_index_name())

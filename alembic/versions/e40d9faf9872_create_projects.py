@@ -46,6 +46,7 @@ def upgrade() -> None:
         sa.Column("llm_provider", sa.String(), nullable=False),
         sa.Column("llm", sa.String(), nullable=False),
         sa.Column("embed_model", sa.String(), nullable=False),
+        sa.Column("embed_dim", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(
             ["workspace_id"],
             ["workspaces.id"],
