@@ -12,6 +12,7 @@ from llama_index.core.agent.workflow import AgentWorkflow
 from app.core.logging_config import get_logger
 from app.plugins.datetime import get_tools as get_datetime_tools
 from app.plugins.debug import get_tools as get_debug_tools
+from app.plugins.accounts import get_tools as get_account_tools
 from app.services.plugin import PluginService
 from llama_index.core.tools import FunctionTool
 from llama_index.core.tools.types import DefaultToolFnSchema
@@ -64,7 +65,7 @@ class WorkflowManager:
         )
 
     def system_tools(self):
-        return [*get_datetime_tools(), *get_debug_tools()]
+        return [*get_datetime_tools(), *get_debug_tools(), *get_account_tools()]
 
     def enabled_plugins(self):
         plugin_service = PluginService(self.db_session)
