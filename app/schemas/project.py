@@ -65,7 +65,7 @@ class ProjectCreate(ProjectBase):
 
 
 class ProjectUpdate(BaseModel):
-    name: Optional[str] = Field(None, max_length=100)
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
     ingest_settings: Optional[Dict[str, Any]] = None
 

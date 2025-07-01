@@ -44,6 +44,40 @@ def test_create_workspace(client, setup_user):
     assert workspace["created_by_id"] == str(user.id)
 
 
+def test_create_workspace_invalid_data(client, setup_user):
+    """Test POST /workspaces endpoint with invalid data."""
+    invalid_workspace_data = {
+        "name": "",  # Empty name should be invalid
+        "description": "A test workspace description",
+    }
+
+    response = client.post("/workspaces", json=invalid_workspace_data)
+    assert response.status_code == 422  # Validation error
+
+
+def test_create_workspace_missing_name(client, setup_user):
+    """Test POST /workspaces endpoint with missing name field."""
+    invalid_workspace_data = {
+        "description": "A test workspace description",
+        # Missing 'name' field
+    }
+
+    response = client.post("/workspaces", json=invalid_workspace_data)
+    assert response.status_code == 422  # Validation error
+
+
+def test_update_workspace_invalid_data(client, setup_workspace):
+    """Test PUT /workspaces/{workspace_id} endpoint with invalid data."""
+    workspace = setup_workspace
+    invalid_update_data = {
+        "name": "",  # Empty name should be invalid
+        "description": "Updated description",
+    }
+
+    response = client.put(f"/workspaces/{workspace.id}", json=invalid_update_data)
+    assert response.status_code == 422  # Validation error
+
+
 def test_delete_workspace(client, setup_workspace):
     """Test DELETE /workspaces/{workspace_id} endpoint."""
     workspace = setup_workspace

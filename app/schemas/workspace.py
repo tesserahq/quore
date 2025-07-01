@@ -31,8 +31,8 @@ class WorkspaceCreate(WorkspaceBase):
 class WorkspaceUpdate(BaseModel):
     """Schema for updating an existing workspace. All fields are optional."""
 
-    name: Optional[str] = Field(None, max_length=50)
-    """Updated workspace name. Must be between 1 and 50 characters if provided."""
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    """Updated workspace name. Must be between 1 and 100 characters if provided."""
 
     description: Optional[str] = None
     """Updated workspace description."""
