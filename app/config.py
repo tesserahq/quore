@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     otel_exporter_otlp_endpoint: str = "http://localhost:4318"
     otel_service_name: str = "quore"
     default_data_dir: str = "data"
+    default_vision_llm_provider: str = "openai"
     default_llm_provider: str = "openai"
     default_llm: str = "gpt-4o"
     default_embed_model: str = "text-embedding-3-small"
@@ -41,6 +42,10 @@ class Settings(BaseSettings):
     default_hnsw_ef_search: int = 40
     default_hnsw_dist_method: str = "vector_cosine_ops"
     default_system_prompt: str = "You are a helpful assistant."
+    default_vision_model: str = "gpt-4.1-mini"
+    default_vision_analysis_prompt: str = (
+        "Please analyze this image and provide a comprehensive description including: 1. What you see in the image 2. Any text or objects that are visible 3. The overall context or setting 4. Any notable details or patterns 5. Potential use cases or applications Be detailed but concise in your analysis."
+    )
     openai_api_key: str = Field(default="", json_schema_extra={"env": "ENV"})
     redis_host: str = Field(
         default="localhost", json_schema_extra={"env": "REDIS_HOST"}

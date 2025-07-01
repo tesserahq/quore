@@ -78,6 +78,9 @@ class Project(Base, TimestampMixin):
     logo = Column(String, nullable=True)  # We'll handle file uploads separately
     llm_provider = Column(String, nullable=False)
     embed_model = Column(String, nullable=False)
+    vision_llm_provider = Column(String, nullable=True)
+    vision_model = Column(String, nullable=True)
+    vision_analysis_prompt = Column(String, nullable=True)
     embed_dim = Column(Integer, nullable=False)
     system_prompt = Column(String, nullable=True)
     llm = Column(String, nullable=False)

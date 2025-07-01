@@ -94,7 +94,6 @@ def get_datetime(tz_name="UTC") -> str:
     return current_time.strftime("%Y-%m-%d %H:%M:%S")
 
 
-@plugin_app.tool()
 def get_current_unix_timestamp() -> float:
     """
     Return the current Unix timestamp.

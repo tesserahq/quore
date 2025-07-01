@@ -12,6 +12,7 @@ from llama_index.core.agent.workflow import AgentWorkflow
 from app.core.logging_config import get_logger
 from app.plugins.datetime import get_tools as get_datetime_tools
 from app.plugins.debug import get_tools as get_debug_tools
+from app.plugins.vision import get_tools as get_vision_tools
 from app.services.plugin import PluginService
 from llama_index.core.tools import FunctionTool
 from llama_index.core.tools.types import DefaultToolFnSchema
@@ -64,7 +65,11 @@ class WorkflowManager:
         )
 
     def system_tools(self):
-        return [*get_datetime_tools(), *get_debug_tools()]
+        return [
+            *get_datetime_tools(),
+            *get_debug_tools(),
+            *get_vision_tools(self.project),
+        ]
 
     def enabled_plugins(self):
         plugin_service = PluginService(self.db_session)
@@ -96,7 +101,7 @@ class WorkflowManager:
             function_tools = [self._convert_to_function_tool(tool) for tool in tools]
             enabled_tools.extend(function_tools)
         # TODO: Add system tools: why *self.system_tools(),  are not working?
-        return [*enabled_tools]
+        return [*get_vision_tools(self.project), *enabled_tools]
 
     # async def get_tools(self):
     #     return [*self.system_tools(), *(await self.estate_buddy_mcp_tools())]
