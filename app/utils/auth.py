@@ -120,11 +120,13 @@ class VerifyToken:
         """Onboard the user locally using the userinfo data."""
         user_id = payload["sub"]
         email = userinfo.get("email")
-        
+
         # Safe name parsing with proper fallbacks
         full_name = userinfo.get("name", "Unknown Unknown")
-        name_parts = full_name.strip().split(" ") if full_name else ["Unknown", "Unknown"]
-        
+        name_parts = (
+            full_name.strip().split(" ") if full_name else ["Unknown", "Unknown"]
+        )
+
         # Handle single names or empty names gracefully
         if len(name_parts) == 0:
             first_name = "Unknown"
@@ -135,7 +137,7 @@ class VerifyToken:
         else:
             first_name = name_parts[0]
             last_name = " ".join(name_parts[1:])  # Join remaining parts as last name
-            
+
         avatar_url = userinfo.get("picture")
 
         # Onboard the user locally

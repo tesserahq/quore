@@ -68,8 +68,12 @@ def get_credential_direct(
     # Check if user has access to the workspace containing this credential
     user_workspace_ids = [m.workspace_id for m in current_user.memberships]
     if credential.workspace_id not in user_workspace_ids:
-        logger.warning(f"User {current_user.id} attempted to access credential {credential_id} from unauthorized workspace {credential.workspace_id}")
-        raise HTTPException(status_code=403, detail="Not authorized to access this credential")
+        logger.warning(
+            f"User {current_user.id} attempted to access credential {credential_id} from unauthorized workspace {credential.workspace_id}"
+        )
+        raise HTTPException(
+            status_code=403, detail="Not authorized to access this credential"
+        )
 
     return credential
 

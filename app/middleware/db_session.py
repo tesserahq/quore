@@ -10,7 +10,7 @@ class DBSessionMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         db_session = SessionLocal()
         request.state.db_session = db_session
-        
+
         try:
             response = await call_next(request)
             # Commit any pending transactions on successful request
