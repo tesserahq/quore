@@ -103,7 +103,7 @@ def get_embedding_models(provider_name: str, include_mock: bool = False) -> list
                 "default": True,
                 "hnsw_m": 16,
                 "hnsw_ef_search": 100,
-                "hnsw_dist_method": "cosine",
+                "hnsw_dist_method": "vector_cosine_ops",
                 "hnsw_ef_construction": 200,
             },
             {
@@ -115,7 +115,7 @@ def get_embedding_models(provider_name: str, include_mock: bool = False) -> list
                 "mteb_avg": 64.6,
                 "hnsw_m": 16,
                 "hnsw_ef_search": 100,
-                "hnsw_dist_method": "cosine",
+                "hnsw_dist_method": "vector_cosine_ops",
                 "hnsw_ef_construction": 200,
             },
             {
@@ -127,7 +127,7 @@ def get_embedding_models(provider_name: str, include_mock: bool = False) -> list
                 "mteb_avg": 61.0,
                 "hnsw_m": 16,
                 "hnsw_ef_search": 100,
-                "hnsw_dist_method": "cosine",
+                "hnsw_dist_method": "vector_cosine_ops",
                 "hnsw_ef_construction": 200,
             },
         ],
@@ -142,7 +142,7 @@ def get_embedding_models(provider_name: str, include_mock: bool = False) -> list
                 "default": True,
                 "hnsw_m": 16,
                 "hnsw_ef_search": 100,
-                "hnsw_dist_method": "cosine",
+                "hnsw_dist_method": "vector_cosine_ops",
                 "hnsw_ef_construction": 200,
             }
         ],
@@ -157,7 +157,7 @@ def get_embedding_models(provider_name: str, include_mock: bool = False) -> list
                 "default": True,
                 "hnsw_m": 16,
                 "hnsw_ef_search": 100,
-                "hnsw_dist_method": "cosine",
+                "hnsw_dist_method": "vector_cosine_ops",
                 "hnsw_ef_construction": 200,
             }
         ],
@@ -171,7 +171,7 @@ def get_embedding_models(provider_name: str, include_mock: bool = False) -> list
                 "mteb_avg": 0.0,
                 "hnsw_m": 16,
                 "hnsw_ef_search": 100,
-                "hnsw_dist_method": "cosine",
+                "hnsw_dist_method": "vector_cosine_ops",
                 "hnsw_ef_construction": 200,
             }
         ],

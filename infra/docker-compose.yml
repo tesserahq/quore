@@ -72,6 +72,14 @@ services:
     env_file:
       - .env
 
+  linden-portal:
+    image: mustela/linden-portal:main
+    pull_policy: always
+    expose:
+      - "3000"
+    env_file:
+      - .linden-portal.env
+
   nginx:
     image: nginx:alpine
     ports:

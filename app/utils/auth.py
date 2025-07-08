@@ -56,7 +56,7 @@ class VerifyToken:
         # This gets the JWKS from a given URL and does processing so you can
         # use any of the keys available
         jwks_url = f"https://{self.config.oidc_domain}/.well-known/jwks.json"
-        self.jwks_client = jwt.PyJWKClient(jwks_url)
+        self.jwks_client = jwt.PyJWKClient(jwks_url, cache_keys=True)
 
     def verify(self, token: str):
         if token is None:
