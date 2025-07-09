@@ -11,6 +11,17 @@ services:
       - redis
       - celery_worker
       - vaulta
+      - custos-api
+
+  custos-api:
+    image: mustela/custos:main
+    pull_policy: always
+    environment:
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/custos
+      - REDIS_URL=redis://redis:6379/0
+    env_file: ".custos.env"
+    depends_on:
+      - db
 
   vaulta:
     image: mustela/vaulta:main
