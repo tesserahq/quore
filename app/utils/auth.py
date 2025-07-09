@@ -59,6 +59,10 @@ class VerifyToken:
         self.jwks_client = jwt.PyJWKClient(jwks_url, cache_keys=True)
 
     def verify(self, token: str):
+        # Check if token is None or empty
+        if not token:
+            raise UnauthenticatedException()
+            
         # This gets the 'kid' from the passed token
         try:
             signing_key = self.jwks_client.get_signing_key_from_jwt(token).key
