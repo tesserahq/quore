@@ -62,7 +62,7 @@ class VerifyToken:
         # Check if token is None or empty
         if not token:
             raise UnauthenticatedException()
-            
+
         # This gets the 'kid' from the passed token
         try:
             signing_key = self.jwks_client.get_signing_key_from_jwt(token).key
