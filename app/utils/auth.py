@@ -59,8 +59,9 @@ class VerifyToken:
         self.jwks_client = jwt.PyJWKClient(jwks_url, cache_keys=True)
 
     def verify(self, token: str):
-        if token is None:
-            raise UnauthenticatedException
+        # Check if token is None or empty
+        if not token:
+            raise UnauthenticatedException()
 
         # This gets the 'kid' from the passed token
         try:
@@ -88,23 +89,23 @@ class VerifyToken:
             raise UnauthorizedException(str(error))
 
         # Extract user ID from JWT payload
-        user_id = payload["sub"]
+        external_user_id = payload["sub"]
 
         # User not in cache or cache was invalid, check database
-        user = self.user_service.get_user_by_external_id(user_id)
+        user = self.user_service.get_user_by_external_id(external_user_id)
 
         if user:
             # User exists in database, cache the existence
             return user
         else:
             # User doesn't exist, cache the non-existence and fetch from OIDC
-            userinfo = self.fetch_user_info_from_oidc(token)
+            userinfo = self.fetch_user_info_from_identies(token)
             user = self.handle_user_onboarding(payload, userinfo)
             return user
 
-    def fetch_user_info_from_oidc(self, access_token: str) -> dict:
+    def fetch_user_info_from_identies(self, access_token: str) -> dict:
         """Fetch user information from the oidc userinfo endpoint."""
-        userinfo_url = f"https://{self.config.oidc_domain}/userinfo"
+        userinfo_url = f"{self.config.identies_host}/userinfo"
         headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.get(userinfo_url, headers=headers)
 
@@ -118,36 +119,17 @@ class VerifyToken:
 
     def handle_user_onboarding(self, payload: dict, userinfo: dict):
         """Onboard the user locally using the userinfo data."""
-        user_id = payload["sub"]
-        email = userinfo.get("email")
-
-        # Safe name parsing with proper fallbacks
-        full_name = userinfo.get("name", "Unknown Unknown")
-        name_parts = (
-            full_name.strip().split(" ") if full_name else ["Unknown", "Unknown"]
-        )
-
-        # Handle single names or empty names gracefully
-        if len(name_parts) == 0:
-            first_name = "Unknown"
-            last_name = "Unknown"
-        elif len(name_parts) == 1:
-            first_name = name_parts[0]
-            last_name = ""
-        else:
-            first_name = name_parts[0]
-            last_name = " ".join(name_parts[1:])  # Join remaining parts as last name
-
-        avatar_url = userinfo.get("picture")
+        external_id = payload["sub"]
 
         # Onboard the user locally
         user = self.user_service.onboard_user(
             UserOnboard(
-                external_id=user_id,
-                email=email,
-                first_name=first_name,
-                last_name=last_name,
-                avatar_url=avatar_url,
+                external_id=external_id,
+                id=userinfo["id"],
+                email=userinfo["email"],
+                first_name=userinfo["first_name"],
+                last_name=userinfo["last_name"],
+                avatar_url=userinfo["avatar_url"],
             )
         )
 

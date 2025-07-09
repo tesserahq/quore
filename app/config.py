@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     environment: str = Field(default="development", json_schema_extra={"env": "ENV"})
     log_level: str = Field(default="INFO", json_schema_extra={"env": "LOG_LEVEL"})
     disable_auth: bool = Field(default=False, json_schema_extra={"env": "DISABLE_AUTH"})
+    identies_host: str = Field(
+        default="https://identies.estate-buddy.com",
+        json_schema_extra={"env": "IDENTIES_HOST"},
+    )
     rollbar_access_token: Optional[str] = Field(
         default=None, json_schema_extra={"env": "ROLLBAR_ACCESS_TOKEN"}
     )  # Optional field
