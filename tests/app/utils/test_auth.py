@@ -1,3 +1,4 @@
+import uuid
 import pytest
 from unittest.mock import Mock, patch
 import jwt
@@ -41,8 +42,9 @@ def test_verify_token_success(verifier, mock_jwks_client):
             # Mock userinfo response
             mock_userinfo = {
                 "email": MOCK_EMAIL,
-                "name": MOCK_NAME,
-                "picture": MOCK_AVATAR,
+                "first_name": "Test",
+                "last_name": "User",
+                "avatar_url": MOCK_AVATAR,
             }
             with patch("requests.get") as mock_get:
                 mock_response = Mock()
@@ -78,15 +80,18 @@ def test_verify_token_new_user(verifier, mock_jwks_client):
     with patch("app.utils.auth.UserService") as mock_user_service_class:
         mock_user_service = Mock()
         mock_user_service_class.return_value = mock_user_service
+        user_id = "13d3ec54-a6b4-42a1-81b8-80d78107bbfd"
 
         # Mock JWT decode
         mock_payload = {"sub": MOCK_USER_ID}
         with patch("jwt.decode", return_value=mock_payload):
             # Mock userinfo response
             mock_userinfo = {
+                "id": user_id,
                 "email": MOCK_EMAIL,
-                "name": MOCK_NAME,
-                "picture": MOCK_AVATAR,
+                "first_name": "Test",
+                "last_name": "User",
+                "avatar_url": MOCK_AVATAR,
             }
             with patch("requests.get") as mock_get:
                 mock_response = Mock()
@@ -97,7 +102,7 @@ def test_verify_token_new_user(verifier, mock_jwks_client):
                 # Mock new user
                 mock_user_service.get_user_by_external_id.return_value = None
                 mock_new_user = User(
-                    id=1,
+                    id=user_id,
                     external_id=MOCK_USER_ID,
                     email=MOCK_EMAIL,
                     first_name="Test",
