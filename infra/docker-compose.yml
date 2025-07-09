@@ -43,6 +43,16 @@ services:
     depends_on:
       - db
 
+  identies-api:
+    image: mustela/identies:main
+    pull_policy: always
+    environment:
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/identies
+      - REDIS_URL=redis://redis:6379/0
+    env_file: ".identies.env"
+    depends_on:
+      - db
+
   github-mcp-server:
     image: mcp/github-mcp-server
     pull_policy: always
