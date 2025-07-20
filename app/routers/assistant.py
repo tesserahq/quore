@@ -16,6 +16,7 @@ from app.core.callbacks import (
     EventCallback,
     SourceNodesFromToolCall,
     SuggestNextQuestions,
+    ToolDebugCallback,
 )
 from app.core.callbacks.stream_handler import StreamHandler
 from app.core.workflow_manager import WorkflowManager
@@ -26,7 +27,7 @@ from app.utils.auth import get_current_user
 from app.utils.vercel_stream import VercelStreamResponse
 from sqlalchemy.orm import Session
 from app.models.project import Project
-from app.utils.dependencies import get_project_by_id
+from app.utils.dependencies import get_access_token, get_project_by_id
 
 
 def assistant_router() -> APIRouter:
@@ -38,11 +39,20 @@ def assistant_router() -> APIRouter:
         project: Project = Depends(get_project_by_id),
         db_session: Session = Depends(get_db),
         current_user=Depends(get_current_user),
-        token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
+        token: str = Depends(get_access_token),
     ) -> StreamingResponse:
         logger = get_logger()
+        debug_mode = request.config and request.config.debug_mode
 
         logger.debug(f"Chat route: Starting chat request for project {project.id}")
+
+        # Enable debug logging if debug mode is enabled
+        if debug_mode:
+            logger.info("🔧 Debug mode enabled - setting verbose logging")
+            # Set llama_index logger to DEBUG level for more verbose output
+            import logging
+
+            logging.getLogger("llama_index").setLevel(logging.DEBUG)
 
         workflow_manager = WorkflowManager(db_session, project, token)
 
@@ -74,6 +84,12 @@ def assistant_router() -> APIRouter:
             callbacks: list[EventCallback] = [
                 SourceNodesFromToolCall(),
             ]
+
+            # Add debug callback if debug mode is enabled
+            if debug_mode:
+                logger.info("🔧 Debug mode enabled - adding tool debug callback")
+                callbacks.append(ToolDebugCallback(logger))
+
             if request.config and request.config.next_question_suggestions:
                 logger.debug("Chat route: Adding next question suggestions callback")
                 callbacks.append(SuggestNextQuestions(db_session, project, request))

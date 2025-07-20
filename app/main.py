@@ -23,7 +23,6 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from app.telemetry import setup_tracing
 from app.exceptions.handlers import register_exception_handlers
 from app.core.logging_config import get_logger
-from app.plugins.datetime import plugin_app as datetime_plugin
 
 
 def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
@@ -45,11 +44,7 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
         # Attach Rollbar handler to the root logger
         logger.addHandler(rollbar_handler)
 
-    # Create the ASGI app
-    mcp_app = datetime_plugin.http_app(path="/mcp")
-    lifespan = mcp_app.lifespan
-
-    app = FastAPI(lifespan=lifespan)
+    app = FastAPI()
 
     if not testing and not settings.disable_auth:
         logger.info("Main: Adding authentication middleware")
@@ -86,9 +81,6 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
     app.include_router(system.router)
 
     register_exception_handlers(app)
-
-    # Mount sub-applications: /system/plugins/datetime/mcp
-    app.mount("/system/plugins/datetime", mcp_app)
 
     return app
 

@@ -15,6 +15,7 @@ from app.schemas.credential import (
     SSHKeyModel,
     BearerAuthModel,
     BasicAuthModel,
+    IdentiesAuthModel,
 )
 from app.config import get_settings
 
@@ -123,7 +124,6 @@ basic_auth_fields = [
     ),
 ]
 
-
 # Credential type registry
 credential_registry: Dict[CredentialType, CredentialTypeInfo] = {
     CredentialType.GITHUB_PAT: CredentialTypeInfo(
@@ -151,6 +151,11 @@ credential_registry: Dict[CredentialType, CredentialTypeInfo] = {
         display_name="Basic Authentication",
         fields=basic_auth_fields,
     ),
+    CredentialType.IDENTIES_AUTH: CredentialTypeInfo(
+        type_name=CredentialType.IDENTIES_AUTH,
+        display_name="Identies Authentication",
+        fields=[],
+    ),
 }
 
 
@@ -161,6 +166,7 @@ credential_models: Dict[CredentialType, Type[BaseModel]] = {
     CredentialType.SSH_KEY: SSHKeyModel,
     CredentialType.BEARER_AUTH: BearerAuthModel,
     CredentialType.BASIC_AUTH: BasicAuthModel,
+    CredentialType.IDENTIES_AUTH: IdentiesAuthModel,
 }
 
 

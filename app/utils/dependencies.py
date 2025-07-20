@@ -1,4 +1,5 @@
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Header
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from uuid import UUID
 
@@ -75,3 +76,14 @@ def get_plugin_by_id(
     if plugin is None:
         raise HTTPException(status_code=404, detail="Plugin not found")
     return plugin
+
+
+def get_access_token(
+    authorization: str = Header(..., description="Authorization header"),
+) -> str:
+    """FastAPI dependency to get the access token from the authorization header."""
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401, detail="Invalid authorization header format"
+        )
+    return authorization[7:]  # Remove "Bearer " prefix

@@ -17,9 +17,11 @@ class PluginManager:
         db: Session,
         plugin_id: Optional[UUID] = None,
         plugin: Optional[Plugin] = None,
+        access_token: Optional[str] = None,
     ):
         """Initialize the plugin manager with a database session and plugin ID."""
         self.db = db
+        self.access_token = access_token
         from app.services.plugin import PluginService
 
         self.plugin_service = PluginService(db)
@@ -45,7 +47,7 @@ class PluginManager:
         headers = None
         if self.plugin.credential_id:
             headers = self.credential_service.apply_credentials(
-                cast(UUID, self.plugin.credential_id)
+                cast(UUID, self.plugin.credential_id), access_token=self.access_token
             )
 
         return MCPClient(str(self.plugin.endpoint_url), headers=headers)
@@ -87,6 +89,7 @@ class PluginManager:
                 cast(UUID, self.plugin.id),
                 PluginUpdate(
                     name=str(self.plugin.name),
+                    state=PluginState.ERROR,
                     state_description=f"Failed to refresh plugin components: {str(e)}",
                 ),
             )

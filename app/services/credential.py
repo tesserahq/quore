@@ -1,5 +1,6 @@
 from typing import List, Optional, Dict, Any
 from uuid import UUID
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 import logging
 
@@ -190,6 +191,7 @@ class CredentialService:
         self,
         credential_id: UUID,
         headers: Optional[Dict[str, str]] = None,
+        access_token: Optional[str] = None,
     ) -> Dict[str, str]:
         """
         Apply credentials to headers based on the credential type.
@@ -197,7 +199,7 @@ class CredentialService:
         Args:
             credential_id: The UUID of the credential to apply
             headers: Optional existing headers to merge with
-
+            access_token: Optional access token to use for Identies Authentication. This is the request user token
         Returns:
             Dictionary of headers with authentication applied
 
@@ -212,9 +214,7 @@ class CredentialService:
         # Get the decrypted fields
         credential_fields = self.get_credential_fields(credential_id)
         if not credential_fields:
-            raise ValueError(
-                f"Could not retrieve fields for credential {credential_id}"
-            )
+            credential_fields = {}
 
         if headers is None:
             headers = {}
@@ -252,6 +252,11 @@ class CredentialService:
             if "token" not in credential_fields:
                 raise ValueError("GitLab PAT requires a token field")
             headers["Authorization"] = f"Bearer {credential_fields['token']}"
+
+        elif credential.type == CredentialType.IDENTIES_AUTH:
+            if access_token is None:
+                raise ValueError("Identies auth requires an access token")
+            headers["Authorization"] = f"Bearer {access_token}"
 
         # SSH_KEY type is not applicable for HTTP headers
 

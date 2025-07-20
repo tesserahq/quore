@@ -14,12 +14,12 @@ services:
       - .:/app
     command: ./start.sh
 
-  estate-buddy-mcp-server:
-    image: mustela/estate-buddy-mcp-server:main
-    pull_policy: always
-    ports:
-      - "8006:8000"
-    env_file: ".env"
+  # estate-buddy-mcp-server:
+  #   image: mustela/estate-buddy-mcp-server:main
+  #   pull_policy: always
+  #   ports:
+  #     - "8006:8000"
+  #   env_file: ".env"
 
   db:
     image: pgvector/pgvector:pg17
@@ -31,6 +31,40 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+  quore-portal:
+    image: mustela/quore-portal:main
+    pull_policy: always
+    extra_hosts:
+      - "quore-api.localhost:host-gateway"
+    environment:
+      - AUTH0_CLIENT_ID=HAZEL7jkxl5yTy5wDKK5uB73tg0Rtg2k
+      - AUTH0_AUDIENCE=https://estate-buddy.com
+      - AUTH0_DOMAIN=dev-si3yygt34d0fk7hc.us.auth0.com
+      - API_URL=http://quore-api.localhost:8000
+      - AUTH0_ORGANIZATION_ID=org_2XOSusUO15bqgE3L
+      - NODE_ENV=development
+      - SESSION_SECRET=NOT_A_STRONG_SECRET
+      - HOST_URL=http://localhost:3000
+    ports:
+      - "3000:3000"
+
+  identies-api:
+    image: mustela/identies:main
+    pull_policy: always
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/identies
+      - OIDC_DOMAIN=dev-si3yygt34d0fk7hc.us.auth0.com
+      - OIDC_API_AUDIENCE=https://estate-buddy.com
+      - OIDC_ISSUER=https://dev-si3yygt34d0fk7hc.us.auth0.com/
+      - OIDC_ALGORITHMS=RS256
+      - OTEL_SERVICE_NAME=identies-api
+      - OTEL_ENABLED=false
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+    depends_on:
+      - db
+    ports:
+      - "8001:8000"
 
   redis:
     image: redis:8-alpine
@@ -65,6 +99,7 @@ services:
       - ./dev/docker/grafana/:/etc/grafana/provisioning/
     env_file:
       - ./dev/docker/grafana/.env
+
   prometheus:
     image: prom/prometheus:v3.4.0
     ports:
@@ -77,6 +112,7 @@ services:
       - "--storage.tsdb.path=/prometheus"
       - "--web.console.libraries=/usr/share/prometheus/console_libraries"
       - "--web.console.templates=/usr/share/prometheus/consoles"
+
   jaeger:
     image: jaegertracing/all-in-one:latest
     ports:
@@ -84,6 +120,7 @@ services:
       - "14250:14250" # gRPC
     environment:
       - COLLECTOR_OTLP_ENABLED=true
+
   otel-collector:
     image: otel/opentelemetry-collector-contrib
     command: ["--config=/etc/otel-collector-config.yml"]

@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     environment: str = Field(default="development", json_schema_extra={"env": "ENV"})
     log_level: str = Field(default="INFO", json_schema_extra={"env": "LOG_LEVEL"})
     disable_auth: bool = Field(default=False, json_schema_extra={"env": "DISABLE_AUTH"})
+    port: int = Field(default=8000, json_schema_extra={"env": "PORT"})
     identies_host: str = Field(
         default="https://identies.estate-buddy.com",
         json_schema_extra={"env": "IDENTIES_HOST"},
