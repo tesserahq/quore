@@ -14,8 +14,9 @@ from app.plugins.datetime import get_tools as get_datetime_tools
 from app.plugins.debug import get_tools as get_debug_tools
 from app.services.plugin import PluginService
 from llama_index.core.tools import FunctionTool
-from llama_index.core.tools.types import DefaultToolFnSchema
 from mcp.types import Tool as MCPTool
+from llama_index.tools.mcp import aget_tools_from_mcp_url
+from llama_index.tools.mcp import BasicMCPClient
 
 
 class WorkflowManager:
@@ -23,7 +24,7 @@ class WorkflowManager:
         self,
         db_session: Session,
         project: Project,
-        access_token: HTTPAuthorizationCredentials,
+        access_token: Optional[str] = None,
     ):
         self.db_session = db_session
         self.project = project
@@ -46,7 +47,10 @@ class WorkflowManager:
         self, chat_request: Optional[ChatRequest] = None
     ) -> AgentWorkflow:
 
+        self.logger.info("Creating AgentWorkflow")
+
         query_tool = self.index_manager.get_query_engine_tool()
+        self.logger.debug("Query tool loaded")
 
         # tools_with_context = [
         #     self.wrap_tool_with_context(query_tool, {"token": self.access_token.credentials})
@@ -57,11 +61,20 @@ class WorkflowManager:
         system_prompt = (
             self.project.system_prompt or get_settings().default_system_prompt
         )
-        return AgentWorkflow.from_tools_or_functions(
-            tools_or_functions=[query_tool, *(await self.get_tools())],
+
+        tools = await self.get_tools()
+        all_tools = [query_tool, *tools]
+
+        self.logger.info(f"Creating workflow with {len(all_tools)} total tools")
+
+        workflow = AgentWorkflow.from_tools_or_functions(
+            tools_or_functions=all_tools,
             llm=self.index_manager.llm(),
             system_prompt=str(system_prompt),
         )
+
+        self.logger.info("AgentWorkflow created successfully")
+        return workflow
 
     def system_tools(self):
         return [*get_datetime_tools(), *get_debug_tools()]
@@ -75,47 +88,98 @@ class WorkflowManager:
 
         def tool_function(**kwargs):
             # The actual function implementation will be handled by the MCP client
+            self.logger.debug(f"MCP Tool '{tool.name}' called with args: {kwargs}")
             return kwargs
 
-        # Convert the JSON schema to a DefaultToolFnSchema
-        schema = DefaultToolFnSchema(input=json.dumps(tool.inputSchema))
+        self.logger.debug(f"Converting MCP tool '{tool.name}' to FunctionTool")
 
         return FunctionTool.from_defaults(
             fn=tool_function,
             name=tool.name,
             description=tool.description,
-            fn_schema=schema,
         )
 
     async def get_tools(self):
         enabled_plugins = self.enabled_plugins()
+        self.logger.info(f"Loading tools from {len(enabled_plugins)} enabled plugins")
+
         enabled_tools = []
         for plugin in enabled_plugins:
-            tools = await PluginManager(db=self.db_session, plugin=plugin).get_tools()
-            # Convert each FastMCP Tool to a LlamaIndex FunctionTool
-            function_tools = [self._convert_to_function_tool(tool) for tool in tools]
-            enabled_tools.extend(function_tools)
-        # TODO: Add system tools: why *self.system_tools(),  are not working?
-        return [*enabled_tools]
+            self.logger.debug(f"Loading tools from plugin: {plugin.name}")
+            try:
+                # Get tools from the plugin using the generic MCP method
+                plugin_tools = await self.get_mcp_tools_from_plugin(plugin)
+                self.logger.info(
+                    f"Plugin '{plugin.name}' provided {len(plugin_tools)} tools"
+                )
+                enabled_tools.extend(plugin_tools)
 
-    # async def get_tools(self):
-    #     return [*self.system_tools(), *(await self.estate_buddy_mcp_tools())]
+            except Exception as e:
+                self.logger.error(
+                    f"Error loading tools from plugin '{plugin.name}': {e}"
+                )
 
-    # async def estate_buddy_mcp_tools(self):
-    #     # allowed_tools=["tool1", "tool2"]
-    #     client = BasicMCPClient(
-    #         "http://localhost:8002/mcp/",
-    #         headers={"Authorization": f"Bearer {self.access_token.credentials}"},
-    #     )
-    #     tools = await aget_tools_from_mcp_url(
-    #         "http://localhost:8002/mcp/",
-    #         client=client,
-    #         allowed_tools=[
-    #             "list_accounts",
-    #             "create_account",
-    #             "get_account",
-    #             "update_account",
-    #             "delete_account",
-    #         ],
-    #     )
-    #     return tools
+        system_tools = self.system_tools()
+        self.logger.info(f"Adding {len(system_tools)} system tools")
+
+        all_tools = [*enabled_tools, *system_tools]
+        self.logger.info(f"Total tools loaded: {len(all_tools)}")
+
+        # Log all tool names for debugging
+        tool_names = [
+            tool.metadata.name if hasattr(tool, "metadata") else str(tool)
+            for tool in all_tools
+        ]
+        self.logger.debug(f"Available tools: {tool_names}")
+
+        return all_tools
+
+    async def get_mcp_tools_from_plugin(self, plugin):
+        """Get MCP tools from a specific plugin using its endpoint URL and allowed tools."""
+        # TODO: Im sure there is a better way to handle this, but for now this works
+        # Get the allowed tools from the plugin's tools list
+        allowed_tools = []
+        if plugin.tools:
+            allowed_tools = [
+                tool.get("name") for tool in plugin.tools if tool.get("name")
+            ]
+
+        if not allowed_tools:
+            self.logger.warning(f"No tools found in plugin '{plugin.name}'")
+            return []
+
+        self.logger.debug(
+            f"Getting tools from plugin '{plugin.name}' at {plugin.endpoint_url}"
+        )
+        self.logger.debug(f"Allowed tools: {allowed_tools}")
+
+        # Get headers using the credential service if the plugin has credentials
+        headers = None
+        if plugin.credential_id:
+            from app.services.credential import CredentialService
+
+            credential_service = CredentialService(self.db_session)
+            headers = credential_service.apply_credentials(
+                plugin.credential_id, access_token=self.access_token
+            )
+            self.logger.debug(
+                f"Applied credentials for plugin '{plugin.name}': {list(headers.keys())}"
+            )
+
+        # Create MCP client with plugin's endpoint URL and credentials
+        client = BasicMCPClient(
+            plugin.endpoint_url,
+            headers=headers,
+        )
+
+        # Get tools from the MCP server
+        tools = await aget_tools_from_mcp_url(
+            plugin.endpoint_url,
+            client=client,
+            allowed_tools=allowed_tools,
+        )
+
+        self.logger.info(
+            f"Successfully loaded {len(tools)} tools from plugin '{plugin.name}'"
+        )
+        return tools

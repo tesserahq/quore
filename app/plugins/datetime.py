@@ -7,10 +7,8 @@ from llama_index.core.tools.function_tool import FunctionTool
 from fastmcp import Context
 
 logger = get_logger()
-plugin_app = FastMCP("datetime")
 
 
-@plugin_app.tool()
 def format_datetime(format_type: str) -> str:
     """Format the current date and time according to the specified format type.
 
@@ -79,7 +77,6 @@ def format_datetime(format_type: str) -> str:
         raise RuntimeError(f"Error formatting date: {str(e)}") from e
 
 
-@plugin_app.tool()
 def get_datetime(tz_name="UTC") -> str:
     """Get the current date and time in 'YYYY-MM-DD HH:MM:SS' format for the specified timezone.
 
@@ -94,7 +91,6 @@ def get_datetime(tz_name="UTC") -> str:
     return current_time.strftime("%Y-%m-%d %H:%M:%S")
 
 
-@plugin_app.tool()
 def get_current_unix_timestamp() -> float:
     """
     Return the current Unix timestamp.

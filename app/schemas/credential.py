@@ -165,3 +165,9 @@ class BasicAuthModel(BaseModel):
         title="Password",
         description="Password for basic authentication",
     )
+
+
+class IdentiesAuthModel(BaseModel):
+    """Model for Identies Authentication credentials."""
+
+    pass

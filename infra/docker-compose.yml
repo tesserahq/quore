@@ -10,7 +10,7 @@ services:
       - db
       - redis
       - celery_worker
-      - vaulta
+      - vaulta-api
       - custos-api
 
   custos-api:
@@ -23,7 +23,7 @@ services:
     depends_on:
       - db
 
-  vaulta:
+  vaulta-api:
     image: mustela/vaulta:main
     pull_policy: always
     environment:
@@ -85,6 +85,22 @@ services:
     depends_on:
       - redis
 
+  vaulta-portal:
+    image: mustela/vaulta-portal:main
+    pull_policy: always
+    expose:
+      - "3000"
+    env_file:
+      - .vaulta-portal.env
+
+  identies-portal:
+    image: mustela/identies-portal:main
+    pull_policy: always
+    expose:
+      - "3000"
+    env_file:
+      - .identies-portal.env
+
   quore-portal:
     image: mustela/quore-portal:main
     pull_policy: always
@@ -92,6 +108,14 @@ services:
       - "3000"
     env_file:
       - .env
+
+  custos-portal:
+    image: mustela/custos-portal:main
+    pull_policy: always
+    expose:
+      - "3000"
+    env_file:
+      - .custos-portal.env
 
   linden-portal:
     image: mustela/linden-portal:main
@@ -107,10 +131,7 @@ services:
       - "80:80"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      - quore-portal
-      - quore-api
-      - linden-api
+
   db:
     image: pgvector/pgvector:pg17
     env_file: ".env"

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from typing import Optional, Dict, Any
 from uuid import UUID
@@ -19,6 +20,7 @@ from app.schemas.common import ListResponse
 from app.models.workspace import Workspace
 from app.models.project import Project
 from app.utils.dependencies import (
+    get_access_token,
     get_workspace_by_id,
     get_project_by_id,
     get_plugin_by_id,
@@ -47,10 +49,16 @@ def create_workspace_plugin(
     plugin_data: PluginCreateRequest,
     workspace: Workspace = Depends(get_workspace_by_id),
     db: Session = Depends(get_db),
+    access_token: str = Depends(get_access_token),
 ):
     """Create a new plugin for a workspace."""
     plugin_data.workspace_id = UUID(str(workspace.id))
-    plugin = initialize_plugin_command(db, PluginCreate(**plugin_data.model_dump()))
+    # TODO: The access token needs to be passed to the plugin manager so it can be used to authenticate with the MCP server
+    # This is a temporary solution to get the access token to the plugin manager
+    # We should find a better way to do this
+    plugin = initialize_plugin_command(
+        db, PluginCreate(**plugin_data.model_dump()), access_token
+    )
     return plugin
 
 

@@ -9,3 +9,4 @@ class CredentialType(str, Enum):
     SSH_KEY = "ssh_key"
     BEARER_AUTH = "bearer_auth"
     BASIC_AUTH = "basic_auth"
+    IDENTIES_AUTH = "identies_auth"
