@@ -30,6 +30,7 @@ class Workspace(Base, TimestampMixin):
         "Plugin", back_populates="workspace", cascade="all, delete-orphan"
     )
     credentials = relationship("Credential", back_populates="workspace")
+    prompts = relationship("Prompt", back_populates="workspace")
 
     def __repr__(self):
         return f"<Workspace(id={self.id}, name={self.name})>"

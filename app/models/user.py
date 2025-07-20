@@ -41,6 +41,7 @@ class User(Base, TimestampMixin):
     workspaces = relationship("Workspace", back_populates="created_by")
     memberships = relationship("Membership", back_populates="user")
     credentials = relationship("Credential", back_populates="created_by")
+    prompts = relationship("Prompt", back_populates="created_by")
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
