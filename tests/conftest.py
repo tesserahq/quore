@@ -19,6 +19,7 @@ pytest_plugins = [
     "tests.fixtures.node_fixtures",
     "tests.fixtures.credential_fixtures",
     "tests.fixtures.plugin_fixtures",
+    "tests.fixtures.prompt_fixtures",
 ]
 
 logger = logging.getLogger(__name__)
