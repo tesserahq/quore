@@ -21,6 +21,7 @@ class Prompt(Base, TimestampMixin):
     workspace_id = Column(
         UUID(as_uuid=True), ForeignKey("workspaces.id"), nullable=False
     )
+    notes = Column(Text, nullable=True)
 
     # Relationships
     created_by = relationship("User", back_populates="prompts")
