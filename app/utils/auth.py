@@ -64,6 +64,7 @@ class VerifyToken:
             raise UnauthenticatedException()
 
         # This gets the 'kid' from the passed token
+
         try:
             signing_key = self.jwks_client.get_signing_key_from_jwt(token).key
         except jwt.exceptions.PyJWKClientError as error:

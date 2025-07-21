@@ -23,6 +23,7 @@ from app.core.workflow_manager import WorkflowManager
 from app.core.logging_config import get_logger
 from app.db import get_db
 from app.schemas.ai_schemas.chat.chat_request import ChatRequest
+from app.schemas.ai_schemas.chat.workflow_manager_context import WorkflowManagerContext
 from app.utils.auth import get_current_user
 from app.utils.vercel_stream import VercelStreamResponse
 from sqlalchemy.orm import Session
@@ -54,7 +55,15 @@ def assistant_router() -> APIRouter:
 
             logging.getLogger("llama_index").setLevel(logging.DEBUG)
 
-        workflow_manager = WorkflowManager(db_session, project, token)
+        # Create workflow manager context
+        context = WorkflowManagerContext(
+            db_session=db_session,
+            project=project,
+            access_token=token,
+            system_prompt_id=request.config.system_prompt_id,
+        )
+
+        workflow_manager = WorkflowManager(context)
 
         try:
             user_message = request.messages[-1].to_llamaindex_message()

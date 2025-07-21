@@ -66,6 +66,33 @@ def test_get_prompt_not_found(db: Session):
     assert retrieved_prompt is None
 
 
+def test_get_prompt_by_prompt_id(db: Session, setup_prompt):
+    """Test retrieving a prompt by prompt_id string."""
+    prompt = setup_prompt
+
+    # Get prompt by prompt_id
+    retrieved_prompt = PromptService(db).get_prompt_by_prompt_id(prompt.prompt_id)
+
+    # Assertions
+    assert retrieved_prompt is not None
+    assert retrieved_prompt.id == prompt.id
+    assert retrieved_prompt.name == prompt.name
+    assert retrieved_prompt.prompt_id == prompt.prompt_id
+    assert retrieved_prompt.type == prompt.type
+    assert retrieved_prompt.prompt == prompt.prompt
+
+
+def test_get_prompt_by_prompt_id_not_found(db: Session):
+    """Test retrieving a non-existent prompt by prompt_id."""
+    # Try to get non-existent prompt by prompt_id
+    retrieved_prompt = PromptService(db).get_prompt_by_prompt_id(
+        "non-existent-prompt-id"
+    )
+
+    # Assertion
+    assert retrieved_prompt is None
+
+
 def test_get_prompts(db: Session, setup_prompt):
     """Test retrieving a list of prompts with pagination."""
     prompt = setup_prompt
