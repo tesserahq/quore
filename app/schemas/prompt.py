@@ -19,6 +19,9 @@ class PromptBase(BaseModel):
     prompt: str = Field(..., min_length=1)
     """The actual prompt content."""
 
+    notes: Optional[str] = None
+    """Notes about the prompt."""
+
     created_by_id: Optional[UUID] = None
     """ID of the user who created the prompt."""
 
