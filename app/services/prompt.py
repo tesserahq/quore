@@ -19,6 +19,10 @@ class PromptService:
         """Fetch a single prompt by ID."""
         return self.db.query(Prompt).filter(Prompt.id == prompt_id).first()
 
+    def get_prompt_by_prompt_id(self, prompt_id: str) -> Optional[Prompt]:
+        """Fetch a single prompt by prompt_id string."""
+        return self.db.query(Prompt).filter(Prompt.prompt_id == prompt_id).first()
+
     def get_prompts(self, skip: int = 0, limit: int = 100) -> List[Prompt]:
         """Fetch a list of prompts with pagination."""
         return self.db.query(Prompt).offset(skip).limit(limit).all()

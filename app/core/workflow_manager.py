@@ -8,11 +8,13 @@ from app.core.index_manager import IndexManager
 from app.core.plugin_manager.manager import PluginManager
 from app.models.project import Project
 from app.schemas.ai_schemas.chat.chat_request import ChatRequest
+from app.schemas.ai_schemas.chat.workflow_manager_context import WorkflowManagerContext
 from llama_index.core.agent.workflow import AgentWorkflow
 from app.core.logging_config import get_logger
 from app.plugins.datetime import get_tools as get_datetime_tools
 from app.plugins.debug import get_tools as get_debug_tools
 from app.services.plugin import PluginService
+from app.services.prompt import PromptService
 from llama_index.core.tools import FunctionTool
 from mcp.types import Tool as MCPTool
 from llama_index.tools.mcp import aget_tools_from_mcp_url
@@ -22,15 +24,14 @@ from llama_index.tools.mcp import BasicMCPClient
 class WorkflowManager:
     def __init__(
         self,
-        db_session: Session,
-        project: Project,
-        access_token: Optional[str] = None,
+        context: WorkflowManagerContext,
     ):
-        self.db_session = db_session
-        self.project = project
-        self.index_manager = IndexManager(db_session, project)
+        self.db_session = context.db_session
+        self.project = context.project
+        self.index_manager = IndexManager(context.db_session, context.project)
         self.logger = get_logger()
-        self.access_token = access_token
+        self.access_token = context.access_token
+        self.system_prompt_id = context.system_prompt_id
 
     # def wrap_tool_with_context(tool, initial_state):
     #     def tool_with_context(input: dict):
@@ -58,9 +59,28 @@ class WorkflowManager:
 
         # https://www.llamaindex.ai/blog/introducing-agentworkflow-a-powerful-system-for-building-ai-agent-systems
 
-        system_prompt = (
-            self.project.system_prompt or get_settings().default_system_prompt
-        )
+        # Determine which system prompt to use
+        if self.system_prompt_id:
+            # Use the specified system prompt from the prompts table
+            prompt_service = PromptService(self.db_session)
+            prompt = prompt_service.get_prompt_by_prompt_id(self.system_prompt_id)
+            if prompt:
+                system_prompt = prompt.prompt
+                self.logger.info(
+                    f"Using system prompt from prompt ID: {self.system_prompt_id}"
+                )
+            else:
+                self.logger.warning(
+                    f"System prompt with ID {self.system_prompt_id} not found, falling back to project default"
+                )
+                system_prompt = (
+                    self.project.system_prompt or get_settings().default_system_prompt
+                )
+        else:
+            # Use project's default system prompt
+            system_prompt = (
+                self.project.system_prompt or get_settings().default_system_prompt
+            )
 
         tools = await self.get_tools()
         all_tools = [query_tool, *tools]
