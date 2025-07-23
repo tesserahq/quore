@@ -107,7 +107,7 @@ services:
     expose:
       - "3000"
     env_file:
-      - .env
+      - .quore-portal.env
 
   custos-portal:
     image: mustela/custos-portal:main
