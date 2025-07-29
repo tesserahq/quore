@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 from uuid import UUID
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -25,9 +25,9 @@ class WorkflowManagerContext(BaseModel):
         description="Access token for authentication with external services",
     )
 
-    system_prompt_id: Optional[str] = Field(
+    system_prompt_id: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="ID of the system prompt to use (overrides project's default system prompt)",
+        description="ID of the system prompt to use (overrides project's default system prompt). Can be either UUID or string prompt_id.",
     )
 
     class Config:

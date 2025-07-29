@@ -17,6 +17,9 @@ class WorkspaceBase(BaseModel):
     logo: Optional[str] = None
     """Optional URL to the workspace's logo image."""
 
+    identifier: Optional[str] = Field(None, min_length=1, max_length=100)
+    """Optional unique identifier for the workspace. Must be a slug-like string."""
+
     created_by_id: Optional[UUID] = None
     """ID of the user who created the workspace."""
 
@@ -39,6 +42,9 @@ class WorkspaceUpdate(BaseModel):
 
     logo: Optional[str] = None
     """Updated workspace logo URL."""
+
+    identifier: Optional[str] = Field(None, min_length=1, max_length=100)
+    """Updated workspace identifier. Must be a unique slug-like string if provided."""
 
 
 class WorkspaceInDB(WorkspaceBase):

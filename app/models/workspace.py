@@ -16,6 +16,7 @@ class Workspace(Base, TimestampMixin):
     name = Column(String(100), nullable=False)
     description = Column(String, nullable=True)
     logo = Column(String, nullable=True)  # We'll handle file uploads separately
+    identifier = Column(String(100), nullable=True, unique=True)
     created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
 
     # Relationships
