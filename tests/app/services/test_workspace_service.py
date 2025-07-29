@@ -131,3 +131,114 @@ def test_search_workspaces_with_filters(db: Session, setup_workspace):
     results = WorkspaceService(db).search(filters)
 
     assert len(results) == 0
+
+
+def test_create_workspace_with_identifier(db: Session, setup_user):
+    """Test creating a workspace with an identifier field."""
+    user = setup_user
+
+    # Create workspace data with identifier
+    workspace_data = {
+        "name": "Test Workspace with Identifier",
+        "description": "A test workspace with identifier",
+        "identifier": "test-workspace-123",
+        "created_by_id": user.id,
+    }
+
+    workspace_create = WorkspaceCreate(**workspace_data)
+    workspace = WorkspaceService(db).create_workspace(workspace_create)
+
+    # Assertions
+    assert workspace.id is not None
+    assert workspace.name == workspace_data["name"]
+    assert workspace.description == workspace_data["description"]
+    assert workspace.identifier == workspace_data["identifier"]
+    assert workspace.created_by_id == workspace_data["created_by_id"]
+    assert workspace.created_at is not None
+    assert workspace.updated_at is not None
+
+
+def test_create_workspace_with_duplicate_identifier(db: Session, setup_user):
+    """Test that creating a workspace with a duplicate identifier fails."""
+    user = setup_user
+
+    # Create first workspace with identifier
+    workspace_data_1 = {
+        "name": "First Workspace",
+        "description": "First workspace with identifier",
+        "identifier": "duplicate-identifier",
+        "created_by_id": user.id,
+    }
+
+    workspace_create_1 = WorkspaceCreate(**workspace_data_1)
+    workspace_1 = WorkspaceService(db).create_workspace(workspace_create_1)
+
+    # Try to create second workspace with same identifier
+    workspace_data_2 = {
+        "name": "Second Workspace",
+        "description": "Second workspace with same identifier",
+        "identifier": "duplicate-identifier",
+        "created_by_id": user.id,
+    }
+
+    workspace_create_2 = WorkspaceCreate(**workspace_data_2)
+
+    # This should raise an integrity error due to unique constraint
+    with pytest.raises(Exception):  # SQLAlchemy will raise an integrity error
+        WorkspaceService(db).create_workspace(workspace_create_2)
+
+
+def test_update_workspace_with_identifier(db: Session, setup_workspace):
+    """Test updating a workspace with an identifier field."""
+    workspace = setup_workspace
+
+    # Update data including identifier
+    update_data = {
+        "name": "Updated Workspace with Identifier",
+        "description": "Updated description with identifier",
+        "identifier": "updated-workspace-456",
+    }
+    workspace_update = WorkspaceUpdate(**update_data)
+
+    # Update workspace
+    updated_workspace = WorkspaceService(db).update_workspace(
+        workspace.id, workspace_update
+    )
+
+    # Assertions
+    assert updated_workspace is not None
+    assert updated_workspace.id == workspace.id
+    assert updated_workspace.name == update_data["name"]
+    assert updated_workspace.description == update_data["description"]
+    assert updated_workspace.identifier == update_data["identifier"]
+
+
+def test_search_workspaces_by_identifier(db: Session, setup_user):
+    """Test searching workspaces by identifier field."""
+    user = setup_user
+
+    # Create workspace with identifier
+    workspace_data = {
+        "name": "Searchable Workspace",
+        "description": "A workspace for testing search",
+        "identifier": "searchable-workspace",
+        "created_by_id": user.id,
+    }
+
+    workspace_create = WorkspaceCreate(**workspace_data)
+    workspace = WorkspaceService(db).create_workspace(workspace_create)
+
+    # Search by exact identifier match
+    filters = {"identifier": "searchable-workspace"}
+    results = WorkspaceService(db).search(filters)
+
+    assert len(results) == 1
+    assert results[0].id == workspace.id
+    assert results[0].identifier == workspace_data["identifier"]
+
+    # Search by partial identifier match
+    filters = {"identifier": {"operator": "ilike", "value": "%searchable%"}}
+    results = WorkspaceService(db).search(filters)
+
+    assert len(results) == 1
+    assert results[0].id == workspace.id

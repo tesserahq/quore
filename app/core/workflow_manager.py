@@ -63,7 +63,7 @@ class WorkflowManager:
         if self.system_prompt_id:
             # Use the specified system prompt from the prompts table
             prompt_service = PromptService(self.db_session)
-            prompt = prompt_service.get_prompt_by_prompt_id(self.system_prompt_id)
+            prompt = prompt_service.get_prompt_by_id_or_prompt_id(self.system_prompt_id)
             if prompt:
                 system_prompt = prompt.prompt
                 self.logger.info(
@@ -74,12 +74,16 @@ class WorkflowManager:
                     f"System prompt with ID {self.system_prompt_id} not found, falling back to project default"
                 )
                 system_prompt = (
-                    self.project.system_prompt or get_settings().default_system_prompt
+                    str(self.project.system_prompt)
+                    if self.project.system_prompt
+                    else get_settings().default_system_prompt
                 )
         else:
             # Use project's default system prompt
             system_prompt = (
-                self.project.system_prompt or get_settings().default_system_prompt
+                str(self.project.system_prompt)
+                if self.project.system_prompt
+                else get_settings().default_system_prompt
             )
 
         tools = await self.get_tools()

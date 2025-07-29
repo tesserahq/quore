@@ -96,6 +96,49 @@ class TestWorkflowManager:
             # (The actual verification would be in the workflow creation logic)
 
     @pytest.mark.asyncio
+    async def test_create_workflow_with_uuid_system_prompt_id(
+        self, db, setup_project, setup_system_prompt
+    ):
+        """Test creating workflow with a UUID system prompt ID."""
+        project = setup_project
+        system_prompt = setup_system_prompt
+
+        # Create context with UUID system_prompt_id
+        context = WorkflowManagerContext(
+            db_session=db, project=project, system_prompt_id=system_prompt.id
+        )
+
+        workflow_manager = WorkflowManager(context)
+
+        # Create a proper mock for the query engine tool
+        mock_query_tool = MagicMock()
+        mock_query_tool.__name__ = "query_index"  # Add the __name__ attribute
+        mock_query_tool.metadata = MagicMock()
+        mock_query_tool.metadata.name = "query_index"
+
+        # Mock the LLM and tools to avoid actual LLM calls
+        with (
+            patch.object(workflow_manager.index_manager, "llm") as mock_llm,
+            patch.object(
+                workflow_manager.index_manager, "get_query_engine_tool"
+            ) as mock_get_query_tool,
+            patch.object(workflow_manager, "get_tools") as mock_get_tools,
+        ):
+
+            mock_llm.return_value = MockLLM()
+            mock_get_query_tool.return_value = mock_query_tool
+            mock_get_tools.return_value = []
+
+            # Create workflow
+            workflow = await workflow_manager.create_workflow()
+
+            # Verify workflow was created
+            assert workflow is not None
+
+            # Verify the system prompt from the prompt service was used
+            # (The actual verification would be in the workflow creation logic)
+
+    @pytest.mark.asyncio
     async def test_create_workflow_with_invalid_system_prompt_id(
         self, db, setup_project
     ):

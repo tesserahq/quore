@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from uuid import UUID
 from sqlalchemy.orm import Session
 from app.models.prompt import Prompt
@@ -22,6 +22,27 @@ class PromptService:
     def get_prompt_by_prompt_id(self, prompt_id: str) -> Optional[Prompt]:
         """Fetch a single prompt by prompt_id string."""
         return self.db.query(Prompt).filter(Prompt.prompt_id == prompt_id).first()
+
+    def get_prompt_by_id_or_prompt_id(
+        self, identifier: Union[UUID, str]
+    ) -> Optional[Prompt]:
+        """
+        Fetch a single prompt by either UUID ID or prompt_id string.
+
+        Args:
+            identifier: Either a UUID (for the id field) or a string (for the prompt_id field)
+
+        Returns:
+            Optional[Prompt]: The prompt if found, None otherwise
+        """
+        if isinstance(identifier, UUID):
+            return self.get_prompt(identifier)
+        elif isinstance(identifier, str):
+            return self.get_prompt_by_prompt_id(identifier)
+        else:
+            raise ValueError(
+                f"Identifier must be UUID or string, got {type(identifier)}"
+            )
 
     def get_prompts(self, skip: int = 0, limit: int = 100) -> List[Prompt]:
         """Fetch a list of prompts with pagination."""
