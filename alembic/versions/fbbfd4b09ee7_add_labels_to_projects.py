@@ -22,10 +22,17 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
+    # Add the column with nullable=True first
     op.add_column(
         "projects",
-        sa.Column("labels", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column("labels", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
     )
+
+    # Update existing records to have an empty JSON object
+    op.execute("UPDATE projects SET labels = '{}' WHERE labels IS NULL")
+
+    # Now make the column non-nullable
+    op.alter_column("projects", "labels", nullable=False)
 
 
 def downgrade() -> None:
