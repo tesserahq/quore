@@ -1,4 +1,4 @@
-"""Add metadata to projects
+"""Add labels to projects
 
 Revision ID: fbbfd4b09ee7
 Revises: 2550d4723c64
@@ -24,10 +24,10 @@ def upgrade() -> None:
     """Upgrade schema."""
     op.add_column(
         "projects",
-        sa.Column("metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column("labels", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
     )
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.drop_column("projects", "metadata")
+    op.drop_column("projects", "labels")
