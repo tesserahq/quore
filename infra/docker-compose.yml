@@ -58,6 +58,10 @@ services:
     pull_policy: always
     env_file: ".github-mcp-server.env"
 
+  bauman-mcp:
+    image: mustela/bauman-mcp:main
+    pull_policy: always
+
   estate-buddy-mcp-server:
     image: mustela/estate-buddy-mcp-server:main
     pull_policy: always

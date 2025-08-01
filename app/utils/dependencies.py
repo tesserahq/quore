@@ -4,7 +4,9 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 
 from app.db import get_db
+from app.models.credential import Credential
 from app.models.plugin import Plugin
+from app.services.credential import CredentialService
 from app.services.plugin import PluginService
 from app.services.workspace import WorkspaceService
 from app.models.workspace import Workspace
@@ -87,3 +89,14 @@ def get_access_token(
             status_code=401, detail="Invalid authorization header format"
         )
     return authorization[7:]  # Remove "Bearer " prefix
+
+
+def get_credential_by_id(
+    credential_id: UUID,
+    workspace: Workspace = Depends(get_workspace_by_id),
+    db: Session = Depends(get_db),
+) -> Credential:
+    credential = CredentialService(db).get_credential(credential_id)
+    if credential is None or credential.workspace_id != workspace.id:
+        raise HTTPException(status_code=404, detail="Credential not found")
+    return credential

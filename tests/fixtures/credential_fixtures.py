@@ -1,6 +1,9 @@
 import pytest
+import json
 from app.schemas.credential import CredentialCreate
 from app.constants.credentials import CredentialType
+from app.models.credential import Credential
+from app.core.credentials import encrypt_credential_fields
 
 
 @pytest.fixture
@@ -91,11 +94,12 @@ def test_credential_create(test_credential_data, setup_workspace):
 @pytest.fixture
 def bearer_auth_credential_create(bearer_auth_credential_data, setup_workspace):
     """Create a Bearer auth CredentialCreate object for testing."""
+    workspace = setup_workspace
     return CredentialCreate(
         name=bearer_auth_credential_data["name"],
         type=bearer_auth_credential_data["type"],
         fields=bearer_auth_credential_data["fields"],
-        workspace_id=setup_workspace.id,
+        workspace_id=workspace.id,
     )
 
 
@@ -146,74 +150,148 @@ def invalid_bearer_auth_credential_create(
 
 
 @pytest.fixture
-def setup_credential(db, setup_user, test_credential_create):
+def setup_credential(db, setup_user, setup_workspace, test_credential_data):
     """Create a test credential in the database."""
-    from app.services.credential import CredentialService
+    user = setup_user
+    workspace = setup_workspace
+    # Encrypt the credential fields
+    encrypted_data = encrypt_credential_fields(test_credential_data["fields"])
 
-    service = CredentialService(db)
-    credential = service.create_credential(
-        credential=test_credential_create, user_id=setup_user.id
+    # Create the credential record
+    credential = Credential(
+        name=test_credential_data["name"],
+        type=test_credential_data["type"],
+        encrypted_data=encrypted_data,
+        created_by_id=user.id,
+        workspace_id=workspace.id,
     )
+
+    db.add(credential)
+    db.commit()
+    db.refresh(credential)
     return credential
 
 
 @pytest.fixture
-def setup_bearer_auth_credential(db, setup_user, bearer_auth_credential_create):
+def setup_bearer_auth_credential(
+    db, setup_user, setup_workspace, bearer_auth_credential_data
+):
     """Create a test Bearer auth credential in the database."""
-    from app.services.credential import CredentialService
+    user = setup_user
+    workspace = setup_workspace
+    # Encrypt the credential fields
+    encrypted_data = encrypt_credential_fields(bearer_auth_credential_data["fields"])
 
-    service = CredentialService(db)
-    credential = service.create_credential(
-        credential=bearer_auth_credential_create, user_id=setup_user.id
+    # Create the credential record
+    credential = Credential(
+        name=bearer_auth_credential_data["name"],
+        type=bearer_auth_credential_data["type"],
+        encrypted_data=encrypted_data,
+        created_by_id=user.id,
+        workspace_id=workspace.id,
     )
+
+    db.add(credential)
+    db.commit()
+    db.refresh(credential)
     return credential
 
 
 @pytest.fixture
-def setup_basic_auth_credential(db, setup_user, basic_auth_credential_create):
+def setup_basic_auth_credential(
+    db, setup_user, setup_workspace, basic_auth_credential_data
+):
     """Create a test Basic auth credential in the database."""
-    from app.services.credential import CredentialService
+    user = setup_user
+    workspace = setup_workspace
+    # Encrypt the credential fields
+    encrypted_data = encrypt_credential_fields(basic_auth_credential_data["fields"])
 
-    service = CredentialService(db)
-    credential = service.create_credential(
-        credential=basic_auth_credential_create, user_id=setup_user.id
+    # Create the credential record
+    credential = Credential(
+        name=basic_auth_credential_data["name"],
+        type=basic_auth_credential_data["type"],
+        encrypted_data=encrypted_data,
+        created_by_id=user.id,
+        workspace_id=workspace.id,
     )
+
+    db.add(credential)
+    db.commit()
+    db.refresh(credential)
     return credential
 
 
 @pytest.fixture
-def setup_gitlab_pat_credential(db, setup_user, gitlab_pat_credential_create):
+def setup_gitlab_pat_credential(
+    db, setup_user, setup_workspace, gitlab_pat_credential_data
+):
     """Create a test GitLab PAT credential in the database."""
-    from app.services.credential import CredentialService
+    user = setup_user
+    workspace = setup_workspace
+    # Encrypt the credential fields
+    encrypted_data = encrypt_credential_fields(gitlab_pat_credential_data["fields"])
 
-    service = CredentialService(db)
-    credential = service.create_credential(
-        credential=gitlab_pat_credential_create, user_id=setup_user.id
+    # Create the credential record
+    credential = Credential(
+        name=gitlab_pat_credential_data["name"],
+        type=gitlab_pat_credential_data["type"],
+        encrypted_data=encrypted_data,
+        created_by_id=user.id,
+        workspace_id=workspace.id,
     )
+
+    db.add(credential)
+    db.commit()
+    db.refresh(credential)
     return credential
 
 
 @pytest.fixture
-def setup_ssh_key_credential(db, setup_user, ssh_key_credential_create):
+def setup_ssh_key_credential(db, setup_user, setup_workspace, ssh_key_credential_data):
     """Create a test SSH key credential in the database."""
-    from app.services.credential import CredentialService
+    user = setup_user
+    workspace = setup_workspace
+    # Encrypt the credential fields
+    encrypted_data = encrypt_credential_fields(ssh_key_credential_data["fields"])
 
-    service = CredentialService(db)
-    credential = service.create_credential(
-        credential=ssh_key_credential_create, user_id=setup_user.id
+    # Create the credential record
+    credential = Credential(
+        name=ssh_key_credential_data["name"],
+        type=ssh_key_credential_data["type"],
+        encrypted_data=encrypted_data,
+        created_by_id=user.id,
+        workspace_id=workspace.id,
     )
+
+    db.add(credential)
+    db.commit()
+    db.refresh(credential)
     return credential
 
 
 @pytest.fixture
 def setup_invalid_bearer_auth_credential(
-    db, setup_user, invalid_bearer_auth_credential_create
+    db, setup_user, setup_workspace, invalid_bearer_auth_credential_data
 ):
     """Create a test invalid Bearer auth credential in the database."""
-    from app.services.credential import CredentialService
-
-    service = CredentialService(db)
-    credential = service.create_credential(
-        credential=invalid_bearer_auth_credential_create, user_id=setup_user.id
+    user = setup_user
+    workspace = setup_workspace
+    # Encrypt the credential fields
+    encrypted_data = encrypt_credential_fields(
+        invalid_bearer_auth_credential_data["fields"]
     )
+
+    # Create the credential record
+    credential = Credential(
+        name=invalid_bearer_auth_credential_data["name"],
+        type=invalid_bearer_auth_credential_data["type"],
+        encrypted_data=encrypted_data,
+        created_by_id=user.id,
+        workspace_id=workspace.id,
+    )
+
+    db.add(credential)
+    db.commit()
+    db.refresh(credential)
     return credential

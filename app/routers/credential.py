@@ -13,7 +13,6 @@ from app.schemas.credential import (
     CredentialTypeInfo,
 )
 from app.services.credential import CredentialService
-from app.services.membership import MembershipService
 from app.schemas.common import ListResponse
 from app.utils.auth import get_current_user
 from app.models.workspace import Workspace
@@ -38,17 +37,6 @@ credential_router = APIRouter(prefix="/credentials", tags=["credentials"])
 def list_credential_types():
     """List all available credential types and their field schemas."""
     return list(credential_registry.values())
-
-
-def get_credential_by_id(
-    credential_id: UUID,
-    workspace: Workspace = Depends(get_workspace_by_id),
-    db: Session = Depends(get_db),
-) -> Credential:
-    credential = CredentialService(db).get_credential(credential_id)
-    if credential is None or credential.workspace_id != workspace.id:
-        raise HTTPException(status_code=404, detail="Credential not found")
-    return credential
 
 
 def get_credential_direct(
@@ -95,24 +83,6 @@ def list_workspace_credentials(
     )
 
 
-@credential_router.get("", response_model=ListResponse[CredentialInfo])
-def list_credentials(
-    skip: int = 0,
-    limit: int = 100,
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
-    """List all credentials the user has access to."""
-    # Get all workspaces the user is a member of
-    workspace_ids = [m.workspace_id for m in current_user.memberships]
-    filters = {"workspace_id": {"operator": "in", "value": workspace_ids}}
-    credentials = CredentialService(db).search(filters)
-    credential_service = CredentialService(db)
-    return ListResponse(
-        data=[credential_service.to_credential_info(c) for c in credentials]
-    )
-
-
 @workspace_router.post(
     "", response_model=CredentialInfo, status_code=status.HTTP_201_CREATED
 )
@@ -133,15 +103,6 @@ def create_workspace_credential(
     return credential_service.to_credential_info(created_credential)
 
 
-@workspace_router.get("/{credential_id}", response_model=CredentialInfo)
-def get_workspace_credential(
-    credential: Credential = Depends(get_credential_by_id),
-    db: Session = Depends(get_db),
-):
-    """Get a specific credential in a workspace."""
-    return CredentialService(db).to_credential_info(credential)
-
-
 @credential_router.get("/{credential_id}", response_model=CredentialInfo)
 def get_credential(
     credential: Credential = Depends(get_credential_direct),
@@ -149,20 +110,6 @@ def get_credential(
 ):
     """Get a specific credential by ID."""
     return CredentialService(db).to_credential_info(credential)
-
-
-@workspace_router.put("/{credential_id}", response_model=CredentialInfo)
-def update_workspace_credential(
-    credential_update: CredentialUpdate,
-    credential: Credential = Depends(get_credential_by_id),
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
-    """Update a credential in a workspace."""
-    updated_credential = CredentialService(db).update_credential(
-        UUID(str(credential.id)), credential_update
-    )
-    return updated_credential
 
 
 @credential_router.put("/{credential_id}", response_model=CredentialInfo)
@@ -177,19 +124,6 @@ def update_credential(
         UUID(str(credential.id)), credential_update
     )
     return updated_credential
-
-
-@workspace_router.delete("/{credential_id}")
-def delete_workspace_credential(
-    credential: Credential = Depends(get_credential_by_id),
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
-    """Delete a credential from a workspace."""
-    success = CredentialService(db).delete_credential(UUID(str(credential.id)))
-    if not success:
-        raise HTTPException(status_code=404, detail="Credential not found")
-    return {"message": "Credential deleted successfully"}
 
 
 @credential_router.delete("/{credential_id}")

@@ -61,6 +61,10 @@ class ProjectBase(BaseModel):
     system_prompt: Optional[str] = Field(
         None, description="Optional system prompt for the project's AI assistant."
     )
+    labels: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Optional labels for the project. This can be used to store arbitrary data about the project.",
+    )
 
 
 class ProjectCreate(ProjectBase):

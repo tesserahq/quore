@@ -81,6 +81,7 @@ class Project(Base, TimestampMixin):
     embed_dim = Column(Integer, nullable=False)
     system_prompt = Column(String, nullable=True)
     llm = Column(String, nullable=False)
+    labels = Column(JSONB, default=dict, nullable=False)  # Dictionary of labels
     workspace_id = Column(
         UUID(as_uuid=True), ForeignKey("workspaces.id"), nullable=False
     )
