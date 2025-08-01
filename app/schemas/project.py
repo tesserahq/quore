@@ -58,6 +58,9 @@ class ProjectBase(BaseModel):
         default_factory=lambda: get_settings().default_llm,
         description="The specific LLM model to use for this project. Defaults to the system's default LLM.",
     )
+    system_prompt: Optional[str] = Field(
+        None, description="Optional system prompt for the project's AI assistant."
+    )
 
 
 class ProjectCreate(ProjectBase):
@@ -68,6 +71,9 @@ class ProjectUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
     ingest_settings: Optional[Dict[str, Any]] = None
+    system_prompt: Optional[str] = Field(
+        None, description="Optional system prompt for the project's AI assistant."
+    )
 
 
 class ProjectInDB(ProjectBase):
