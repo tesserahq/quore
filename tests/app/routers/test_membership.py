@@ -1,5 +1,5 @@
 import pytest
-from app.constants.membership import MEMBER_ROLE, OWNER_ROLE, ADMIN_ROLE
+from app.constants.membership import MEMBER_ROLE, OWNER_ROLE, ADMIN_ROLE, ROLES_DATA
 
 
 def test_list_memberships(client, setup_membership):
@@ -213,3 +213,35 @@ def test_update_membership_to_invalid_role(client, setup_membership):
     # Should either accept it (if no validation) or reject it (if validation exists)
     # This depends on your business logic validation
     assert response.status_code in [200, 400, 422]
+
+
+def test_get_roles(client):
+    """Test GET /memberships/roles endpoint."""
+    response = client.get("/memberships/roles")
+
+    assert response.status_code == 200
+    data = response.json()
+
+    assert "roles" in data
+    assert isinstance(data["roles"], list)
+    assert len(data["roles"]) == len(ROLES_DATA)
+
+    # Verify each role has the expected structure
+    for role in data["roles"]:
+        assert "id" in role
+        assert "name" in role
+        assert isinstance(role["id"], str)
+        assert isinstance(role["name"], str)
+
+    # Verify all expected roles are present
+    role_ids = [role["id"] for role in data["roles"]]
+    expected_role_ids = [role["id"] for role in ROLES_DATA]
+    assert set(role_ids) == set(expected_role_ids)
+
+    # Verify role names match
+    for expected_role in ROLES_DATA:
+        found_role = next(
+            (r for r in data["roles"] if r["id"] == expected_role["id"]), None
+        )
+        assert found_role is not None
+        assert found_role["name"] == expected_role["name"]

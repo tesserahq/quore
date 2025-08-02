@@ -1,7 +1,24 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from uuid import UUID
 from datetime import datetime
+
+
+class RoleData(BaseModel):
+    """Schema for individual role data."""
+
+    id: str
+    """Role identifier."""
+
+    name: str
+    """Display name for the role."""
+
+
+class RolesResponse(BaseModel):
+    """Schema for the roles endpoint response."""
+
+    roles: List[RoleData]
+    """List of available roles."""
 
 
 class MembershipBase(BaseModel):

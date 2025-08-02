@@ -10,11 +10,13 @@ from app.schemas.membership import (
     MembershipCreateRequest,
     MembershipInDB,
     MembershipUpdate,
+    RolesResponse,
 )
 from app.services.membership import MembershipService
 from app.schemas.common import ListResponse
 from app.models.workspace import Workspace
 from app.utils.dependencies import get_workspace_by_id
+from app.constants.membership import ROLES_DATA
 
 workspace_membership_router = APIRouter(
     prefix="/workspaces/{workspace_id}/memberships", tags=["memberships"]
@@ -78,6 +80,12 @@ def create_membership(
         role=membership.role,
     )
     return membership_service.create_membership(membership_create)
+
+
+@membership_router.get("/roles", response_model=RolesResponse)
+def get_roles():
+    """Get the list of available membership roles."""
+    return RolesResponse(roles=ROLES_DATA)
 
 
 @membership_router.get("/{membership_id}", response_model=MembershipInDB)
