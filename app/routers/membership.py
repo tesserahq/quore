@@ -5,18 +5,25 @@ from typing import Optional
 from uuid import UUID
 
 from app.db import get_db
-from app.schemas.membership import MembershipInDB, MembershipCreate, MembershipUpdate
+from app.schemas.membership import (
+    MembershipCreate,
+    MembershipCreateRequest,
+    MembershipInDB,
+    MembershipUpdate,
+)
 from app.services.membership import MembershipService
 from app.schemas.common import ListResponse
 from app.models.workspace import Workspace
 from app.utils.dependencies import get_workspace_by_id
 
-router = APIRouter(
-    prefix="/workspaces/{workspace_id}/memberships", tags=["workspace-memberships"]
+workspace_membership_router = APIRouter(
+    prefix="/workspaces/{workspace_id}/memberships", tags=["memberships"]
 )
 
+membership_router = APIRouter(prefix="/memberships", tags=["memberships"])
 
-@router.get("", response_model=ListResponse[MembershipInDB])
+
+@workspace_membership_router.get("", response_model=ListResponse[MembershipInDB])
 def list_memberships(
     skip: int = 0,
     limit: int = 100,
@@ -43,9 +50,11 @@ def list_memberships(
     return ListResponse(data=memberships)
 
 
-@router.post("", response_model=MembershipInDB, status_code=status.HTTP_201_CREATED)
+@workspace_membership_router.post(
+    "", response_model=MembershipInDB, status_code=status.HTTP_201_CREATED
+)
 def create_membership(
-    membership: MembershipCreate,
+    membership: MembershipCreateRequest,
     workspace: Workspace = Depends(get_workspace_by_id),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
@@ -63,26 +72,30 @@ def create_membership(
             detail="User is already a member of this workspace",
         )
 
-    # Set the workspace_id from the dependency
-    membership.workspace_id = UUID(str(workspace.id))
-    return membership_service.create_membership(membership)
+    membership_create = MembershipCreate(
+        user_id=membership.user_id,
+        workspace_id=UUID(str(workspace.id)),
+        role=membership.role,
+    )
+    return membership_service.create_membership(membership_create)
 
 
-@router.get("/{membership_id}", response_model=MembershipInDB)
+@membership_router.get("/{membership_id}", response_model=MembershipInDB)
 def get_membership(
     membership_id: UUID,
-    workspace: Workspace = Depends(get_workspace_by_id),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
     """Get a specific membership by ID."""
     membership = MembershipService(db).get_membership(membership_id)
-    if membership is None or membership.workspace_id != UUID(str(workspace.id)):
+
+    if membership is None:
         raise HTTPException(status_code=404, detail="Membership not found")
+
     return membership
 
 
-@router.put("/{membership_id}", response_model=MembershipInDB)
+@membership_router.put("/{membership_id}", response_model=MembershipInDB)
 def update_membership(
     membership_id: UUID,
     membership: MembershipUpdate,
@@ -98,7 +111,7 @@ def update_membership(
     return updated_membership
 
 
-@router.delete("/{membership_id}")
+@membership_router.delete("/{membership_id}")
 def delete_membership(
     membership_id: UUID,
     db: Session = Depends(get_db),

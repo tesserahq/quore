@@ -70,7 +70,8 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
 
     app.include_router(workspace.router)
     app.include_router(user.router)
-    app.include_router(membership.router)
+    app.include_router(membership.workspace_membership_router)
+    app.include_router(membership.membership_router)
     app.include_router(project.router)
     app.include_router(ingest.router)
     app.include_router(status.router)

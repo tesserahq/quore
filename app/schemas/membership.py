@@ -23,6 +23,15 @@ class MembershipCreate(MembershipBase):
     pass
 
 
+class MembershipCreateRequest(BaseModel):
+    """Schema for creating a new membership. Inherits all fields from MembershipBase."""
+
+    user_id: UUID
+    """ID of the user who is a member of the workspace."""
+
+    role: str = "member"
+
+
 class MembershipUpdate(BaseModel):
     """Schema for updating an existing membership. All fields are optional."""
 
