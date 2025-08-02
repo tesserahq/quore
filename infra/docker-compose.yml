@@ -42,6 +42,7 @@ services:
     env_file: ".linden.env"
     depends_on:
       - db
+      - quore-api
 
   identies-api:
     image: mustela/identies:main
