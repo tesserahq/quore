@@ -43,6 +43,19 @@ def test_create_workspace(client, setup_user):
     assert workspace["name"] == "Test Workspace"
     assert workspace["created_by_id"] == str(user.id)
 
+    # Verify that a membership was created for the workspace creator
+    workspace_id = workspace["id"]
+    membership_response = client.get(f"/workspaces/{workspace_id}/memberships")
+    assert membership_response.status_code == 200
+
+    memberships = membership_response.json()["data"]
+    assert len(memberships) == 1
+
+    membership = memberships[0]
+    assert membership["user_id"] == str(user.id)
+    assert membership["workspace_id"] == workspace_id
+    assert membership["role"] == "owner"  # Should be owner role
+
 
 def test_create_workspace_invalid_data(client, setup_user):
     """Test POST /workspaces endpoint with invalid data."""

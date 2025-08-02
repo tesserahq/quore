@@ -1,3 +1,4 @@
+from app.commands.workspaces.create_workspace_command import CreateWorkspaceCommand
 from app.schemas.project import ProjectCreate, Project
 from app.services.project import ProjectService
 from app.utils.auth import get_current_user
@@ -37,7 +38,8 @@ def create_workspace(
     current_user=Depends(get_current_user),
 ):
     workspace.created_by_id = current_user.id
-    return WorkspaceService(db).create_workspace(workspace)
+
+    return CreateWorkspaceCommand(db).execute(workspace_create=workspace)
 
 
 @router.get("/{workspace_id}", response_model=Workspace)
