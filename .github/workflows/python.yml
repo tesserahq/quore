@@ -35,7 +35,7 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/quore_test
-      CREDENTIAL_MASTER_KEY: "test"
+      CREDENTIAL_MASTER_KEY: "RrAy78H8PevHw9EJ3a0OZgrHp8RABeXRQQGajzO5NQc="
       ENV: test
       ROLLBAR_ACCESS_TOKEN: 7cd9dd0b5df9462b8ebdfb522af61cd2
     steps:

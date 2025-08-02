@@ -242,3 +242,339 @@ def test_search_workspaces_by_identifier(db: Session, setup_user):
 
     assert len(results) == 1
     assert results[0].id == workspace.id
+
+
+def test_get_workspace_stats_empty_workspace(db: Session, setup_workspace):
+    """Test get_workspace_stats with an empty workspace."""
+    workspace = setup_workspace
+
+    stats = WorkspaceService(db).get_workspace_stats(workspace.id)
+
+    assert stats is not None
+    assert stats.project_stats.total_projects == 0
+    assert stats.project_stats.recent_projects == []
+    assert stats.prompt_stats.total_prompts == 0
+    assert stats.prompt_stats.recent_prompts == []
+    assert stats.plugin_stats.total_enabled == 0
+    assert stats.plugin_stats.total_disabled == 0
+    assert stats.credential_stats.total_credentials == 0
+    assert stats.credential_stats.recent_credentials == []
+
+
+def test_get_workspace_stats_with_projects(db: Session, setup_workspace, setup_project):
+    """Test get_workspace_stats with projects."""
+    workspace = setup_workspace
+    project = setup_project
+
+    stats = WorkspaceService(db).get_workspace_stats(workspace.id)
+
+    assert stats is not None
+    assert stats.project_stats.total_projects == 1
+    assert len(stats.project_stats.recent_projects) == 1
+    assert stats.project_stats.recent_projects[0].id == project.id
+    assert stats.project_stats.recent_projects[0].name == project.name
+    assert stats.project_stats.recent_projects[0].description == project.description
+
+
+def test_get_workspace_stats_with_prompts(db: Session, setup_workspace, setup_prompt):
+    """Test get_workspace_stats with prompts."""
+    workspace = setup_workspace
+    prompt = setup_prompt
+
+    stats = WorkspaceService(db).get_workspace_stats(workspace.id)
+
+    assert stats is not None
+    assert stats.prompt_stats.total_prompts == 1
+    assert len(stats.prompt_stats.recent_prompts) == 1
+    assert stats.prompt_stats.recent_prompts[0].id == prompt.id
+    assert stats.prompt_stats.recent_prompts[0].name == prompt.name
+    assert stats.prompt_stats.recent_prompts[0].type == prompt.type
+
+
+def test_get_workspace_stats_with_plugins(db: Session, setup_workspace, setup_plugin):
+    """Test get_workspace_stats with plugins."""
+    workspace = setup_workspace
+    plugin = setup_plugin
+
+    stats = WorkspaceService(db).get_workspace_stats(workspace.id)
+
+    assert stats is not None
+    # Plugin should be counted as disabled (INITIALIZING state)
+    assert stats.plugin_stats.total_enabled == 0
+    assert stats.plugin_stats.total_disabled == 1
+
+
+def test_get_workspace_stats_with_credentials(
+    db: Session, setup_workspace, setup_credential
+):
+    """Test get_workspace_stats with credentials."""
+    workspace = setup_workspace
+    credential = setup_credential
+
+    stats = WorkspaceService(db).get_workspace_stats(workspace.id)
+
+    assert stats is not None
+    assert stats.credential_stats.total_credentials == 1
+    assert len(stats.credential_stats.recent_credentials) == 1
+    assert stats.credential_stats.recent_credentials[0].id == credential.id
+    assert stats.credential_stats.recent_credentials[0].name == credential.name
+    assert stats.credential_stats.recent_credentials[0].type == credential.type
+
+
+def test_get_workspace_stats_comprehensive(
+    db: Session,
+    setup_workspace,
+    setup_project,
+    setup_prompt,
+    setup_plugin,
+    setup_credential,
+):
+    """Test get_workspace_stats with all types of data."""
+    workspace = setup_workspace
+    project = setup_project
+    prompt = setup_prompt
+    plugin = setup_plugin
+    credential = setup_credential
+
+    stats = WorkspaceService(db).get_workspace_stats(workspace.id)
+
+    assert stats is not None
+
+    # Check projects
+    assert stats.project_stats.total_projects == 1
+    assert len(stats.project_stats.recent_projects) == 1
+    assert stats.project_stats.recent_projects[0].id == project.id
+
+    # Check prompts
+    assert stats.prompt_stats.total_prompts == 1
+    assert len(stats.prompt_stats.recent_prompts) == 1
+    assert stats.prompt_stats.recent_prompts[0].id == prompt.id
+
+    # Check plugins
+    assert stats.plugin_stats.total_enabled == 0
+    assert stats.plugin_stats.total_disabled == 1
+
+    # Check credentials
+    assert stats.credential_stats.total_credentials == 1
+    assert len(stats.credential_stats.recent_credentials) == 1
+    assert stats.credential_stats.recent_credentials[0].id == credential.id
+
+
+def test_get_workspace_stats_multiple_items(db: Session, setup_workspace, faker):
+    """Test get_workspace_stats with multiple items."""
+    workspace = setup_workspace
+
+    # Create multiple projects
+    from app.models.project import Project
+    from app.constants.providers import MOCK_PROVIDER
+
+    projects = []
+    for i in range(3):
+        project = Project(
+            name=f"Project {i}",
+            description=f"Description {i}",
+            workspace_id=workspace.id,
+            llm_provider=MOCK_PROVIDER,
+            embed_model="mock",
+            embed_dim=1536,
+            llm="mock",
+        )
+        db.add(project)
+        projects.append(project)
+
+    # Create multiple prompts
+    from app.models.prompt import Prompt
+
+    prompts = []
+    for i in range(3):
+        prompt = Prompt(
+            name=f"Prompt {i}",
+            prompt_id=faker.uuid4(),
+            type=f"type_{i}",
+            prompt=f"Prompt content {i}",
+            workspace_id=workspace.id,
+            created_by_id=workspace.created_by_id,
+        )
+        db.add(prompt)
+        prompts.append(prompt)
+
+    # Create multiple credentials
+    from app.models.credential import Credential
+    from app.core.credentials import encrypt_credential_fields
+
+    credentials = []
+    for i in range(3):
+        # Encrypt the credential fields
+        fields_data = {"field": f"value_{i}"}
+        encrypted_data = encrypt_credential_fields(fields_data)
+
+        credential = Credential(
+            name=f"Credential {i}",
+            type=f"type_{i}",
+            encrypted_data=encrypted_data,
+            workspace_id=workspace.id,
+            created_by_id=workspace.created_by_id,
+        )
+        db.add(credential)
+        credentials.append(credential)
+
+    # Create multiple plugins
+    from app.models.plugin import Plugin
+    from app.constants.plugin_states import PluginState
+
+    plugins = []
+    for i in range(3):
+        plugin = Plugin(
+            name=f"Plugin {i}",
+            description=f"Description {i}",
+            version="1.0.0",
+            state=PluginState.RUNNING if i % 2 == 0 else PluginState.STOPPED,
+            endpoint_url=f"http://localhost:{8000 + i}",
+            workspace_id=workspace.id,
+        )
+        db.add(plugin)
+        plugins.append(plugin)
+
+    db.commit()
+
+    stats = WorkspaceService(db).get_workspace_stats(workspace.id)
+
+    assert stats is not None
+
+    # Check counts
+    assert stats.project_stats.total_projects == 3
+    assert stats.prompt_stats.total_prompts == 3
+    assert stats.plugin_stats.total_enabled == 2  # 2 RUNNING plugins
+    assert stats.plugin_stats.total_disabled == 1  # 1 STOPPED plugin
+    assert stats.credential_stats.total_credentials == 3
+
+    # Check recent items (should be limited to 5 most recent)
+    assert len(stats.project_stats.recent_projects) == 3
+    assert len(stats.prompt_stats.recent_prompts) == 3
+    assert len(stats.credential_stats.recent_credentials) == 3
+
+
+def test_get_workspace_stats_nonexistent_workspace(db: Session):
+    """Test get_workspace_stats with nonexistent workspace."""
+    import uuid
+
+    nonexistent_id = uuid.uuid4()
+    stats = WorkspaceService(db).get_workspace_stats(nonexistent_id)
+
+    assert stats is None
+
+
+def test_get_workspace_stats_plugin_states(db: Session, setup_workspace):
+    """Test get_workspace_stats with different plugin states."""
+    workspace = setup_workspace
+
+    # Create plugins with different states
+    from app.models.plugin import Plugin
+    from app.constants.plugin_states import PluginState
+
+    # Enabled states: RUNNING, IDLE, STARTING
+    enabled_plugins = []
+    for state in [PluginState.RUNNING, PluginState.IDLE, PluginState.STARTING]:
+        plugin = Plugin(
+            name=f"Enabled Plugin {state}",
+            description=f"Description {state}",
+            version="1.0.0",
+            state=state,
+            endpoint_url="http://localhost:8000",
+            workspace_id=workspace.id,
+        )
+        db.add(plugin)
+        enabled_plugins.append(plugin)
+
+    # Disabled states: STOPPED, ERROR, REGISTERED, INITIALIZING
+    disabled_plugins = []
+    for state in [
+        PluginState.STOPPED,
+        PluginState.ERROR,
+        PluginState.REGISTERED,
+        PluginState.INITIALIZING,
+    ]:
+        plugin = Plugin(
+            name=f"Disabled Plugin {state}",
+            description=f"Description {state}",
+            version="1.0.0",
+            state=state,
+            endpoint_url="http://localhost:8000",
+            workspace_id=workspace.id,
+        )
+        db.add(plugin)
+        disabled_plugins.append(plugin)
+
+    db.commit()
+
+    stats = WorkspaceService(db).get_workspace_stats(workspace.id)
+
+    assert stats is not None
+    assert stats.plugin_stats.total_enabled == 3  # RUNNING, IDLE, STARTING
+    assert (
+        stats.plugin_stats.total_disabled == 4
+    )  # STOPPED, ERROR, REGISTERED, INITIALIZING
+
+
+def test_get_workspace_stats_recent_items_limit(db: Session, setup_workspace, faker):
+    """Test get_workspace_stats ensures recent items are limited to 5."""
+    workspace = setup_workspace
+
+    # Create more than 5 projects
+    from app.models.project import Project
+    from app.constants.providers import MOCK_PROVIDER
+
+    for i in range(7):
+        project = Project(
+            name=f"Project {i}",
+            description=f"Description {i}",
+            workspace_id=workspace.id,
+            llm_provider=MOCK_PROVIDER,
+            embed_model="mock",
+            embed_dim=1536,
+            llm="mock",
+        )
+        db.add(project)
+
+    # Create more than 5 prompts
+    from app.models.prompt import Prompt
+
+    for i in range(7):
+        prompt = Prompt(
+            name=f"Prompt {i}",
+            prompt_id=faker.uuid4(),
+            type=f"type_{i}",
+            prompt=f"Prompt content {i}",
+            workspace_id=workspace.id,
+            created_by_id=workspace.created_by_id,
+        )
+        db.add(prompt)
+
+    # Create more than 5 credentials
+    from app.models.credential import Credential
+    from app.core.credentials import encrypt_credential_fields
+
+    for i in range(7):
+        fields_data = {"field": f"value_{i}"}
+        encrypted_data = encrypt_credential_fields(fields_data)
+
+        credential = Credential(
+            name=f"Credential {i}",
+            type=f"type_{i}",
+            encrypted_data=encrypted_data,
+            workspace_id=workspace.id,
+            created_by_id=workspace.created_by_id,
+        )
+        db.add(credential)
+
+    db.commit()
+
+    stats = WorkspaceService(db).get_workspace_stats(workspace.id)
+
+    assert stats is not None
+    assert stats.project_stats.total_projects == 7
+    assert len(stats.project_stats.recent_projects) == 5  # Limited to 5
+    assert stats.prompt_stats.total_prompts == 7
+    assert len(stats.prompt_stats.recent_prompts) == 5  # Limited to 5
+    assert stats.credential_stats.total_credentials == 7
+    assert len(stats.credential_stats.recent_credentials) == 5  # Limited to 5
