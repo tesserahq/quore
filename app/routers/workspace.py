@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.schemas.workspace import Workspace, WorkspaceCreate, WorkspaceUpdate
+from app.schemas.workspace import Workspace, WorkspaceCreate, WorkspaceUpdate, WorkspaceStats
 from app.services.workspace import WorkspaceService
 from app.schemas.common import ListResponse
 from app.utils.dependencies import get_workspace_by_id
@@ -62,6 +62,22 @@ def delete_workspace(
     if not success:
         raise HTTPException(status_code=404, detail="Workspace not found")
     return {"message": "Workspace deleted successfully"}
+
+
+@router.get("/{workspace_id}/stats", response_model=WorkspaceStats)
+def get_workspace_stats(
+    workspace: Workspace = Depends(get_workspace_by_id),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Get comprehensive statistics for a workspace."""
+    service = WorkspaceService(db)
+    stats = service.get_workspace_stats(workspace.id)
+    
+    if not stats:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+    
+    return stats
 
 
 @router.get("/{workspace_id}/projects", response_model=ListResponse[Project])

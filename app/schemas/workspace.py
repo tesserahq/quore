@@ -1,6 +1,6 @@
 from app.schemas.user import UserDetails
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List
 from uuid import UUID
 from datetime import datetime
 
@@ -70,3 +70,63 @@ class Workspace(WorkspaceInDB):
 
     created_by: Optional[UserDetails]
     """Details of the user who created the workspace."""
+
+
+class WorkspaceStats(BaseModel):
+    """Schema for workspace statistics returned by the stats endpoint."""
+    
+    total_projects: int = Field(..., description="Total number of projects in the workspace")
+    recent_projects: List['ProjectSummary'] = Field(..., description="5 most recently updated projects")
+    recent_prompts: List['PromptSummary'] = Field(..., description="5 most recently updated prompts")
+    plugin_stats: 'PluginStats' = Field(..., description="Plugin statistics")
+    credential_stats: 'CredentialStats' = Field(..., description="Credential statistics")
+
+
+class ProjectSummary(BaseModel):
+    """Summary information for a project in stats."""
+    
+    id: UUID
+    name: str
+    description: Optional[str] = None
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
+class PromptSummary(BaseModel):
+    """Summary information for a prompt in stats."""
+    
+    id: UUID
+    name: str
+    type: str
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
+class PluginStats(BaseModel):
+    """Plugin statistics."""
+    
+    total_enabled: int = Field(..., description="Total number of enabled plugins")
+    total_disabled: int = Field(..., description="Total number of disabled plugins")
+
+
+class CredentialStats(BaseModel):
+    """Credential statistics."""
+    
+    total_credentials: int = Field(..., description="Total number of credentials")
+    recent_credentials: List['CredentialSummary'] = Field(..., description="5 most recently updated credentials")
+
+
+class CredentialSummary(BaseModel):
+    """Summary information for a credential in stats."""
+    
+    id: UUID
+    name: str
+    type: str
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
