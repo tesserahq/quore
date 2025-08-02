@@ -5,7 +5,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.schemas.workspace import Workspace, WorkspaceCreate, WorkspaceUpdate, WorkspaceStats
+from app.schemas.workspace import (
+    Workspace,
+    WorkspaceCreate,
+    WorkspaceUpdate,
+    WorkspaceStats,
+)
 from app.services.workspace import WorkspaceService
 from app.schemas.common import ListResponse
 from app.utils.dependencies import get_workspace_by_id
@@ -73,10 +78,10 @@ def get_workspace_stats(
     """Get comprehensive statistics for a workspace."""
     service = WorkspaceService(db)
     stats = service.get_workspace_stats(workspace.id)
-    
+
     if not stats:
         raise HTTPException(status_code=404, detail="Workspace not found")
-    
+
     return stats
 
 
