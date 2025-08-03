@@ -8,7 +8,7 @@ from app.utils.auth import get_current_user
 from app.db import get_db
 from app.core.index_manager import IndexManager
 from app.core.ingestor import Ingestor
-from app.utils.dependencies import get_project_by_id
+from app.routers.utils.dependencies import get_project_by_id
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 

@@ -12,10 +12,10 @@ from app.schemas.membership import (
     MembershipUpdate,
     RolesResponse,
 )
-from app.services.membership import MembershipService
+from app.services.membership_service import MembershipService
 from app.schemas.common import ListResponse
 from app.models.workspace import Workspace
-from app.utils.dependencies import get_workspace_by_id
+from app.routers.utils.dependencies import get_workspace_by_id
 from app.constants.membership import ROLES_DATA
 
 workspace_membership_router = APIRouter(
@@ -50,36 +50,6 @@ def list_memberships(
         )
 
     return ListResponse(data=memberships)
-
-
-@workspace_membership_router.post(
-    "", response_model=MembershipInDB, status_code=status.HTTP_201_CREATED
-)
-def create_membership(
-    membership: MembershipCreateRequest,
-    workspace: Workspace = Depends(get_workspace_by_id),
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
-    """Create a new membership."""
-    membership_service = MembershipService(db)
-
-    # Check if membership already exists
-    existing = membership_service.get_user_workspace_membership(
-        membership.user_id, UUID(str(workspace.id))
-    )
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User is already a member of this workspace",
-        )
-
-    membership_create = MembershipCreate(
-        user_id=membership.user_id,
-        workspace_id=UUID(str(workspace.id)),
-        role=membership.role,
-    )
-    return membership_service.create_membership(membership_create)
 
 
 @membership_router.get("/roles", response_model=RolesResponse)

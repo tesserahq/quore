@@ -1,5 +1,10 @@
 import pytest
-from app.constants.membership import MEMBER_ROLE, OWNER_ROLE, ADMIN_ROLE, ROLES_DATA
+from app.constants.membership import (
+    COLLABORATOR_ROLE,
+    OWNER_ROLE,
+    ADMIN_ROLE,
+    ROLES_DATA,
+)
 
 
 def test_list_memberships(client, setup_membership):
@@ -19,52 +24,6 @@ def test_list_memberships(client, setup_membership):
     assert any(
         m["workspace_id"] == str(membership.workspace_id) for m in membership_list
     )
-
-
-def test_create_membership(client, setup_user, setup_workspace, setup_another_user):
-    """Test POST /workspaces/{workspace_id}/memberships endpoint."""
-    workspace = setup_workspace
-    user = (
-        setup_another_user  # Use a different user than the one creating the membership
-    )
-
-    membership_data = {
-        "user_id": str(user.id),
-        "workspace_id": str(workspace.id),
-        "role": MEMBER_ROLE,
-    }
-
-    response = client.post(
-        f"/workspaces/{workspace.id}/memberships", json=membership_data
-    )
-
-    assert response.status_code == 201
-    data = response.json()
-
-    assert data["user_id"] == str(user.id)
-    assert data["workspace_id"] == str(workspace.id)
-    assert data["role"] == MEMBER_ROLE
-    assert "id" in data
-    assert "created_at" in data
-    assert "updated_at" in data
-
-
-def test_create_membership_duplicate(client, setup_membership):
-    """Test POST /workspaces/{workspace_id}/memberships endpoint with duplicate membership."""
-    membership = setup_membership
-
-    membership_data = {
-        "user_id": str(membership.user_id),
-        "workspace_id": str(membership.workspace_id),
-        "role": MEMBER_ROLE,
-    }
-
-    response = client.post(
-        f"/workspaces/{membership.workspace_id}/memberships", json=membership_data
-    )
-
-    assert response.status_code == 400
-    assert "already a member" in response.json()["detail"]
 
 
 def test_get_membership(client, setup_membership):
@@ -167,39 +126,6 @@ def test_list_memberships_pagination(
     assert response.status_code == 200
     data = response.json()
     assert len(data["data"]) >= 1
-
-
-def test_create_membership_with_different_roles(
-    client, setup_workspace, setup_another_user
-):
-    """Test creating memberships with different roles."""
-    workspace = setup_workspace
-    user = setup_another_user
-
-    # Test each role
-    roles_to_test = [MEMBER_ROLE, ADMIN_ROLE, OWNER_ROLE]
-
-    for role in roles_to_test:
-        membership_data = {
-            "user_id": str(user.id),
-            "workspace_id": str(workspace.id),
-            "role": role,
-        }
-
-        response = client.post(
-            f"/workspaces/{workspace.id}/memberships", json=membership_data
-        )
-
-        if role == roles_to_test[0]:  # First role should succeed
-            assert response.status_code == 201
-            data = response.json()
-            assert data["role"] == role
-
-            # Clean up for next iteration
-            client.delete(f"/memberships/{data['id']}")
-        else:
-            # Subsequent attempts might succeed or fail depending on business logic
-            assert response.status_code in [201, 400]
 
 
 def test_update_membership_to_invalid_role(client, setup_membership):

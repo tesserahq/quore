@@ -12,6 +12,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from cryptography.fernet import Fernet
 from alembic import command
 from alembic.config import Config
+from faker import Faker
 
 pytest_plugins = [
     "tests.fixtures.workspace_fixtures",
@@ -22,6 +23,7 @@ pytest_plugins = [
     "tests.fixtures.credential_fixtures",
     "tests.fixtures.plugin_fixtures",
     "tests.fixtures.prompt_fixtures",
+    "tests.fixtures.invitation_fixtures",
 ]
 
 logger = logging.getLogger(__name__)
@@ -126,6 +128,12 @@ def db(engine):
 
     # return connection to the Engine
     connection.close()
+
+
+@pytest.fixture(scope="function")
+def faker():
+    """Create a Faker instance for generating test data."""
+    return Faker()
 
 
 @pytest.fixture(scope="function")

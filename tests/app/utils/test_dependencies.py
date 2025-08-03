@@ -1,7 +1,7 @@
 import pytest
 from uuid import uuid4
 from fastapi import HTTPException
-from app.utils.dependencies import get_project_by_id
+from app.routers.utils.dependencies import get_project_by_id
 
 
 def test_get_project_by_id_success(db, setup_project):

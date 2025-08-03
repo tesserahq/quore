@@ -6,6 +6,7 @@ from sqlalchemy.dialects.postgresql import UUID
 import uuid
 
 from app.db import Base
+from app.models.membership import Membership
 
 
 class User(Base, TimestampMixin):
@@ -39,9 +40,14 @@ class User(Base, TimestampMixin):
 
     # Relationships
     workspaces = relationship("Workspace", back_populates="created_by")
-    memberships = relationship("Membership", back_populates="user")
+    memberships = relationship(
+        "Membership", foreign_keys=[Membership.user_id], back_populates="user"
+    )
     credentials = relationship("Credential", back_populates="created_by")
     prompts = relationship("Prompt", back_populates="created_by")
+    invitations = relationship(
+        "Invitation", back_populates="inviter", cascade="all, delete-orphan"
+    )
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

@@ -5,8 +5,10 @@ from uuid import UUID
 
 from app.db import get_db
 from app.models.credential import Credential
+from app.models.invitation import Invitation
 from app.models.plugin import Plugin
 from app.services.credential import CredentialService
+from app.services.invitation_service import InvitationService
 from app.services.plugin import PluginService
 from app.services.workspace import WorkspaceService
 from app.models.workspace import Workspace
@@ -100,3 +102,25 @@ def get_credential_by_id(
     if credential is None or credential.workspace_id != workspace.id:
         raise HTTPException(status_code=404, detail="Credential not found")
     return credential
+
+
+def get_invitation_by_id(
+    invitation_id: UUID,
+    db: Session = Depends(get_db),
+) -> Invitation:
+    """FastAPI dependency to get an invitation by ID.
+
+    Args:
+        invitation_id: The UUID of the invitation to retrieve
+        db: Database session dependency
+
+    Returns:
+        Invitation: The retrieved invitation
+
+    Raises:
+        HTTPException: If the invitation is not found
+    """
+    invitation = InvitationService(db).get_invitation(invitation_id)
+    if invitation is None:
+        raise HTTPException(status_code=404, detail="Invitation not found")
+    return invitation

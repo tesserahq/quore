@@ -19,7 +19,7 @@ from app.services.plugin import PluginService
 from app.schemas.common import ListResponse
 from app.models.workspace import Workspace
 from app.models.project import Project
-from app.utils.dependencies import (
+from app.routers.utils.dependencies import (
     get_access_token,
     get_workspace_by_id,
     get_project_by_id,
