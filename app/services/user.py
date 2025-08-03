@@ -4,13 +4,14 @@ from sqlalchemy.orm import Session
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate, UserOnboard
 from datetime import datetime, timezone
+from app.services.soft_delete_service import SoftDeleteService
 
 from app.utils.db.filtering import apply_filters
 
 
-class UserService:
+class UserService(SoftDeleteService[User]):
     def __init__(self, db: Session):
-        self.db = db
+        super().__init__(db, User)
 
     def get_user(self, user_id: UUID) -> Optional[User]:
         return self.db.query(User).filter(User.id == user_id).first()
@@ -52,12 +53,8 @@ class UserService:
         return db_user
 
     def delete_user(self, user_id: UUID) -> bool:
-        db_user = self.db.query(User).filter(User.id == user_id).first()
-        if db_user:
-            self.db.delete(db_user)
-            self.db.commit()
-            return True
-        return False
+        """Soft delete a user."""
+        return self.delete_record(user_id)
 
     def verify_user(self, user_id: UUID) -> Optional[User]:
         db_user = self.db.query(User).filter(User.id == user_id).first()

@@ -1,4 +1,4 @@
-from app.models.mixins import TimestampMixin
+from app.models.mixins import TimestampMixin, SoftDeleteMixin
 from sqlalchemy import Column, String, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
@@ -7,7 +7,7 @@ import uuid
 from app.db import Base
 
 
-class Workspace(Base, TimestampMixin):
+class Workspace(Base, TimestampMixin, SoftDeleteMixin):
     """Workspace model for organizing projects and resources."""
 
     __tablename__ = "workspaces"

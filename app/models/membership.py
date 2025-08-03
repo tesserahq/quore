@@ -2,13 +2,13 @@ from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
-from app.models.mixins import TimestampMixin
+from app.models.mixins import TimestampMixin, SoftDeleteMixin
 from sqlalchemy import String
 
 from app.db import Base
 
 
-class Membership(Base, TimestampMixin):
+class Membership(Base, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "memberships"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

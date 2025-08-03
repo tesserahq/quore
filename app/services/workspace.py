@@ -22,6 +22,7 @@ from app.schemas.workspace import (
 )
 from app.utils.db.filtering import apply_filters
 from app.services.workspace_prune import WorkspacePruneService
+from app.services.soft_delete_service import SoftDeleteService
 
 """
 Module providing the WorkspaceService class for managing Workspace entities.
@@ -29,9 +30,9 @@ Includes methods for CRUD operations and dynamic searching with flexible filters
 """
 
 
-class WorkspaceService:
+class WorkspaceService(SoftDeleteService[Workspace]):
     def __init__(self, db: Session):
-        self.db = db
+        super().__init__(db, Workspace)
         self.prune_service = WorkspacePruneService(db)
 
     def get_workspace(self, workspace_id: UUID) -> Optional[Workspace]:
@@ -62,19 +63,13 @@ class WorkspaceService:
         return db_workspace
 
     def delete_workspace(self, workspace_id: UUID) -> bool:
-        db_workspace = (
-            self.db.query(Workspace).filter(Workspace.id == workspace_id).first()
-        )
-        if db_workspace:
-            # First prune all workspace resources
-            if not self.prune_service.prune_workspace(workspace_id):
-                return False
+        """Soft delete a workspace after pruning its resources."""
+        # First prune all workspace resources
+        if not self.prune_service.prune_workspace(workspace_id):
+            return False
 
-            # Then delete the workspace from the database
-            self.db.delete(db_workspace)
-            self.db.commit()
-            return True
-        return False
+        # Then soft delete the workspace
+        return self.delete_record(workspace_id)
 
     def search(self, filters: Dict[str, Any]) -> List[Workspace]:
         """

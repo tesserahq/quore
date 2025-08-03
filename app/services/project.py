@@ -8,11 +8,12 @@ from app.services.workspace import WorkspaceService
 from app.utils.db.filtering import apply_filters
 from app.core.index_manager import IndexManager
 from app.models.node import get_node_model
+from app.services.soft_delete_service import SoftDeleteService
 
 
-class ProjectService:
+class ProjectService(SoftDeleteService[Project]):
     def __init__(self, db: Session):
-        self.db = db
+        super().__init__(db, Project)
         self.workspace_service = WorkspaceService(db)
 
     def get_project(self, project_id: UUID) -> Optional[Project]:
@@ -57,16 +58,15 @@ class ProjectService:
         return db_project
 
     def delete_project(self, project_id: UUID) -> bool:
+        """Soft delete a project and drop its vector index table."""
         db_project = self.db.query(Project).filter(Project.id == project_id).first()
         if db_project:
-            self.db.delete(db_project)
-            self.db.commit()
-
-            # Drop the vector index table
+            # Drop the vector index table first
             index_manager = IndexManager(self.db, db_project)
             index_manager.drop_index()  # Ensure IndexManager has a method to drop the index
 
-            return True
+            # Then soft delete the project
+            return self.delete_record(project_id)
         return False
 
     def get_nodes(self, project_id: UUID) -> List[Any]:

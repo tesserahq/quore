@@ -6,13 +6,14 @@ from app.models.plugin import Plugin
 from app.models.project_plugin import ProjectPlugin
 from app.models.project import Project
 from app.schemas.plugin import PluginCreate, PluginUpdate
+from app.services.soft_delete_service import SoftDeleteService
 
 
-class PluginService:
+class PluginService(SoftDeleteService[Plugin]):
     """Service for managing plugin registration and configuration."""
 
     def __init__(self, db: Session):
-        self.db = db
+        super().__init__(db, Plugin)
 
     def update_state(self, plugin_id: UUID, state: PluginState) -> Plugin:
         """Update the state of a plugin."""
@@ -55,11 +56,8 @@ class PluginService:
         return plugin
 
     def delete_plugin(self, plugin_id: UUID) -> bool:
-        """Delete a plugin and all its configurations."""
-        plugin = self.get_plugin(plugin_id)
-        self.db.delete(plugin)
-        self.db.commit()
-        return True
+        """Soft delete a plugin and all its configurations."""
+        return self.delete_record(plugin_id)
 
     # Workspace Plugin Management
     def get_workspace_plugins(self, workspace_id: UUID) -> List[Plugin]:

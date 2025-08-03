@@ -1,4 +1,4 @@
-from app.models.mixins import TimestampMixin
+from app.models.mixins import TimestampMixin, SoftDeleteMixin
 from sqlalchemy import Column, String, ForeignKey, LargeBinary, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
@@ -7,7 +7,7 @@ import uuid
 from app.db import Base
 
 
-class Prompt(Base, TimestampMixin):
+class Prompt(Base, TimestampMixin, SoftDeleteMixin):
     """Prompt model for storing prompts."""
 
     __tablename__ = "prompts"

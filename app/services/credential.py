@@ -15,13 +15,14 @@ from app.core.credentials import (
 )
 from app.constants.credentials import CredentialType
 from app.core.logging_config import get_logger
+from app.services.soft_delete_service import SoftDeleteService
 
 logger = get_logger()
 
 
-class CredentialService:
+class CredentialService(SoftDeleteService[Credential]):
     def __init__(self, db: Session):
-        self.db = db
+        super().__init__(db, Credential)
 
     def get_credential(self, credential_id: UUID) -> Optional[Credential]:
         """Get a credential by its ID."""
@@ -114,14 +115,8 @@ class CredentialService:
         return db_credential
 
     def delete_credential(self, credential_id: UUID) -> bool:
-        """Delete a credential."""
-        db_credential = self.get_credential(credential_id)
-        if not db_credential:
-            return False
-
-        self.db.delete(db_credential)
-        self.db.commit()
-        return True
+        """Soft delete a credential."""
+        return self.delete_record(credential_id)
 
     def search(self, filters: Dict[str, Any]) -> List[Credential]:
         """

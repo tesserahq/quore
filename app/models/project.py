@@ -1,4 +1,4 @@
-from app.models.mixins import TimestampMixin
+from app.models.mixins import TimestampMixin, SoftDeleteMixin
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
@@ -67,7 +67,7 @@ class IngestSettings:
         return self._data.copy()
 
 
-class Project(Base, TimestampMixin):
+class Project(Base, TimestampMixin, SoftDeleteMixin):
     """Project model for the application."""
 
     __tablename__ = "projects"

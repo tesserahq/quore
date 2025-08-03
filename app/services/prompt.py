@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.models.prompt import Prompt
 from app.schemas.prompt import PromptCreate, PromptUpdate
 from app.utils.db.filtering import apply_filters
+from app.services.soft_delete_service import SoftDeleteService
 
 """
 Module providing the PromptService class for managing Prompt entities.
@@ -11,9 +12,9 @@ Includes methods for CRUD operations and dynamic searching with flexible filters
 """
 
 
-class PromptService:
+class PromptService(SoftDeleteService[Prompt]):
     def __init__(self, db: Session):
-        self.db = db
+        super().__init__(db, Prompt)
 
     def get_prompt(self, prompt_id: UUID) -> Optional[Prompt]:
         """Fetch a single prompt by ID."""
@@ -68,13 +69,8 @@ class PromptService:
         return db_prompt
 
     def delete_prompt(self, prompt_id: UUID) -> bool:
-        """Delete a prompt and return a boolean indicating success."""
-        db_prompt = self.db.query(Prompt).filter(Prompt.id == prompt_id).first()
-        if db_prompt:
-            self.db.delete(db_prompt)
-            self.db.commit()
-            return True
-        return False
+        """Soft delete a prompt and return a boolean indicating success."""
+        return self.delete_record(prompt_id)
 
     def search(self, filters: Dict[str, Any]) -> List[Prompt]:
         """
