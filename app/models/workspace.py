@@ -32,6 +32,9 @@ class Workspace(Base, TimestampMixin):
     )
     credentials = relationship("Credential", back_populates="workspace")
     prompts = relationship("Prompt", back_populates="workspace")
+    invitations = relationship(
+        "Invitation", back_populates="workspace", cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"<Workspace(id={self.id}, name={self.name})>"

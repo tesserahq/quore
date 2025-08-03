@@ -33,6 +33,9 @@ class MembershipBase(BaseModel):
     role: str = "member"
     """Role of the user in the workspace. Defaults to 'member'. Other common roles include 'owner' and 'admin'."""
 
+    created_by_id: UUID
+    """ID of the user who created the membership."""
+
 
 class MembershipCreate(MembershipBase):
     """Schema for creating a new membership. Inherits all fields from MembershipBase."""

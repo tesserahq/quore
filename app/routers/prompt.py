@@ -11,7 +11,7 @@ from app.schemas.common import ListResponse
 from app.utils.auth import get_current_user
 from app.models.workspace import Workspace
 from app.models.prompt import Prompt as PromptModel
-from app.utils.dependencies import get_workspace_by_id
+from app.routers.utils.dependencies import get_workspace_by_id
 from app.core.logging_config import get_logger
 
 logger = get_logger()

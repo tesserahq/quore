@@ -17,7 +17,7 @@ from app.schemas.project import (
 )
 from app.services.project import ProjectService
 from app.models.project import Project as ProjectModel
-from app.utils.dependencies import get_project_by_id
+from app.routers.utils.dependencies import get_project_by_id
 from app.config import get_settings
 
 router = APIRouter(prefix="/projects", tags=["workspace-projects"])

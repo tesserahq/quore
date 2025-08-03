@@ -16,10 +16,10 @@ class Membership(Base, TimestampMixin):
     workspace_id = Column(
         UUID(as_uuid=True), ForeignKey("workspaces.id"), nullable=False
     )
-    role = Column(
-        String, nullable=False, default="member"
-    )  # e.g., "owner", "admin", "member"
+    role = Column(String, nullable=False)  # e.g., "owner", "admin", "collaborator"
+    created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
 
     # Relationships
-    user = relationship("User", back_populates="memberships")
+    user = relationship("User", foreign_keys=[user_id], back_populates="memberships")
     workspace = relationship("Workspace", back_populates="memberships")
+    created_by = relationship("User", foreign_keys=[created_by_id])

@@ -14,7 +14,7 @@ from app.schemas.workspace import (
 )
 from app.services.workspace import WorkspaceService
 from app.schemas.common import ListResponse
-from app.utils.dependencies import get_workspace_by_id
+from app.routers.utils.dependencies import get_workspace_by_id
 
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 

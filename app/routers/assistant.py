@@ -28,7 +28,7 @@ from app.utils.auth import get_current_user
 from app.utils.vercel_stream import VercelStreamResponse
 from sqlalchemy.orm import Session
 from app.models.project import Project
-from app.utils.dependencies import get_access_token, get_project_by_id
+from app.routers.utils.dependencies import get_access_token, get_project_by_id
 
 
 def assistant_router() -> APIRouter:

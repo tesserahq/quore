@@ -2,14 +2,24 @@
 
 OWNER_ROLE = "owner"
 ADMIN_ROLE = "administrator"
-MEMBER_ROLE = "member"
+COLLABORATOR_ROLE = "collaborator"
 
 # List of all valid roles
-VALID_ROLES = [OWNER_ROLE, ADMIN_ROLE, MEMBER_ROLE]
+VALID_ROLES = [OWNER_ROLE, ADMIN_ROLE, COLLABORATOR_ROLE]
 
 # Role data for API responses
 ROLES_DATA = [
     {"id": OWNER_ROLE, "name": "Owner"},
     {"id": ADMIN_ROLE, "name": "Administrator"},
-    {"id": MEMBER_ROLE, "name": "Member"},
+    {"id": COLLABORATOR_ROLE, "name": "Collaborator"},
 ]
+
+
+class MembershipRoles:
+    OWNER = "owner"
+    ADMIN = "admin"
+    COLLABORATOR = "collaborator"
+
+    @classmethod
+    def get_all(cls):
+        return [cls.OWNER, cls.ADMIN, cls.COLLABORATOR]

@@ -1,7 +1,7 @@
 from app.models import workspace
 from app.schemas.membership import MembershipCreate
 from app.schemas.workspace import Workspace, WorkspaceCreate
-from app.services.membership import MembershipService
+from app.services.membership_service import MembershipService
 from app.services.workspace import WorkspaceService
 from sqlalchemy.orm import Session
 from uuid import UUID
@@ -27,11 +27,11 @@ class CreateWorkspaceCommand:
         workspace = self.workspace_service.create_workspace(workspace_create)
 
         # Create an owner membership for the user who created the workspace
-        self._create_owner_membership(workspace.id, workspace.created_by_id)
+        self._create_owner_membership(workspace, workspace.created_by_id)
 
         return workspace
 
-    def _create_owner_membership(self, workspace_id: UUID, user_id: UUID):
+    def _create_owner_membership(self, workspace: Workspace, user_id: UUID):
         """
         Create an owner membership for the user in the specified workspace.
 
@@ -40,7 +40,8 @@ class CreateWorkspaceCommand:
         """
         membership_data = MembershipCreate(
             user_id=user_id,
-            workspace_id=workspace_id,
+            workspace_id=workspace.id,
             role=OWNER_ROLE,
+            created_by_id=workspace.created_by_id,
         )
         self.membership_service.create_membership(membership_data)
