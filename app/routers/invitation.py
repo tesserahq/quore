@@ -190,6 +190,31 @@ def decline_invitation(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/invitations/{invitation_id}/resend", 
+             response_model=InvitationResponse,
+             status_code=status.HTTP_201_CREATED)
+def resend_invitation(
+    invitation: Invitation = Depends(get_invitation_by_id),
+    db: Session = Depends(get_db),
+):
+    """Resend an invitation by deleting the existing one and creating a new one."""
+    from app.commands.invitations.resend_invitation_command import (
+        ResendInvitationCommand,
+    )
+
+    try:
+        command = ResendInvitationCommand(db)
+        new_invitation = command.execute(invitation.id)
+
+        if not new_invitation:
+            raise HTTPException(status_code=404, detail="Invitation not found")
+
+        return new_invitation
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.delete("/invitations/{invitation_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_invitation(
     invitation: Invitation = Depends(get_invitation_by_id),
