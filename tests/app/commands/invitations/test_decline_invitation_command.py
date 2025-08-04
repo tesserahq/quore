@@ -5,6 +5,11 @@ from datetime import datetime, timedelta, timezone
 from app.commands.invitations.decline_invitation_command import DeclineInvitationCommand
 from app.models.invitation import Invitation
 from app.constants.membership import MembershipRoles
+from app.exceptions.invitation_exceptions import (
+    InvitationExpiredError,
+    InvitationNotFoundError,
+    InvitationUnauthorizedError,
+)
 from app.services.invitation_service import InvitationService
 
 
@@ -31,9 +36,12 @@ class TestDeclineInvitationCommand:
         non_existent_id = uuid4()
 
         command = DeclineInvitationCommand(db)
-        success = command.execute(non_existent_id, "test@example.com")
 
-        assert success is False
+        with pytest.raises(
+            InvitationNotFoundError,
+            match=f"Invitation with ID {non_existent_id} not found",
+        ):
+            command.execute(non_existent_id, "test@example.com")
 
     def test_decline_expired_invitation(self, db, setup_workspace, setup_user, faker):
         """Test declining an expired invitation."""
@@ -56,7 +64,7 @@ class TestDeclineInvitationCommand:
         # Execute command
         command = DeclineInvitationCommand(db)
 
-        with pytest.raises(ValueError, match="Invitation has expired"):
+        with pytest.raises(InvitationExpiredError, match="Invitation has expired"):
             command.execute(invitation.id, "test@example.com")
 
         # Verify invitation still exists (not deleted)
@@ -89,7 +97,8 @@ class TestDeclineInvitationCommand:
         command = DeclineInvitationCommand(db)
 
         with pytest.raises(
-            ValueError, match="Only the invited user can decline this invitation"
+            InvitationUnauthorizedError,
+            match="Only the invited user can decline this invitation",
         ):
             command.execute(invitation.id, "wrong@email.com")
 

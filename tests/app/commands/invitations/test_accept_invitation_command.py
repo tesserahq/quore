@@ -7,16 +7,27 @@ from app.models.invitation import Invitation
 from app.models.membership import Membership
 from app.constants.membership import MembershipRoles
 from app.services.invitation_service import InvitationService
+from app.exceptions.invitation_exceptions import (
+    InvitationExpiredError,
+    InvitationNotFoundError,
+    InvitationUnauthorizedError,
+    UserNotFoundError,
+)
 
 
 class TestAcceptInvitationCommand:
     """Test cases for AcceptInvitationCommand."""
 
     def test_accept_invitation_success(
-        self, db, setup_workspace, setup_user, setup_invitation
+        self,
+        db,
+        setup_workspace,
+        setup_user,
+        setup_invitation_for_current_user,
+        setup_invitation,
     ):
         """Test successfully accepting an invitation and creating a membership."""
-        invitation = setup_invitation
+        invitation = setup_invitation_for_current_user
         accepting_user = setup_user
 
         # Execute command
@@ -42,7 +53,8 @@ class TestAcceptInvitationCommand:
         command = AcceptInvitationCommand(db)
 
         with pytest.raises(
-            Exception, match=f"Invitation with ID {non_existent_id} not found"
+            InvitationNotFoundError,
+            match=f"Invitation with ID {non_existent_id} not found",
         ):
             command.execute(non_existent_id, accepting_user.id)
 
@@ -72,7 +84,7 @@ class TestAcceptInvitationCommand:
         # Execute command
         command = AcceptInvitationCommand(db)
 
-        with pytest.raises(ValueError, match="Invitation has expired"):
+        with pytest.raises(InvitationExpiredError, match="Invitation has expired"):
             command.execute(invitation.id, accepting_user.id)
 
         # Verify invitation still exists (not deleted)

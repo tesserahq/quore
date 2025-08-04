@@ -2,6 +2,12 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.services.invitation_service import InvitationService
+from app.exceptions.invitation_exceptions import (
+    InvitationException,
+    InvitationNotFoundError,
+    InvitationExpiredError,
+    InvitationUnauthorizedError,
+)
 
 
 class DeclineInvitationCommand:
@@ -22,11 +28,10 @@ class DeclineInvitationCommand:
             user_email: The email of the user declining the invitation
 
         Returns:
-            bool: True if invitation was successfully declined, False if not found
+            bool: True if invitation was successfully declined
 
         Raises:
-            ValueError: If invitation has expired or user is not authorized
-            Exception: If invitation decline fails
+            InvitationException: If invitation decline fails
         """
         try:
             # Decline the invitation
@@ -36,8 +41,8 @@ class DeclineInvitationCommand:
 
             return success
 
-        except ValueError as e:
-            # Re-raise ValueError (e.g., expired invitation, unauthorized user) without rollback
+        except InvitationException as e:
+            # Re-raise invitation-specific exceptions without rollback
             raise e
         except Exception as e:
             # Rollback the transaction if something goes wrong

@@ -104,17 +104,10 @@ def setup_invitation_for_current_user(
 
 
 @pytest.fixture
-def setup_invitation_for_user_person(db, setup_workspace, setup_user, faker):
-    """Create an invitation for a user's associated person."""
-    invitation = Invitation(
-        email=faker.email(),
-        workspace_id=setup_workspace.id,
-        role=MembershipRoles.COLLABORATOR,
-        message=faker.text(100),
-        inviter_id=setup_user.id,
-        expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
-    )
-    db.add(invitation)
+def setup_invitation_for_wrong_email(db, setup_invitation):
+    """Create an invitation for a wrong email."""
+    invitation = setup_invitation
+    invitation.email = "wrong@example.com"
     db.commit()
     db.refresh(invitation)
     return invitation
