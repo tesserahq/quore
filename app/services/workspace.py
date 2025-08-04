@@ -23,6 +23,7 @@ from app.schemas.workspace import (
 from app.utils.db.filtering import apply_filters
 from app.services.workspace_prune import WorkspacePruneService
 from app.services.soft_delete_service import SoftDeleteService
+from app.exceptions.workspace_exceptions import WorkspaceLockedError
 
 """
 Module providing the WorkspaceService class for managing Workspace entities.
@@ -64,6 +65,14 @@ class WorkspaceService(SoftDeleteService[Workspace]):
 
     def delete_workspace(self, workspace_id: UUID) -> bool:
         """Soft delete a workspace after pruning its resources."""
+        # First check if workspace exists and is not locked
+        workspace = self.get_workspace(workspace_id)
+        if not workspace:
+            return False
+
+        if workspace.locked:
+            raise WorkspaceLockedError(str(workspace_id))
+
         # First prune all workspace resources
         if not self.prune_service.prune_workspace(workspace_id):
             return False
