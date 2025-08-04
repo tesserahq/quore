@@ -16,7 +16,6 @@ class InvitationBase(BaseModel):
     email: EmailStr
     role: str = MembershipRoles.COLLABORATOR
     message: Optional[str] = None
-    person_id: Optional[UUID] = None
 
 
 class InvitationCreate(InvitationBase):
@@ -28,7 +27,6 @@ class InvitationCreateRequest(BaseModel):
     email: EmailStr
     role: str = MembershipRoles.COLLABORATOR
     message: Optional[str] = None
-    person_id: Optional[UUID] = None
 
     @field_validator("role")
     @classmethod

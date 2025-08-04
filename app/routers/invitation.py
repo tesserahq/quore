@@ -123,13 +123,17 @@ def accept_invitation(
     from app.commands.invitations.accept_invitation_command import (
         AcceptInvitationCommand,
     )
+    from app.exceptions.invitation_exceptions import (
+        InvitationException,
+        InvitationNotFoundError,
+        InvitationExpiredError,
+        InvitationUnauthorizedError,
+        UserNotFoundError,
+    )
 
     try:
         command = AcceptInvitationCommand(db)
         membership = command.execute(invitation.id, current_user.id)
-
-        if not membership:
-            raise HTTPException(status_code=404, detail="Invitation not found")
 
         # Return the created membership
         return {
@@ -137,7 +141,15 @@ def accept_invitation(
             "membership_id": str(membership.id),
         }
 
-    except ValueError as e:
+    except InvitationNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except (
+        InvitationExpiredError,
+        InvitationUnauthorizedError,
+        UserNotFoundError,
+    ) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except InvitationException as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -153,19 +165,26 @@ def decline_invitation(
     from app.commands.invitations.decline_invitation_command import (
         DeclineInvitationCommand,
     )
+    from app.exceptions.invitation_exceptions import (
+        InvitationException,
+        InvitationNotFoundError,
+        InvitationExpiredError,
+        InvitationUnauthorizedError,
+    )
 
     try:
         command = DeclineInvitationCommand(db)
         success = command.execute(invitation.id, current_user.email)
 
-        if not success:
-            raise HTTPException(status_code=404, detail="Invitation not found")
-
         return {
             "message": "Invitation declined successfully",
         }
 
-    except ValueError as e:
+    except InvitationNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except (InvitationExpiredError, InvitationUnauthorizedError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except InvitationException as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

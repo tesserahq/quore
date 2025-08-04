@@ -7,6 +7,11 @@ from sqlalchemy import and_
 from app.models.invitation import Invitation
 from app.schemas.invitation import InvitationCreate, InvitationUpdate
 from app.services.soft_delete_service import SoftDeleteService
+from app.exceptions.invitation_exceptions import (
+    InvitationNotFoundError,
+    InvitationExpiredError,
+    InvitationUnauthorizedError,
+)
 
 
 class InvitationService(SoftDeleteService[Invitation]):
@@ -42,14 +47,14 @@ class InvitationService(SoftDeleteService[Invitation]):
             .first()
         )
 
-    def get_invitations_by_account(
+    def get_invitations_by_workspace(
         self,
         workspace_id: UUID,
         skip: int = 0,
         limit: int = 100,
         valid_only: bool = True,
     ) -> List[Invitation]:
-        """Get invitations for a specific account."""
+        """Get invitations for a specific workspace."""
         query = (
             self.db.query(Invitation)
             .options(joinedload(Invitation.workspace), joinedload(Invitation.inviter))
@@ -107,10 +112,12 @@ class InvitationService(SoftDeleteService[Invitation]):
         invitation = self.get_invitation(invitation_id)
 
         if not invitation:
-            return None
+            raise InvitationNotFoundError(
+                f"Invitation with ID {invitation_id} not found"
+            )
 
         if invitation.is_expired:
-            raise ValueError("Invitation has expired")
+            raise InvitationExpiredError("Invitation has expired")
 
         # Soft delete the invitation
         self.delete_record(invitation_id)
@@ -122,13 +129,17 @@ class InvitationService(SoftDeleteService[Invitation]):
         invitation = self.get_invitation(invitation_id)
 
         if not invitation:
-            return False
+            raise InvitationNotFoundError(
+                f"Invitation with ID {invitation_id} not found"
+            )
 
         if invitation.is_expired:
-            raise ValueError("Invitation has expired")
+            raise InvitationExpiredError("Invitation has expired")
 
         if invitation.email != user_email:
-            raise ValueError("Only the invited user can decline this invitation")
+            raise InvitationUnauthorizedError(
+                "Only the invited user can decline this invitation"
+            )
 
         # Soft delete the invitation
         return self.delete_record(invitation_id)
@@ -137,10 +148,10 @@ class InvitationService(SoftDeleteService[Invitation]):
         """Delete an invitation (soft delete)."""
         return self.delete_record(invitation_id)
 
-    def delete_invitations_by_account(self, workspace_id: UUID) -> bool:
-        """Delete all invitations for an account."""
+    def delete_invitations_by_workspace(self, workspace_id: UUID) -> bool:
+        """Delete all invitations for a workspace."""
         # TODO: This could be more efficient by using a bulk delete
-        invitations = self.get_invitations_by_account(workspace_id)
+        invitations = self.get_invitations_by_workspace(workspace_id)
         invitation_ids = [invitation.id for invitation in invitations]
         return self.delete_records(invitation_ids)
 
@@ -182,7 +193,7 @@ class InvitationService(SoftDeleteService[Invitation]):
         return count
 
     def get_pending_invitations_count(self, workspace_id: UUID) -> int:
-        """Get the count of pending (valid, unexpired) invitations for an account."""
+        """Get the count of pending (valid, unexpired) invitations for a workspace."""
         return (
             self.db.query(Invitation)
             .filter(
