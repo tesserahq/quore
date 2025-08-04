@@ -1,5 +1,5 @@
 from app.models.mixins import TimestampMixin, SoftDeleteMixin
-from sqlalchemy import Column, String, ForeignKey
+from sqlalchemy import Column, String, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
@@ -18,6 +18,7 @@ class Workspace(Base, TimestampMixin, SoftDeleteMixin):
     logo = Column(String, nullable=True)  # We'll handle file uploads separately
     identifier = Column(String(100), nullable=True, unique=True)
     created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    locked = Column(Boolean, default=False, nullable=False)
 
     # Relationships
     created_by = relationship("User", back_populates="workspaces")

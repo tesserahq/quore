@@ -15,6 +15,7 @@ from app.schemas.workspace import (
 from app.services.workspace import WorkspaceService
 from app.schemas.common import ListResponse
 from app.routers.utils.dependencies import get_workspace_by_id
+from app.exceptions.workspace_exceptions import WorkspaceLockedError
 
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 
@@ -65,10 +66,13 @@ def delete_workspace(
     workspace: Workspace = Depends(get_workspace_by_id),
     db: Session = Depends(get_db),
 ):
-    success = WorkspaceService(db).delete_workspace(workspace.id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Workspace not found")
-    return {"message": "Workspace deleted successfully"}
+    try:
+        success = WorkspaceService(db).delete_workspace(workspace.id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Workspace not found")
+        return {"message": "Workspace deleted successfully"}
+    except WorkspaceLockedError as e:
+        raise HTTPException(status_code=400, detail=e.message)
 
 
 @router.get("/{workspace_id}/stats", response_model=WorkspaceStats)

@@ -23,6 +23,9 @@ class WorkspaceBase(BaseModel):
     created_by_id: Optional[UUID] = None
     """ID of the user who created the workspace."""
 
+    locked: Optional[bool] = False
+    """Whether the workspace is locked and cannot be deleted."""
+
 
 class WorkspaceCreate(WorkspaceBase):
     """Schema for creating a new workspace. Inherits all fields from WorkspaceBase."""
@@ -45,6 +48,9 @@ class WorkspaceUpdate(BaseModel):
 
     identifier: Optional[str] = Field(None, min_length=1, max_length=100)
     """Updated workspace identifier. Must be a unique slug-like string if provided."""
+
+    locked: Optional[bool] = None
+    """Whether the workspace is locked and cannot be deleted."""
 
 
 class WorkspaceInDB(WorkspaceBase):

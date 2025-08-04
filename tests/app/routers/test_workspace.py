@@ -103,6 +103,70 @@ def test_delete_workspace(client, setup_workspace):
     assert response.status_code == 404
 
 
+def test_delete_locked_workspace(client, setup_workspace):
+    """Test DELETE /workspaces/{workspace_id} endpoint with locked workspace."""
+    workspace = setup_workspace
+
+    # First lock the workspace
+    update_response = client.put(f"/workspaces/{workspace.id}", json={"locked": True})
+    assert update_response.status_code == 200
+    assert update_response.json()["locked"] is True
+
+    # Try to delete the locked workspace - should fail
+    response = client.delete(f"/workspaces/{workspace.id}")
+    assert response.status_code == 400
+    assert "is locked and cannot be deleted" in response.json()["detail"]
+
+    # Verify the workspace still exists
+    response = client.get(f"/workspaces/{workspace.id}")
+    assert response.status_code == 200
+    assert response.json()["locked"] is True
+
+
+def test_update_workspace_locked_field(client, setup_workspace):
+    """Test PUT /workspaces/{workspace_id} endpoint to update locked field."""
+    workspace = setup_workspace
+
+    # Lock the workspace
+    response = client.put(f"/workspaces/{workspace.id}", json={"locked": True})
+    assert response.status_code == 200
+    updated_workspace = response.json()
+    assert updated_workspace["locked"] is True
+    assert updated_workspace["id"] == str(workspace.id)
+
+    # Unlock the workspace
+    response = client.put(f"/workspaces/{workspace.id}", json={"locked": False})
+    assert response.status_code == 200
+    updated_workspace = response.json()
+    assert updated_workspace["locked"] is False
+
+    # Verify we can now delete the unlocked workspace
+    response = client.delete(f"/workspaces/{workspace.id}")
+    assert response.status_code == 200
+    assert response.json() == {"message": "Workspace deleted successfully"}
+
+
+def test_create_workspace_with_locked_field(client, setup_user):
+    """Test POST /workspaces endpoint with locked field."""
+    user = setup_user
+
+    response = client.post(
+        "/workspaces",
+        json={"name": "Test Locked Workspace", "locked": True},
+    )
+    assert response.status_code == 201
+    workspace = response.json()
+    assert workspace["name"] == "Test Locked Workspace"
+    assert workspace["locked"] is True
+    assert workspace["created_by_id"] == str(user.id)
+
+    # Try to delete the locked workspace - should fail
+    workspace_id = workspace["id"]
+    delete_response = client.delete(f"/workspaces/{workspace_id}")
+    assert delete_response.status_code == 400
+    assert "is locked and cannot be deleted" in delete_response.json()["detail"]
+
+
 def test_get_workspace_stats_empty_workspace(client, setup_workspace):
     """Test GET /workspaces/{workspace_id}/stats endpoint with empty workspace."""
     workspace = setup_workspace
