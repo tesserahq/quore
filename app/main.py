@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 import rollbar
 from rollbar.logger import RollbarHandler
+from rollbar.contrib.fastapi import ReporterMiddleware as RollbarMiddleware
 
 from .routers import (
     workspace,
@@ -31,6 +32,8 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
     logger = get_logger()
     settings = get_settings()
 
+    app = FastAPI()
+
     if settings.is_production:
         # Initialize Rollbar SDK with your server-side access token
         rollbar.init(
@@ -45,8 +48,7 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
 
         # Attach Rollbar handler to the root logger
         logger.addHandler(rollbar_handler)
-
-    app = FastAPI()
+        app.add_middleware(RollbarMiddleware)
 
     if not testing and not settings.disable_auth:
         logger.info("Main: Adding authentication middleware")
