@@ -190,9 +190,11 @@ def decline_invitation(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/invitations/{invitation_id}/resend", 
-             response_model=InvitationResponse,
-             status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/invitations/{invitation_id}/resend",
+    response_model=InvitationResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 def resend_invitation(
     invitation: Invitation = Depends(get_invitation_by_id),
     db: Session = Depends(get_db),

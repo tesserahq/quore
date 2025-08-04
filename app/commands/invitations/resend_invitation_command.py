@@ -32,7 +32,7 @@ class ResendInvitationCommand:
         try:
             # Get the original invitation
             original_invitation = self.invitation_service.get_invitation(invitation_id)
-            
+
             if not original_invitation:
                 return None
 
@@ -42,7 +42,7 @@ class ResendInvitationCommand:
                 workspace_id=original_invitation.workspace_id,
                 role=original_invitation.role,
                 message=original_invitation.message,
-                inviter_id=original_invitation.inviter_id
+                inviter_id=original_invitation.inviter_id,
             )
 
             # Delete the existing invitation
