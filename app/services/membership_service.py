@@ -5,6 +5,7 @@ from sqlalchemy import and_
 from app.models.membership import Membership
 from app.schemas.membership import MembershipCreate, MembershipUpdate
 from app.utils.db.filtering import apply_filters
+from app.services.soft_delete_service import SoftDeleteService
 
 """
 Module providing the MembershipService class for managing Membership entities.
@@ -12,9 +13,9 @@ Includes methods for CRUD operations, role management, and workspace membership 
 """
 
 
-class MembershipService:
+class MembershipService(SoftDeleteService[Membership]):
     def __init__(self, db: Session):
-        self.db = db
+        super().__init__(db, Membership)
 
     def get_membership(self, membership_id: UUID) -> Optional[Membership]:
         """Get a membership by its ID."""
@@ -83,15 +84,8 @@ class MembershipService:
         return db_membership
 
     def delete_membership(self, membership_id: UUID) -> bool:
-        """Delete a membership."""
-        db_membership = (
-            self.db.query(Membership).filter(Membership.id == membership_id).first()
-        )
-        if db_membership:
-            self.db.delete(db_membership)
-            self.db.commit()
-            return True
-        return False
+        """Soft delete a membership."""
+        return self.delete_record(membership_id)
 
     def search(self, filters: Dict[str, Any]) -> List[Membership]:
         """

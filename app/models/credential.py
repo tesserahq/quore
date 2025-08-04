@@ -1,4 +1,4 @@
-from app.models.mixins import TimestampMixin
+from app.models.mixins import TimestampMixin, SoftDeleteMixin
 from sqlalchemy import Column, String, ForeignKey, LargeBinary
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
@@ -7,7 +7,7 @@ import uuid
 from app.db import Base
 
 
-class Credential(Base, TimestampMixin):
+class Credential(Base, TimestampMixin, SoftDeleteMixin):
     """Credential model for storing encrypted credentials."""
 
     __tablename__ = "credentials"

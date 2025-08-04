@@ -1,4 +1,4 @@
-from app.models.mixins import TimestampMixin
+from app.models.mixins import TimestampMixin, SoftDeleteMixin
 from sqlalchemy import Column, String
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
@@ -6,7 +6,7 @@ import uuid
 from app.db import Base
 
 
-class AppSetting(Base, TimestampMixin):
+class AppSetting(Base, TimestampMixin, SoftDeleteMixin):
     """AppSettings model for the application."""
 
     __tablename__ = "app_settings"

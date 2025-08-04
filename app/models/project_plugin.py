@@ -1,4 +1,4 @@
-from app.models.mixins import TimestampMixin
+from app.models.mixins import TimestampMixin, SoftDeleteMixin
 from sqlalchemy import Column, Boolean, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
@@ -7,7 +7,7 @@ import uuid
 from app.db import Base
 
 
-class ProjectPlugin(Base, TimestampMixin):
+class ProjectPlugin(Base, TimestampMixin, SoftDeleteMixin):
     """ProjectPlugin model for project-level plugin configurations."""
 
     __tablename__ = "project_plugins"

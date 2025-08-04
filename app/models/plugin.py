@@ -1,5 +1,5 @@
 from sqlalchemy_json import mutable_json_type
-from app.models.mixins import TimestampMixin
+from app.models.mixins import TimestampMixin, SoftDeleteMixin
 from sqlalchemy import Column, String, ForeignKey, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
@@ -9,7 +9,7 @@ from app.db import Base
 from app.constants.plugin_states import PluginState
 
 
-class Plugin(Base, TimestampMixin):
+class Plugin(Base, TimestampMixin, SoftDeleteMixin):
     """Plugin model for storing plugin metadata and configuration."""
 
     __tablename__ = "plugins"

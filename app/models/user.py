@@ -1,4 +1,4 @@
-from app.models.mixins import TimestampMixin
+from app.models.mixins import TimestampMixin, SoftDeleteMixin
 from sqlalchemy import Column, String, Boolean, DateTime, Index, text
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
@@ -9,7 +9,7 @@ from app.db import Base
 from app.models.membership import Membership
 
 
-class User(Base, TimestampMixin):
+class User(Base, TimestampMixin, SoftDeleteMixin):
     """User model for the application.
     This model represents a user in the system and includes fields for
     personal information, authentication, and relationships with other models.
