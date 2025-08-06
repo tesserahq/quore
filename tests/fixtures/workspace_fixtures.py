@@ -1,4 +1,6 @@
 import pytest
+from app.constants.membership import MembershipRoles
+from app.models.membership import Membership
 from app.models.workspace import Workspace
 
 
@@ -18,6 +20,15 @@ def setup_workspace(db, setup_user, faker):
     db.add(workspace)
     db.commit()
     db.refresh(workspace)
+
+    membership = Membership(
+        user_id=user.id,
+        workspace_id=workspace.id,
+        role=MembershipRoles.OWNER,
+        created_by_id=user.id,
+    )
+    db.add(membership)
+    db.commit()
     return workspace
 
 

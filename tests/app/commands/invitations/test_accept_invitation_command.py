@@ -94,15 +94,16 @@ class TestAcceptInvitationCommand:
         assert existing_invitation is not None
 
         # Verify no membership was created
-        membership = (
+        memberships = (
             db.query(Membership)
             .filter(
                 Membership.user_id == accepting_user.id,
                 Membership.workspace_id == setup_workspace.id,
             )
-            .first()
+            .all()
         )
-        assert membership is None
+        assert len(memberships) == 1
+        assert memberships[0].role == MembershipRoles.OWNER
 
     def test_accept_invitation_different_role(
         self, db, setup_workspace, setup_user, faker

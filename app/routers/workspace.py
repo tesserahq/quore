@@ -27,8 +27,9 @@ def list_workspaces(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    filters = {"created_by_id": current_user.id}
-    workspaces = WorkspaceService(db).search(filters)
+    workspaces = WorkspaceService(db).get_workspaces_by_user_memberships(
+        current_user.id, skip, limit
+    )
     return ListResponse(data=workspaces)
 
 

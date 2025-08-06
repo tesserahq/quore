@@ -2,6 +2,7 @@ from typing import List, Optional, Dict, Any
 from uuid import UUID
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, case
+from app.models.membership import Membership
 from app.models.workspace import Workspace
 from app.models.project import Project
 from app.models.prompt import Prompt
@@ -38,6 +39,31 @@ class WorkspaceService(SoftDeleteService[Workspace]):
 
     def get_workspace(self, workspace_id: UUID) -> Optional[Workspace]:
         return self.db.query(Workspace).filter(Workspace.id == workspace_id).first()
+
+    def get_workspaces_by_user_memberships(
+        self, user_id: UUID, skip: int = 0, limit: int = 100
+    ) -> List[Workspace]:
+        """
+        Get accounts that a user has access to based on their memberships.
+
+        Args:
+            user_id: The UUID of the user
+            skip: Number of records to skip for pagination
+            limit: Maximum number of records to return
+
+        Returns:
+            List[Account]: List of accounts the user has access to through memberships
+        """
+        query = (
+            self.db.query(Workspace)
+            .join(Membership, Workspace.id == Membership.workspace_id)
+            .filter(
+                Membership.user_id == user_id,
+            )
+            .offset(skip)
+            .limit(limit)
+        )
+        return query.all()
 
     def get_workspaces(self, skip: int = 0, limit: int = 100) -> List[Workspace]:
         return self.db.query(Workspace).offset(skip).limit(limit).all()

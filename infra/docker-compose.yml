@@ -30,6 +30,8 @@ services:
       - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/vaulta
       - REDIS_URL=redis://redis:6379/0
     env_file: ".vaulta.env"
+    volumes:
+      - vaulta_data:/app/files
     depends_on:
       - db
 
@@ -156,3 +158,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  vaulta_data:
