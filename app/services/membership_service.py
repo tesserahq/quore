@@ -34,7 +34,12 @@ class MembershipService(SoftDeleteService[Membership]):
 
     def get_membership(self, membership_id: UUID) -> Optional[Membership]:
         """Get a membership by its ID."""
-        return self.db.query(Membership).filter(Membership.id == membership_id).first()
+        return (
+            self.db.query(Membership)
+            .options(joinedload(Membership.user), joinedload(Membership.created_by))
+            .filter(Membership.id == membership_id)
+            .first()
+        )
 
     def get_user_memberships(
         self, user_id: UUID, skip: int = 0, limit: int = 100

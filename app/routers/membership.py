@@ -61,7 +61,7 @@ def get_roles():
     return RolesResponse(roles=ROLES_DATA)
 
 
-@membership_router.get("/{membership_id}", response_model=MembershipInDB)
+@membership_router.get("/{membership_id}", response_model=MembershipResponse)
 def get_membership(
     membership: Membership = Depends(get_membership_by_id),
     db: Session = Depends(get_db),
