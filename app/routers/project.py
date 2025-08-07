@@ -1,5 +1,14 @@
 from app.utils.auth import get_current_user
-from fastapi import APIRouter, Depends, HTTPException, Request, File, UploadFile, Form
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Request,
+    File,
+    UploadFile,
+    Form,
+    status,
+)
 from fastapi.responses import JSONResponse
 import httpx
 from sqlalchemy.orm import Session
@@ -95,7 +104,7 @@ def update_project(
     return updated
 
 
-@router.delete("/{project_id}")
+@router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_project(
     project: ProjectModel = Depends(get_project_by_id),
     db: Session = Depends(get_db),

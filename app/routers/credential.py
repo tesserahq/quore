@@ -126,7 +126,7 @@ def update_credential(
     return updated_credential
 
 
-@credential_router.delete("/{credential_id}")
+@credential_router.delete("/{credential_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_credential(
     credential: Credential = Depends(get_credential_direct),
     db: Session = Depends(get_db),
@@ -136,7 +136,7 @@ def delete_credential(
     success = CredentialService(db).delete_credential(UUID(str(credential.id)))
     if not success:
         raise HTTPException(status_code=404, detail="Credential not found")
-    return {"message": "Credential deleted successfully"}
+    return
 
 
 @credential_router.post(

@@ -209,8 +209,7 @@ def test_delete_plugin(client, db, setup_plugin):
 
     # Delete the plugin
     response = client.delete(f"/plugins/{plugin.id}")
-    assert response.status_code == 200
-    assert response.json() == {"message": "Plugin deleted successfully"}
+    assert response.status_code == 204
 
     # Verify plugin was deleted from database
     with pytest.raises(ValueError) as exc_info:

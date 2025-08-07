@@ -95,8 +95,7 @@ def test_delete_workspace(client, setup_workspace):
     """Test DELETE /workspaces/{workspace_id} endpoint."""
     workspace = setup_workspace
     response = client.delete(f"/workspaces/{workspace.id}")
-    assert response.status_code == 200
-    assert response.json() == {"message": "Workspace deleted successfully"}
+    assert response.status_code == 204
 
     # Verify the workspace is deleted
     response = client.get(f"/workspaces/{workspace.id}")
@@ -142,8 +141,7 @@ def test_update_workspace_locked_field(client, setup_workspace):
 
     # Verify we can now delete the unlocked workspace
     response = client.delete(f"/workspaces/{workspace.id}")
-    assert response.status_code == 200
-    assert response.json() == {"message": "Workspace deleted successfully"}
+    assert response.status_code == 204
 
 
 def test_create_workspace_with_locked_field(client, setup_user):

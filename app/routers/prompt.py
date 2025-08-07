@@ -153,19 +153,7 @@ def update_prompt(
     return updated_prompt
 
 
-@workspace_router.delete("/{prompt_id}")
-def delete_workspace_prompt(
-    prompt: PromptModel = Depends(get_prompt_by_id),
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
-    """Delete a prompt from a workspace."""
-    PromptService(db).delete_prompt(prompt.id)
-
-    return {"message": "Prompt deleted successfully"}
-
-
-@prompt_router.delete("/{prompt_id}")
+@prompt_router.delete("/{prompt_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_prompt(
     prompt: PromptModel = Depends(get_prompt_direct),
     db: Session = Depends(get_db),
@@ -173,8 +161,6 @@ def delete_prompt(
 ):
     """Delete a prompt by ID."""
     PromptService(db).delete_prompt(prompt.id)
-
-    return {"message": "Prompt deleted successfully"}
 
 
 # Additional convenience endpoints
