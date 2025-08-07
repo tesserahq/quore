@@ -6,9 +6,11 @@ from uuid import UUID
 from app.db import get_db
 from app.models.credential import Credential
 from app.models.invitation import Invitation
+from app.models.membership import Membership
 from app.models.plugin import Plugin
 from app.services.credential import CredentialService
 from app.services.invitation_service import InvitationService
+from app.services.membership_service import MembershipService
 from app.services.plugin import PluginService
 from app.services.workspace import WorkspaceService
 from app.models.workspace import Workspace
@@ -124,3 +126,25 @@ def get_invitation_by_id(
     if invitation is None:
         raise HTTPException(status_code=404, detail="Invitation not found")
     return invitation
+
+
+def get_membership_by_id(
+    membership_id: UUID,
+    db: Session = Depends(get_db),
+) -> Membership:
+    """FastAPI dependency to get a membership by ID.
+
+    Args:
+        membership_id: The UUID of the membership to retrieve
+        db: Database session dependency
+
+    Returns:
+        Membership: The retrieved membership
+
+    Raises:
+        HTTPException: If the membership is not found
+    """
+    membership = MembershipService(db).get_membership(membership_id)
+    if membership is None:
+        raise HTTPException(status_code=404, detail="Membership not found")
+    return membership

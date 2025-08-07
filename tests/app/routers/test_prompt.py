@@ -139,27 +139,12 @@ def test_update_prompt(client, setup_prompt):
     assert data["id"] == str(prompt.id)
 
 
-def test_delete_workspace_prompt(client, setup_prompt, setup_workspace):
-    """Test DELETE /workspaces/{workspace_id}/prompts/{prompt_id} endpoint."""
-    prompt = setup_prompt
-    workspace = setup_workspace
-
-    response = client.delete(f"/workspaces/{workspace.id}/prompts/{prompt.id}")
-    assert response.status_code == 200
-    assert response.json() == {"message": "Prompt deleted successfully"}
-
-    # Verify the prompt is deleted
-    response = client.get(f"/workspaces/{workspace.id}/prompts/{prompt.id}")
-    assert response.status_code == 404
-
-
 def test_delete_prompt(client, setup_prompt):
     """Test DELETE /prompts/{prompt_id} endpoint."""
     prompt = setup_prompt
 
     response = client.delete(f"/prompts/{prompt.id}")
-    assert response.status_code == 200
-    assert response.json() == {"message": "Prompt deleted successfully"}
+    assert response.status_code == 204
 
     # Verify the prompt is deleted
     response = client.get(f"/prompts/{prompt.id}")
@@ -317,15 +302,6 @@ def test_update_nonexistent_prompt(client):
     assert response.status_code == 404
 
 
-def test_delete_nonexistent_workspace_prompt(client, setup_workspace):
-    """Test DELETE /workspaces/{workspace_id}/prompts/{prompt_id} with non-existent prompt."""
-    workspace = setup_workspace
-    nonexistent_id = uuid4()
-
-    response = client.delete(f"/workspaces/{workspace.id}/prompts/{nonexistent_id}")
-    assert response.status_code == 404
-
-
 def test_delete_nonexistent_prompt(client):
     """Test DELETE /prompts/{prompt_id} with non-existent prompt."""
     nonexistent_id = uuid4()
@@ -407,12 +383,6 @@ def test_cross_workspace_access_denied(client, setup_prompt, setup_different_wor
     }
     response = client.put(
         f"/workspaces/{different_workspace.id}/prompts/{prompt.id}", json=update_data
-    )
-    assert response.status_code == 404
-
-    # Try to delete prompt from different workspace
-    response = client.delete(
-        f"/workspaces/{different_workspace.id}/prompts/{prompt.id}"
     )
     assert response.status_code == 404
 

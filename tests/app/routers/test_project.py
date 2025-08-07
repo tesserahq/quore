@@ -49,8 +49,7 @@ def test_delete_project(client, setup_project):
     """Test DELETE /projects/{project_id} endpoint."""
     project = setup_project
     response = client.delete(f"/projects/{project.id}")
-    assert response.status_code == 200
-    assert response.json() == {"message": "Project deleted successfully"}
+    assert response.status_code == 204
 
     # Verify the project is deleted
     response = client.get(f"/projects/{project.id}")

@@ -62,7 +62,7 @@ def update_workspace(
     return updated_workspace
 
 
-@router.delete("/{workspace_id}")
+@router.delete("/{workspace_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_workspace(
     workspace: Workspace = Depends(get_workspace_by_id),
     db: Session = Depends(get_db),
@@ -71,7 +71,6 @@ def delete_workspace(
         success = WorkspaceService(db).delete_workspace(workspace.id)
         if not success:
             raise HTTPException(status_code=404, detail="Workspace not found")
-        return {"message": "Workspace deleted successfully"}
     except WorkspaceLockedError as e:
         raise HTTPException(status_code=400, detail=e.message)
 

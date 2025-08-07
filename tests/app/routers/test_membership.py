@@ -5,6 +5,8 @@ from app.constants.membership import (
     ADMIN_ROLE,
     ROLES_DATA,
 )
+from app.schemas.membership import MembershipCreate
+from app.services.membership_service import MembershipService
 
 
 def test_list_memberships(client, setup_membership):
@@ -82,15 +84,13 @@ def test_update_membership_not_found(client):
     assert "not found" in response.json()["detail"]
 
 
-def test_delete_membership(client, setup_membership):
+def test_delete_membership(client, setup_another_user_membership):
     """Test DELETE /memberships/{membership_id} endpoint."""
-    membership = setup_membership
+    membership = setup_another_user_membership
 
     response = client.delete(f"/memberships/{membership.id}")
 
-    assert response.status_code == 200
-    data = response.json()
-    assert "deleted successfully" in data["message"]
+    assert response.status_code == 204
 
     # Verify membership is actually deleted
     get_response = client.get(f"/memberships/{membership.id}")
@@ -171,3 +171,140 @@ def test_get_roles(client):
         )
         assert found_role is not None
         assert found_role["name"] == expected_role["name"]
+
+
+def test_delete_membership_only_owners_can_delete_owners(
+    client, setup_workspace, setup_user, setup_another_user, db
+):
+    """Test DELETE /memberships/{membership_id} - only owners can delete other owners."""
+    workspace = setup_workspace
+
+    # Create an owner membership for another user
+    membership_service = MembershipService(db)
+    owner_membership_data = MembershipCreate(
+        user_id=setup_another_user.id,
+        workspace_id=workspace.id,
+        role=OWNER_ROLE,
+        created_by_id=workspace.created_by_id,
+    )
+    owner_membership = membership_service.create_membership(owner_membership_data)
+
+    # Remove any existing memberships for the current user and create a collaborator membership
+    existing_memberships = membership_service.get_memberships_by_user(setup_user.id)
+    for existing_membership in existing_memberships:
+        if existing_membership.workspace_id == workspace.id:
+            membership_service.delete_membership(existing_membership.id)
+
+    # Create a collaborator membership for the current user (setup_user)
+    collaborator_membership_data = MembershipCreate(
+        user_id=setup_user.id,
+        workspace_id=workspace.id,
+        role=COLLABORATOR_ROLE,
+        created_by_id=workspace.created_by_id,
+    )
+    membership_service.create_membership(collaborator_membership_data)
+
+    # Try to delete the owner membership as a collaborator
+    response = client.delete(f"/memberships/{owner_membership.id}")
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Only owners can delete other owners"
+
+
+def test_delete_membership_cannot_delete_self(
+    client_another_user, setup_workspace, setup_another_user, db
+):
+    """Test DELETE /memberships/{membership_id} - users cannot delete their own membership."""
+    workspace = setup_workspace
+
+    # Create a membership for the current user (setup_another_user)
+    membership_service = MembershipService(db)
+    membership_data = MembershipCreate(
+        user_id=setup_another_user.id,
+        workspace_id=workspace.id,
+        role=COLLABORATOR_ROLE,
+        created_by_id=workspace.created_by_id,
+    )
+    membership = membership_service.create_membership(membership_data)
+
+    # Try to delete own membership
+    response = client_another_user.delete(f"/memberships/{membership.id}")
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "You cannot delete your own membership"
+
+
+def test_delete_membership_cannot_delete_last_owner(
+    client, setup_workspace, setup_user, setup_another_user, db
+):
+    """Test DELETE /memberships/{membership_id} - cannot delete the last owner."""
+    workspace = setup_workspace
+
+    # Remove any existing memberships for both users
+    membership_service = MembershipService(db)
+    existing_memberships = membership_service.get_memberships_by_workspace(workspace.id)
+    for existing_membership in existing_memberships:
+        if existing_membership.user_id in [setup_user.id, setup_another_user.id]:
+            membership_service.delete_membership(existing_membership.id)
+
+    # Create an owner membership for another user (not the workspace creator)
+    membership_data = MembershipCreate(
+        user_id=setup_another_user.id,
+        workspace_id=workspace.id,
+        role=OWNER_ROLE,
+        created_by_id=workspace.created_by_id,
+    )
+    membership = membership_service.create_membership(membership_data)
+
+    # Create a collaborator membership for the current user (setup_user)
+    collaborator_membership_data = MembershipCreate(
+        user_id=setup_user.id,
+        workspace_id=workspace.id,
+        role=COLLABORATOR_ROLE,
+        created_by_id=workspace.created_by_id,
+    )
+    membership_service.create_membership(collaborator_membership_data)
+
+    # Try to delete the owner membership as a collaborator
+    response = client.delete(f"/memberships/{membership.id}")
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Only owners can delete other owners"
+
+
+def test_delete_membership_cannot_delete_last_owner_scenario(
+    client, setup_workspace, setup_user, setup_another_user, db
+):
+    """Test DELETE /memberships/{membership_id} - cannot delete the last owner when there are only two owners."""
+    workspace = setup_workspace
+
+    # Remove any existing memberships for both users
+    membership_service = MembershipService(db)
+    existing_memberships = membership_service.get_memberships_by_workspace(workspace.id)
+    for existing_membership in existing_memberships:
+        if existing_membership.user_id in [setup_user.id, setup_another_user.id]:
+            membership_service.delete_membership(existing_membership.id)
+
+    # Create an owner membership for another user
+    membership_data = MembershipCreate(
+        user_id=setup_another_user.id,
+        workspace_id=workspace.id,
+        role=OWNER_ROLE,
+        created_by_id=workspace.created_by_id,
+    )
+    target_membership = membership_service.create_membership(membership_data)
+
+    # Create an owner membership for the current user (setup_user)
+    current_user_membership_data = MembershipCreate(
+        user_id=setup_user.id,
+        workspace_id=workspace.id,
+        role=OWNER_ROLE,
+        created_by_id=workspace.created_by_id,
+    )
+    membership_service.create_membership(current_user_membership_data)
+
+    # Try to delete the other owner membership (as an owner)
+    response = client.delete(f"/memberships/{target_membership.id}")
+
+    # This should succeed because there are 2 owners, so deleting one leaves 1 owner
+    assert response.status_code == 204

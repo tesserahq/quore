@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from typing import Optional, Dict, Any
@@ -170,7 +170,7 @@ async def inspect_resources_plugin(
         return await client.list_resources()
 
 
-@router.delete("/plugins/{plugin_id}")
+@router.delete("/plugins/{plugin_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_plugin(
     plugin: Plugin = Depends(get_plugin_by_id),
     db: Session = Depends(get_db),
