@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict, Any
 from uuid import UUID
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_
 from app.models.membership import Membership
 from app.schemas.membership import MembershipCreate, MembershipUpdate
@@ -39,6 +39,7 @@ class MembershipService(SoftDeleteService[Membership]):
         """Get all memberships for a specific workspace."""
         return (
             self.db.query(Membership)
+            .options(joinedload(Membership.user), joinedload(Membership.created_by))
             .filter(Membership.workspace_id == workspace_id)
             .offset(skip)
             .limit(limit)

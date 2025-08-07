@@ -9,6 +9,7 @@ from app.schemas.membership import (
     MembershipCreate,
     MembershipCreateRequest,
     MembershipInDB,
+    MembershipResponse,
     MembershipUpdate,
     RolesResponse,
 )
@@ -25,7 +26,7 @@ workspace_membership_router = APIRouter(
 membership_router = APIRouter(prefix="/memberships", tags=["memberships"])
 
 
-@workspace_membership_router.get("", response_model=ListResponse[MembershipInDB])
+@workspace_membership_router.get("", response_model=ListResponse[MembershipResponse])
 def list_memberships(
     skip: int = 0,
     limit: int = 100,
