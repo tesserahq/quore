@@ -8,13 +8,13 @@ from app.models.credential import Credential
 from app.models.invitation import Invitation
 from app.models.membership import Membership
 from app.models.plugin import Plugin
-from app.services.credential import CredentialService
+from app.services.credential_service import CredentialService
 from app.services.invitation_service import InvitationService
 from app.services.membership_service import MembershipService
-from app.services.plugin import PluginService
-from app.services.workspace import WorkspaceService
+from app.services.plugin_service import PluginService
+from app.services.workspace_service import WorkspaceService
 from app.models.workspace import Workspace
-from app.services.project import ProjectService
+from app.services.project_service import ProjectService
 from app.models.project import Project
 
 

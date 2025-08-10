@@ -13,8 +13,8 @@ from llama_index.core.agent.workflow import AgentWorkflow
 from app.core.logging_config import get_logger
 from app.plugins.datetime import get_tools as get_datetime_tools
 from app.plugins.debug import get_tools as get_debug_tools
-from app.services.plugin import PluginService
-from app.services.prompt import PromptService
+from app.services.plugin_service import PluginService
+from app.services.prompt_service import PromptService
 from llama_index.core.tools import FunctionTool
 from mcp.types import Tool as MCPTool
 from llama_index.tools.mcp import aget_tools_from_mcp_url
@@ -180,7 +180,7 @@ class WorkflowManager:
         # Get headers using the credential service if the plugin has credentials
         headers = None
         if plugin.credential_id:
-            from app.services.credential import CredentialService
+            from app.services.credential_service import CredentialService
 
             credential_service = CredentialService(self.db_session)
             headers = credential_service.apply_credentials(

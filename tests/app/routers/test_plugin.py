@@ -1,5 +1,5 @@
 import pytest
-from app.services.plugin import PluginService
+from app.services.plugin_service import PluginService
 from app.models.project_plugin import ProjectPlugin
 from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient

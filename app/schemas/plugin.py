@@ -20,6 +20,8 @@ class PluginBase(BaseModel):
     resources: Optional[List[Dict[str, Any]]] = None
     prompts: Optional[List[Dict[str, Any]]] = None
     workspace_id: Optional[UUID] = None  # Optional since it's set from URL parameter
+    is_global: bool = False
+    is_enabled: bool = False
 
 
 class PluginCreate(PluginBase):
@@ -37,6 +39,8 @@ class PluginCreateRequest(BaseModel):
     version: Optional[str] = None
     credential_id: Optional[UUID] = None
     workspace_id: Optional[UUID] = None
+    is_global: bool = False
+    is_enabled: bool = False
 
 
 class PluginUpdate(BaseModel):
@@ -53,6 +57,8 @@ class PluginUpdate(BaseModel):
     tools: Optional[List[Dict[str, Any]]] = None
     resources: Optional[List[Dict[str, Any]]] = None
     prompts: Optional[List[Dict[str, Any]]] = None
+    is_global: Optional[bool] = False
+    is_enabled: Optional[bool] = True
 
 
 class PluginToolBase(BaseModel):

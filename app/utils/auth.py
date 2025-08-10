@@ -5,7 +5,7 @@ from fastapi import HTTPException, status, Request
 from fastapi.security import HTTPBearer
 
 from app.config import get_settings
-from app.services.user import UserService
+from app.services.user_service import UserService
 
 security = HTTPBearer()
 

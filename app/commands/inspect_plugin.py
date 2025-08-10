@@ -1,7 +1,7 @@
 from uuid import UUID
 from sqlalchemy.orm import Session
 from app.models.plugin import Plugin
-from app.services.plugin import PluginService
+from app.services.plugin_service import PluginService
 from app.tasks.plugin_tasks import inspect_plugin
 
 

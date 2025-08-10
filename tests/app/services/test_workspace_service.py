@@ -2,7 +2,7 @@ import pytest
 from uuid import uuid4
 from sqlalchemy.orm import Session
 from app.schemas.workspace import WorkspaceCreate, WorkspaceUpdate
-from app.services.workspace import WorkspaceService
+from app.services.workspace_service import WorkspaceService
 
 
 @pytest.fixture

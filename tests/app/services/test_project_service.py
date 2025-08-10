@@ -4,7 +4,7 @@ from uuid import uuid4
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect
 
-from app.services.project import ProjectService
+from app.services.project_service import ProjectService
 from app.schemas.project import ProjectCreate, ProjectUpdate
 
 

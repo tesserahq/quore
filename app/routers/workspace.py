@@ -1,6 +1,6 @@
 from app.commands.workspaces.create_workspace_command import CreateWorkspaceCommand
 from app.schemas.project import ProjectCreate, Project
-from app.services.project import ProjectService
+from app.services.project_service import ProjectService
 from app.utils.auth import get_current_user
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -12,7 +12,7 @@ from app.schemas.workspace import (
     WorkspaceUpdate,
     WorkspaceStats,
 )
-from app.services.workspace import WorkspaceService
+from app.services.workspace_service import WorkspaceService
 from app.schemas.common import ListResponse
 from app.routers.utils.dependencies import get_workspace_by_id
 from app.exceptions.workspace_exceptions import WorkspaceLockedError

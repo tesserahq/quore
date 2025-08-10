@@ -6,7 +6,7 @@ from app.services.invitation_service import InvitationService
 from app.services.membership_service import MembershipService
 from app.models.membership import Membership
 from app.schemas.membership import MembershipCreate
-from app.services.user import UserService
+from app.services.user_service import UserService
 from app.exceptions.invitation_exceptions import (
     InvitationException,
     InvitationNotFoundError,

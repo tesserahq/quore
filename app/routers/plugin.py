@@ -15,7 +15,7 @@ from app.schemas.plugin import (
     PluginStatesResponse,
 )
 from app.schemas.project import EnablePluginRequest
-from app.services.plugin import PluginService
+from app.services.plugin_service import PluginService
 from app.schemas.common import ListResponse
 from app.models.workspace import Workspace
 from app.models.project import Project

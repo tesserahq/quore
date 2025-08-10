@@ -79,7 +79,7 @@ class CredentialInfo(CredentialBase):
         type_info = credential_registry.get(obj.type)
         if type_info:
             # Get the decrypted fields
-            from app.services.credential import CredentialService
+            from app.services.credential_service import CredentialService
             from app.db import get_db
 
             db = next(get_db())

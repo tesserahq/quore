@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any
 
 from app.core.plugin_manager.manager import PluginManager
 from app.constants.plugin_states import PluginState
-from app.services.plugin import PluginService
+from app.services.plugin_service import PluginService
 
 
 class Tool(BaseModel):

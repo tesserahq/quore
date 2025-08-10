@@ -22,7 +22,7 @@ from app.schemas.workspace import (
     CredentialSummary,
 )
 from app.utils.db.filtering import apply_filters
-from app.services.workspace_prune import WorkspacePruneService
+from app.services.workspace_prune_service import WorkspacePruneService
 from app.services.soft_delete_service import SoftDeleteService
 from app.exceptions.workspace_exceptions import WorkspaceLockedError
 

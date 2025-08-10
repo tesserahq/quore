@@ -1,7 +1,7 @@
 import pytest
 from uuid import uuid4
 from app.constants.credentials import CredentialType
-from app.services.credential import CredentialService
+from app.services.credential_service import CredentialService
 from app.core.credentials import (
     get_credential_type,
     validate_credential_fields,

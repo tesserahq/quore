@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.mcp_client import MCPClient
 from app.models.plugin import Plugin
 from app.schemas.plugin import PluginUpdate
-from app.services.credential import CredentialService
+from app.services.credential_service import CredentialService
 from app.constants.plugin_states import PluginState
 
 
@@ -22,7 +22,7 @@ class PluginManager:
         """Initialize the plugin manager with a database session and plugin ID."""
         self.db = db
         self.access_token = access_token
-        from app.services.plugin import PluginService
+        from app.services.plugin_service import PluginService
 
         self.plugin_service = PluginService(db)
         if plugin_id:
