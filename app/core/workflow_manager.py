@@ -32,6 +32,7 @@ class WorkflowManager:
         self.logger = get_logger()
         self.access_token = context.access_token
         self.system_prompt_id = context.system_prompt_id
+        self.initial_state = context.initial_state or {}
 
     # def wrap_tool_with_context(tool, initial_state):
     #     def tool_with_context(input: dict):
@@ -93,8 +94,10 @@ class WorkflowManager:
 
         workflow = AgentWorkflow.from_tools_or_functions(
             tools_or_functions=all_tools,
+            # Revise this, the llm should come from the project settings
             llm=self.index_manager.llm(),
             system_prompt=str(system_prompt),
+            initial_state=self.initial_state,
         )
 
         self.logger.info("AgentWorkflow created successfully")
