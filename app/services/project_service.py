@@ -4,7 +4,7 @@ from app.exceptions.resource_not_found_error import ResourceNotFoundError
 from sqlalchemy.orm import Session
 from app.models.project import Project
 from app.schemas.project import ProjectCreate, ProjectUpdate, Project as ProjectSchema
-from app.services.workspace import WorkspaceService
+from app.services.workspace_service import WorkspaceService
 from app.utils.db.filtering import apply_filters
 from app.core.index_manager import IndexManager
 from app.models.node import get_node_model

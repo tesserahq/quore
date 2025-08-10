@@ -4,7 +4,7 @@ from uuid import UUID
 from app.core.plugin_manager.manager import PluginManager
 from app.constants.plugin_states import PluginState
 from app.db import SessionLocal
-from app.services.plugin import PluginService
+from app.services.plugin_service import PluginService
 from app.tasks import celery_app
 
 

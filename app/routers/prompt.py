@@ -6,7 +6,7 @@ import logging
 
 from app.db import get_db
 from app.schemas.prompt import Prompt, PromptCreate, PromptUpdate
-from app.services.prompt import PromptService
+from app.services.prompt_service import PromptService
 from app.schemas.common import ListResponse
 from app.utils.auth import get_current_user
 from app.models.workspace import Workspace

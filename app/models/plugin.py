@@ -1,6 +1,6 @@
 from sqlalchemy_json import mutable_json_type
 from app.models.mixins import TimestampMixin, SoftDeleteMixin
-from sqlalchemy import Column, String, ForeignKey, Enum as SQLEnum
+from sqlalchemy import Boolean, Column, String, ForeignKey, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 import uuid
@@ -32,6 +32,8 @@ class Plugin(Base, TimestampMixin, SoftDeleteMixin):
     workspace_id = Column(
         UUID(as_uuid=True), ForeignKey("workspaces.id"), nullable=False
     )  # Required workspace association
+    is_global = Column(Boolean, default=False, nullable=False)
+    is_enabled = Column(Boolean, default=False, nullable=False)
 
     # Relationships
     workspace = relationship("Workspace", back_populates="plugins")

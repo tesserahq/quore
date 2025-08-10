@@ -24,7 +24,7 @@ from app.schemas.project import (
     NodeListResponse,
     NodeResponse,
 )
-from app.services.project import ProjectService
+from app.services.project_service import ProjectService
 from app.models.project import Project as ProjectModel
 from app.routers.utils.dependencies import get_project_by_id
 from app.config import get_settings

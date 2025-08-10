@@ -2,7 +2,7 @@ import pytest
 from uuid import uuid4
 from sqlalchemy.orm import Session
 from app.schemas.prompt import PromptCreate, PromptUpdate
-from app.services.prompt import PromptService
+from app.services.prompt_service import PromptService
 
 
 @pytest.fixture

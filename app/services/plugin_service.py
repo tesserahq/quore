@@ -64,6 +64,16 @@ class PluginService(SoftDeleteService[Plugin]):
         """Get all plugins for a workspace."""
         return self.db.query(Plugin).filter(Plugin.workspace_id == workspace_id).all()
 
+    def get_global_workspace_plugins(self, workspace_id: UUID) -> List[Plugin]:
+        """Get all global plugins for a workspace."""
+        return (
+            self.db.query(Plugin)
+            .filter(
+                Plugin.workspace_id == workspace_id, Plugin.is_enabled, Plugin.is_global
+            )
+            .all()
+        )
+
     # Project Plugin Management
     def enable_plugin_in_project(
         self,
@@ -78,6 +88,10 @@ class PluginService(SoftDeleteService[Plugin]):
         Enable a plugin in a project.
         If the plugin is already installed, update its configuration and ensure it's enabled.
         """
+        plugin = self.get_plugin(plugin_id)
+        if plugin.is_global:
+            raise ValueError("Global plugins cannot be enabled in a project")
+
         # Check if plugin is already installed
         project_plugin = (
             self.db.query(ProjectPlugin)
@@ -134,23 +148,38 @@ class PluginService(SoftDeleteService[Plugin]):
     def get_project_plugins(self, project_id: UUID) -> List[Plugin]:
         """Get all enabled plugins for a project."""
         project = self.db.query(Project).filter(Project.id == project_id).first()
+
+        print("project")
         if not project:
             return []
 
+        print("paso")
+
         # Get all plugins from the project's workspace
-        workspace_plugins = self.get_workspace_plugins(project.workspace_id)
+        global_workspace_plugins = self.get_global_workspace_plugins(
+            project.workspace_id
+        )
 
         # Get project-specific plugin configurations
         project_plugins = (
-            self.db.query(ProjectPlugin)
-            .join(Plugin, ProjectPlugin.plugin_id == Plugin.id)
+            self.db.query(Plugin)
+            .join(ProjectPlugin, ProjectPlugin.plugin_id == Plugin.id)
             .filter(ProjectPlugin.project_id == project_id, ProjectPlugin.is_enabled)
             .all()
         )
 
-        # Filter to only include enabled plugins
-        enabled_plugin_ids = {pp.plugin_id for pp in project_plugins}
-        return [p for p in workspace_plugins if p.id in enabled_plugin_ids]
+        # Combine plugins and remove duplicates based on plugin ID
+        all_plugins = {}
+
+        # Add global plugins first
+        for plugin in global_workspace_plugins:
+            all_plugins[plugin.id] = plugin
+
+        # Add project plugins (will override global plugins if same ID)
+        for plugin in project_plugins:
+            all_plugins[plugin.id] = plugin
+
+        return list(all_plugins.values())
 
     def get_project_tools(self, project_id: UUID) -> List[Dict[str, Any]]:
         """Get all enabled plugins for a project."""

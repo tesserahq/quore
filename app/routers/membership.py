@@ -1,5 +1,5 @@
 from app.models.membership import Membership
-from app.services.workspace import WorkspaceService
+from app.services.workspace_service import WorkspaceService
 from app.utils.auth import get_current_user
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session

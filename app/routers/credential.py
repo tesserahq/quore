@@ -12,7 +12,7 @@ from app.schemas.credential import (
     CredentialUpdate,
     CredentialTypeInfo,
 )
-from app.services.credential import CredentialService
+from app.services.credential_service import CredentialService
 from app.schemas.common import ListResponse
 from app.utils.auth import get_current_user
 from app.models.workspace import Workspace

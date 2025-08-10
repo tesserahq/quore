@@ -1,5 +1,5 @@
 import pytest
-from app.services.plugin import PluginService
+from app.services.plugin_service import PluginService
 from app.schemas.plugin import PluginCreate
 from app.constants.plugin_states import PluginState
 

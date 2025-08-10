@@ -2,7 +2,7 @@ from app.models import workspace
 from app.schemas.membership import MembershipCreate
 from app.schemas.workspace import Workspace, WorkspaceCreate
 from app.services.membership_service import MembershipService
-from app.services.workspace import WorkspaceService
+from app.services.workspace_service import WorkspaceService
 from sqlalchemy.orm import Session
 from uuid import UUID
 from app.constants.membership import OWNER_ROLE

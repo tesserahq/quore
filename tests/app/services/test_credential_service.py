@@ -1,5 +1,5 @@
 from uuid import uuid4
-from app.services.credential import CredentialService
+from app.services.credential_service import CredentialService
 from app.schemas.credential import CredentialUpdate
 
 

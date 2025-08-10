@@ -1,5 +1,5 @@
 import pytest
-from app.services.plugin import PluginService
+from app.services.plugin_service import PluginService
 from app.schemas.plugin import PluginCreate
 from app.constants.plugin_states import PluginState
 
@@ -28,6 +28,8 @@ def setup_plugin(db, setup_workspace):
         plugin_metadata={"type": "test"},
         credential_id=None,  # No credential by default
         workspace_id=setup_workspace.id,
+        is_global=False,
+        is_enabled=True,
     )
     plugin = PluginService(db).create_plugin(plugin_data)
     return plugin

@@ -4,7 +4,7 @@ from uuid import UUID
 
 from app.db import get_db
 from app.schemas.user import User, UserCreate, UserUpdate
-from app.services.user import UserService
+from app.services.user_service import UserService
 from app.schemas.common import ListResponse
 
 router = APIRouter(
