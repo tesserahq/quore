@@ -16,3 +16,7 @@ class ChatConfig(BaseModel):
         default=None,
         description="The ID of the system prompt to use. Can be either UUID or string prompt_id.",
     )
+    initial_state: Optional[dict] = Field(
+        default=None,
+        description="Initial state for the workflow",
+    )

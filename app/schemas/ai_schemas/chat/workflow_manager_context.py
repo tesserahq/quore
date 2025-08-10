@@ -30,5 +30,10 @@ class WorkflowManagerContext(BaseModel):
         description="ID of the system prompt to use (overrides project's default system prompt). Can be either UUID or string prompt_id.",
     )
 
+    initial_state: Optional[dict] = Field(
+        default=None,
+        description="Initial state for the workflow",
+    )
+
     class Config:
         arbitrary_types_allowed = True  # Allow SQLAlchemy Session and Project objects

@@ -61,6 +61,7 @@ def assistant_router() -> APIRouter:
             project=project,
             access_token=token,
             system_prompt_id=request.config.system_prompt_id,
+            initial_state=request.config.initial_state,
         )
 
         workflow_manager = WorkflowManager(context)
