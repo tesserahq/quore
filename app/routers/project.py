@@ -91,7 +91,9 @@ def search_projects(
     return ProjectSearchResponse(data=results)
 
 
-@router.get("/{project_id}/memberships", response_model=ListResponse[ProjectMembershipInDB])
+@router.get(
+    "/{project_id}/memberships", response_model=ListResponse[ProjectMembershipInDB]
+)
 def list_project_memberships(
     project: ProjectModel = Depends(get_project_by_id),
     skip: int = 0,
@@ -139,7 +141,9 @@ def update_project_membership(
     current_user=Depends(get_current_user),
 ):
     service = ProjectMembershipService(db)
-    updated = service.update_project_membership(UUID(str(membership.id)), membership_update)
+    updated = service.update_project_membership(
+        UUID(str(membership.id)), membership_update
+    )
     if updated is None:
         raise HTTPException(status_code=404, detail="Project membership not found")
     return updated
