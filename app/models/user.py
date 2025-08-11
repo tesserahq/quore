@@ -7,6 +7,7 @@ import uuid
 
 from app.db import Base
 from app.models.membership import Membership
+from app.models.project_membership import ProjectMembership
 
 
 class User(Base, TimestampMixin, SoftDeleteMixin):
@@ -47,6 +48,12 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     prompts = relationship("Prompt", back_populates="created_by")
     invitations = relationship(
         "Invitation", back_populates="inviter", cascade="all, delete-orphan"
+    )
+    project_memberships = relationship(
+        "ProjectMembership",
+        foreign_keys=[ProjectMembership.user_id],
+        back_populates="user",
+        cascade="all, delete-orphan",
     )
 
     def __init__(self, **kwargs):

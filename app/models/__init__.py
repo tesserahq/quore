@@ -8,6 +8,7 @@ from app.models.app_setting import AppSetting
 from app.models.credential import Credential
 from app.models.prompt import Prompt
 from app.models.invitation import Invitation
+from app.models.project_membership import ProjectMembership
 
 
 __all__ = [
@@ -21,4 +22,5 @@ __all__ = [
     "Credential",
     "Prompt",
     "Invitation",
+    "ProjectMembership",
 ]

@@ -2,7 +2,7 @@ from app.models.mixins import TimestampMixin, SoftDeleteMixin
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy_json import mutable_json_type
+from sqlalchemy_json import mutable_json_type  # type: ignore
 from sqlalchemy.dialects.postgresql import JSONB
 from app.config import get_settings
 
@@ -104,6 +104,9 @@ class Project(Base, TimestampMixin, SoftDeleteMixin):
     # Relationships
     workspace = relationship("Workspace", back_populates="projects")
     plugins = relationship("ProjectPlugin", back_populates="project")
+    memberships = relationship(
+        "ProjectMembership", back_populates="project", cascade="all, delete-orphan"
+    )
 
     def __init__(self, **kwargs):
         ingest_data = kwargs.pop("ingest_settings", None)
