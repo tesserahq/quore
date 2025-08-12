@@ -12,6 +12,7 @@ from fastapi import (
 from fastapi.responses import JSONResponse
 import httpx
 from sqlalchemy.orm import Session
+from uuid import UUID
 from typing import Optional, List
 import json
 
@@ -26,8 +27,18 @@ from app.schemas.project import (
 )
 from app.services.project_service import ProjectService
 from app.models.project import Project as ProjectModel
-from app.routers.utils.dependencies import get_project_by_id
+from app.routers.utils.dependencies import (
+    get_project_by_id,
+    get_project_membership_by_id,
+)
 from app.config import get_settings
+from app.services.project_membership_service import ProjectMembershipService
+from app.schemas.project_membership import (
+    ProjectMembershipUpdate,
+    ProjectMembershipInDB,
+)
+from app.schemas.common import ListResponse
+from app.models.project_membership import ProjectMembership
 
 router = APIRouter(prefix="/projects", tags=["workspace-projects"])
 
@@ -39,7 +50,7 @@ def nodes(
     current_user=Depends(get_current_user),
 ):
     service = ProjectService(db)
-    nodes = service.get_nodes(project_id=project.id)
+    nodes = service.get_nodes(project_id=UUID(str(project.id)))
     node_responses = []
     for node in nodes:
         node_dict = node.__dict__.copy()
@@ -80,6 +91,21 @@ def search_projects(
     return ProjectSearchResponse(data=results)
 
 
+@router.get(
+    "/{project_id}/memberships", response_model=ListResponse[ProjectMembershipInDB]
+)
+def list_project_memberships(
+    project: ProjectModel = Depends(get_project_by_id),
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    service = ProjectMembershipService(db)
+    memberships = service.get_memberships_by_project(UUID(str(project.id)), skip, limit)
+    return ListResponse(data=memberships)
+
+
 @router.get("/{project_id}", response_model=Project)
 def get_project(
     project: ProjectModel = Depends(get_project_by_id),
@@ -91,16 +117,35 @@ def get_project(
 
 @router.put("/{project_id}", response_model=Project)
 def update_project(
+    project_update: ProjectUpdate,
     project: ProjectModel = Depends(get_project_by_id),
-    project_update: ProjectUpdate = None,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
     """Update an existing project."""
     service = ProjectService(db)
-    updated = service.update_project(project.id, project_update)
+    updated = service.update_project(UUID(str(project.id)), project_update)
     if updated is None:
         raise HTTPException(status_code=404, detail="Project not found")
+    return updated
+
+
+@router.put(
+    "/{project_id}/memberships/{membership_id}",
+    response_model=ProjectMembershipInDB,
+)
+def update_project_membership(
+    membership_update: ProjectMembershipUpdate,
+    membership: ProjectMembership = Depends(get_project_membership_by_id),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    service = ProjectMembershipService(db)
+    updated = service.update_project_membership(
+        UUID(str(membership.id)), membership_update
+    )
+    if updated is None:
+        raise HTTPException(status_code=404, detail="Project membership not found")
     return updated
 
 
@@ -112,17 +157,32 @@ def delete_project(
 ):
     """Delete a project."""
     service = ProjectService(db)
-    success = service.delete_project(project.id)
+    success = service.delete_project(UUID(str(project.id)))
     if not success:
         raise HTTPException(status_code=404, detail="Project not found")
     return {"message": "Project deleted successfully"}
 
 
+@router.delete(
+    "/{project_id}/memberships/{membership_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_project_membership(
+    membership: ProjectMembership = Depends(get_project_membership_by_id),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    service = ProjectMembershipService(db)
+    success = service.delete_project_membership(UUID(str(membership.id)))
+    if not success:
+        raise HTTPException(status_code=404, detail="Project membership not found")
+
+
 @router.post("/{project_id}/documents")
 async def create_project_document(
-    file: UploadFile = File(description="The file to upload"),
+    request: Request,
     project: ProjectModel = Depends(get_project_by_id),
-    request: Request = None,
+    file: UploadFile = File(description="The file to upload"),
     name: Optional[str] = Form(None),
     labels: Optional[str] = Form(None),
     current_user=Depends(get_current_user),
@@ -142,13 +202,16 @@ async def create_project_document(
         "user_id": str(current_user.id),
     }
 
+    merged_labels: dict[str, str]
     if labels:
-        labels = json.loads(labels)
-        labels.update(custom_labels)
+        parsed = json.loads(labels)
+        if not isinstance(parsed, dict):
+            parsed = {}
+        merged_labels = {**parsed, **custom_labels}
     else:
-        labels = custom_labels
+        merged_labels = custom_labels
 
-    data = {"labels": json.dumps(labels)}
+    data = {"labels": json.dumps(merged_labels)}
     if name:
         data["name"] = name
 
@@ -159,15 +222,15 @@ async def create_project_document(
             f"{settings.vaulta_api_url}/documents",
             files=files,
             data=data,
-            headers={"authorization": request.headers.get("authorization")},
+            headers={"authorization": request.headers.get("authorization") or ""},
         )
         return JSONResponse(content=response.json(), status_code=response.status_code)
 
 
 @router.post("/{project_id}/documents/search")
 async def search_project_documents(
+    request: Request,
     project: ProjectModel = Depends(get_project_by_id),
-    request: Request = None,
     current_user=Depends(get_current_user),
 ):
     """
@@ -183,6 +246,6 @@ async def search_project_documents(
         response = await client.post(
             f"{settings.vaulta_api_url}/documents/search",
             json={"query": query},
-            headers={"authorization": request.headers.get("authorization")},
+            headers={"authorization": request.headers.get("authorization") or ""},
         )
         return JSONResponse(content=response.json(), status_code=response.status_code)

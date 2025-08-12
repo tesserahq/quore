@@ -16,6 +16,8 @@ from app.services.workspace_service import WorkspaceService
 from app.models.workspace import Workspace
 from app.services.project_service import ProjectService
 from app.models.project import Project
+from app.models.project_membership import ProjectMembership
+from app.services.project_membership_service import ProjectMembershipService
 
 
 def get_workspace_by_id(
@@ -148,3 +150,15 @@ def get_membership_by_id(
     if membership is None:
         raise HTTPException(status_code=404, detail="Membership not found")
     return membership
+
+
+def get_project_membership_by_id(
+    membership_id: UUID,
+    project: Project = Depends(get_project_by_id),
+    db: Session = Depends(get_db),
+) -> ProjectMembership:
+    """FastAPI dependency to get a project membership by ID, scoped to a project."""
+    pm = ProjectMembershipService(db).get_project_membership(membership_id)
+    if pm is None or pm.project_id != project.id:
+        raise HTTPException(status_code=404, detail="Project membership not found")
+    return pm

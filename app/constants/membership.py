@@ -23,3 +23,12 @@ class MembershipRoles:
     @classmethod
     def get_all(cls):
         return [cls.OWNER, cls.ADMIN, cls.COLLABORATOR]
+
+
+class ProjectMembershipRoles:
+    ADMIN = "admin"
+    COLLABORATOR = "collaborator"
+
+    @classmethod
+    def get_all(cls):
+        return [cls.ADMIN, cls.COLLABORATOR]
