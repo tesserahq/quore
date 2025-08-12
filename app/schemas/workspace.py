@@ -26,6 +26,10 @@ class WorkspaceBase(BaseModel):
     locked: Optional[bool] = False
     """Whether the workspace is locked and cannot be deleted."""
 
+    system_prompt: Optional[str] = Field(
+        None, description="Optional system prompt for the workspace's AI assistant."
+    )
+
 
 class WorkspaceCreate(WorkspaceBase):
     """Schema for creating a new workspace. Inherits all fields from WorkspaceBase."""
@@ -51,6 +55,10 @@ class WorkspaceUpdate(BaseModel):
 
     locked: Optional[bool] = None
     """Whether the workspace is locked and cannot be deleted."""
+
+    system_prompt: Optional[str] = Field(
+        None, description="Optional system prompt for the workspace's AI assistant."
+    )
 
 
 class WorkspaceInDB(WorkspaceBase):
@@ -158,6 +166,3 @@ class CredentialSummary(BaseModel):
     name: str
     type: str
     updated_at: datetime
-
-    class Config:
-        from_attributes = True
