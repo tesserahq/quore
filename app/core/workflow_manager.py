@@ -72,19 +72,29 @@ class WorkflowManager:
                 )
             else:
                 self.logger.warning(
-                    f"System prompt with ID {self.system_prompt_id} not found, falling back to project default"
+                    f"System prompt with ID {self.system_prompt_id} not found, falling back to defaults"
                 )
                 system_prompt = (
                     str(self.project.system_prompt)
-                    if self.project.system_prompt
-                    else get_settings().default_system_prompt
+                    if getattr(self.project, "system_prompt", None)
+                    else (
+                        str(getattr(self.project.workspace, "system_prompt", None))
+                        if getattr(self.project, "workspace", None)
+                        and getattr(self.project.workspace, "system_prompt", None)
+                        else get_settings().default_system_prompt
+                    )
                 )
         else:
-            # Use project's default system prompt
+            # Use project's default system prompt, then workspace, then global default
             system_prompt = (
                 str(self.project.system_prompt)
-                if self.project.system_prompt
-                else get_settings().default_system_prompt
+                if getattr(self.project, "system_prompt", None)
+                else (
+                    str(getattr(self.project.workspace, "system_prompt", None))
+                    if getattr(self.project, "workspace", None)
+                    and getattr(self.project.workspace, "system_prompt", None)
+                    else get_settings().default_system_prompt
+                )
             )
 
         tools = await self.get_tools()

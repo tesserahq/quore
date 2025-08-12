@@ -578,3 +578,29 @@ def test_get_workspace_stats_recent_items_limit(db: Session, setup_workspace, fa
     assert len(stats.prompt_stats.recent_prompts) == 5  # Limited to 5
     assert stats.credential_stats.total_credentials == 7
     assert len(stats.credential_stats.recent_credentials) == 5  # Limited to 5
+
+
+def test_create_workspace_with_system_prompt(db: Session, setup_user, faker):
+    """Ensure system_prompt is persisted on create and can be updated."""
+    user = setup_user
+
+    workspace_data = {
+        "name": faker.company(),
+        "description": faker.text(50),
+        "created_by_id": user.id,
+        "system_prompt": "You are a helpful workspace assistant.",
+    }
+
+    workspace_create = WorkspaceCreate(**workspace_data)
+    workspace = WorkspaceService(db).create_workspace(workspace_create)
+
+    assert workspace.system_prompt == "You are a helpful workspace assistant."
+
+    # Update the system_prompt
+    workspace_update = WorkspaceUpdate(system_prompt="New workspace system prompt")
+    updated_workspace = WorkspaceService(db).update_workspace(
+        workspace.id, workspace_update
+    )
+
+    assert updated_workspace is not None
+    assert updated_workspace.system_prompt == "New workspace system prompt"
