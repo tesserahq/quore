@@ -163,6 +163,13 @@ class IndexManager:
         self.db.execute(text(f"DROP TABLE IF EXISTS {table_name};"))
         self.db.commit()
 
+    @instrument_method()
+    def reset_index(self):
+        """Delete all rows from the project's vector index table without dropping it."""
+        table_name = self.project.vector_llama_index_name()
+        self.db.execute(text(f"DELETE FROM {table_name};"))
+        self.db.commit()
+
     def create_query_engine(self, **kwargs: Any) -> BaseQueryEngine:
         """Create a query engine for the project's index.
 

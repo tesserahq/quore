@@ -39,6 +39,7 @@ from app.schemas.project_membership import (
 )
 from app.schemas.common import ListResponse
 from app.models.project_membership import ProjectMembership
+from app.core.index_manager import IndexManager
 
 router = APIRouter(prefix="/projects", tags=["workspace-projects"])
 
@@ -249,3 +250,15 @@ async def search_project_documents(
             headers={"authorization": request.headers.get("authorization") or ""},
         )
         return JSONResponse(content=response.json(), status_code=response.status_code)
+
+
+@router.post("/{project_id}/index/reset")
+def reset_project_index(
+    project: ProjectModel = Depends(get_project_by_id),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Reset (clear) all records from the project's index table without dropping the table."""
+    index_manager = IndexManager(db, project)
+    index_manager.reset_index()
+    return {"message": "Project index reset successfully"}
