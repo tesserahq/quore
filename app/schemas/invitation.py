@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, List
 from uuid import UUID
 from pydantic import BaseModel, field_validator, EmailStr
 from app.constants.membership import MembershipRoles
@@ -12,10 +12,16 @@ else:
     from app.schemas.workspace import Workspace
 
 
+class ProjectAssignment(BaseModel):
+    id: UUID
+    role: str
+
+
 class InvitationBase(BaseModel):
     email: EmailStr
     role: str = MembershipRoles.COLLABORATOR
     message: Optional[str] = None
+    projects: Optional[List[ProjectAssignment]] = None
 
 
 class InvitationCreate(InvitationBase):
@@ -27,6 +33,7 @@ class InvitationCreateRequest(BaseModel):
     email: EmailStr
     role: str = MembershipRoles.COLLABORATOR
     message: Optional[str] = None
+    projects: Optional[List[ProjectAssignment]] = None
 
     @field_validator("role")
     @classmethod
@@ -35,9 +42,10 @@ class InvitationCreateRequest(BaseModel):
             MembershipRoles.OWNER,
             MembershipRoles.COLLABORATOR,
             MembershipRoles.ADMIN,
+            MembershipRoles.PROJECT_MEMBER,
         ]:
             raise ValueError(
-                f"Invalid membership type. Must be one of: {MembershipRoles.OWNER}, {MembershipRoles.COLLABORATOR}, {MembershipRoles.ADMIN}"
+                f"Invalid membership type. Must be one of: {MembershipRoles.OWNER}, {MembershipRoles.COLLABORATOR}, {MembershipRoles.ADMIN}, {MembershipRoles.PROJECT_MEMBER}"
             )
         return v
 
@@ -53,9 +61,10 @@ class InvitationUpdate(BaseModel):
             MembershipRoles.OWNER,
             MembershipRoles.COLLABORATOR,
             MembershipRoles.ADMIN,
+            MembershipRoles.PROJECT_MEMBER,
         ]:
             raise ValueError(
-                f"Invalid membership type. Must be one of: {MembershipRoles.OWNER}, {MembershipRoles.COLLABORATOR}, {MembershipRoles.ADMIN}"
+                f"Invalid membership type. Must be one of: {MembershipRoles.OWNER}, {MembershipRoles.COLLABORATOR}, {MembershipRoles.ADMIN}, {MembershipRoles.PROJECT_MEMBER}"
             )
         return v
 

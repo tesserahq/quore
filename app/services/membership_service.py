@@ -8,6 +8,8 @@ from app.models.membership import Membership
 from app.schemas.membership import MembershipCreate, MembershipUpdate
 from app.utils.db.filtering import apply_filters
 from app.services.soft_delete_service import SoftDeleteService
+from app.models.project import Project
+from app.models.project_membership import ProjectMembership
 
 """
 Module providing the MembershipService class for managing Membership entities.
@@ -142,6 +144,38 @@ class MembershipService(SoftDeleteService[Membership]):
             )
             .count()
         )
+
+    def get_accessible_projects_for_user(
+        self, workspace_id: UUID, user_id: UUID
+    ) -> List[Project]:
+        """Return projects in a workspace that the user can access.
+
+        - If the user has a workspace membership with role project_member,
+          return only projects where the user has a project membership.
+        - Otherwise, return all projects in the workspace.
+        """
+        membership = self.get_user_workspace_membership(user_id, workspace_id)
+        if membership is None:
+            return []
+
+        if membership.role == MembershipRoles.PROJECT_MEMBER:
+            return (
+                self.db.query(Project)
+                .join(
+                    ProjectMembership,
+                    ProjectMembership.project_id == Project.id,
+                )
+                .filter(
+                    and_(
+                        Project.workspace_id == workspace_id,
+                        ProjectMembership.user_id == user_id,
+                    )
+                )
+                .all()
+            )
+
+        # Owners/admins/collaborators: full access to workspace projects
+        return self.db.query(Project).filter(Project.workspace_id == workspace_id).all()
 
     def validate_delete_membership_permissions(
         self, membership_id: UUID, current_user_id: UUID, workspace_id: UUID
