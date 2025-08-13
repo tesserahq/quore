@@ -55,7 +55,7 @@ class IndexManager:
             storage=self.storage,
         )
 
-    def get_chat_memory(self, project_id: str, user_id: str) -> ChatMemoryBuffer:
+    def get_chat_memory(self, session_id: str) -> ChatMemoryBuffer:
         """Get a chat memory buffer instance for a specific project and user.
 
         Args:
@@ -73,7 +73,7 @@ class IndexManager:
         return ChatMemoryBuffer.from_defaults(
             token_limit=3000,
             chat_store=chat_store,
-            chat_store_key=f"{project_id}-{user_id}",
+            chat_store_key=session_id,
         )
 
     def default_text(self) -> str:
