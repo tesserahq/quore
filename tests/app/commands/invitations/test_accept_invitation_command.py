@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 from app.commands.invitations.accept_invitation_command import AcceptInvitationCommand
 from app.models.invitation import Invitation
 from app.models.membership import Membership
+from app.models.project_membership import ProjectMembership
 from app.constants.membership import MembershipRoles
 from app.services.invitation_service import InvitationService
 from app.exceptions.invitation_exceptions import (
@@ -139,3 +140,120 @@ class TestAcceptInvitationCommand:
         assert membership.role == MembershipRoles.OWNER
         assert membership.user_id == accepting_user.id
         assert membership.workspace_id == setup_workspace.id
+
+    def test_accept_project_invitation_creates_project_memberships_and_workspace_project_member(
+        self, db, setup_workspace, setup_user, setup_another_user, setup_project, faker
+    ):
+        """Accepting an invitation with projects creates project memberships and sets workspace role to project_member."""
+        workspace = setup_workspace
+        inviter = setup_another_user
+        accepting_user = setup_user
+
+        # Ensure accepting_user email matches invitation
+        accepting_user.email = "project-invitee@example.com"
+        db.commit()
+
+        # Create two projects in the same workspace
+        project1 = setup_project
+        # Create another project
+        from app.models.project import Project as ProjectModel
+
+        project2 = ProjectModel(
+            name=faker.company(),
+            description=faker.text(50),
+            workspace_id=workspace.id,
+            llm_provider="mock",
+            embed_model="mock",
+            embed_dim=1536,
+            llm="mock",
+        )
+        db.add(project2)
+        db.commit()
+        db.refresh(project2)
+
+        # Create invitation with projects assignments
+        invitation = Invitation(
+            email=accepting_user.email,
+            workspace_id=workspace.id,
+            inviter_id=inviter.id,
+            role=MembershipRoles.COLLABORATOR,
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
+            message="Project-specific invitation",
+            projects=[
+                {"id": project1.id, "role": "admin"},
+                {"id": project2.id, "role": "collaborator"},
+            ],
+        )
+        db.add(invitation)
+        db.commit()
+
+        # Execute command
+        command = AcceptInvitationCommand(db)
+        membership = command.execute(invitation.id, accepting_user.id)
+
+        # Verify workspace membership exists with project_member role
+        assert membership is not None
+        assert membership.role == MembershipRoles.PROJECT_MEMBER
+        assert membership.user_id == accepting_user.id
+        assert membership.workspace_id == workspace.id
+
+        # Verify project memberships created for accepting_user
+        pmemberships = (
+            db.query(ProjectMembership)
+            .filter(ProjectMembership.user_id == accepting_user.id)
+            .all()
+        )
+        assert len(pmemberships) == 2
+        mapped = {str(pm.project_id): pm for pm in pmemberships}
+        assert str(project1.id) in mapped and mapped[str(project1.id)].role == "admin"
+        assert (
+            str(project2.id) in mapped
+            and mapped[str(project2.id)].role == "collaborator"
+        )
+
+        # Invitation should be deleted
+        assert InvitationService(db).get_invitation(invitation.id) is None
+
+    def test_accept_project_invitation_missing_role_defaults_to_collaborator(
+        self, db, setup_workspace, setup_user, setup_another_user, setup_project, faker
+    ):
+        """If a project assignment lacks a role, default to collaborator for that project membership."""
+        workspace = setup_workspace
+        inviter = setup_another_user
+        accepting_user = setup_user
+        accepting_user.email = "project-invitee2@example.com"
+        db.commit()
+
+        project = setup_project
+
+        # Create invitation with one project assignment without role
+        invitation = Invitation(
+            email=accepting_user.email,
+            workspace_id=workspace.id,
+            inviter_id=inviter.id,
+            role=MembershipRoles.COLLABORATOR,
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
+            message="Project invite without role",
+            projects=[{"id": project.id}],
+        )
+        db.add(invitation)
+        db.commit()
+
+        command = AcceptInvitationCommand(db)
+        membership = command.execute(invitation.id, accepting_user.id)
+
+        # Workspace membership should be project_member
+        assert membership is not None
+        assert membership.role == MembershipRoles.PROJECT_MEMBER
+
+        # Project membership defaults to collaborator
+        pm = (
+            db.query(ProjectMembership)
+            .filter(
+                ProjectMembership.user_id == accepting_user.id,
+                ProjectMembership.project_id == project.id,
+            )
+            .first()
+        )
+        assert pm is not None
+        assert pm.role == "collaborator"

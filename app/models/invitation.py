@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import cast
 from uuid import uuid4
 from sqlalchemy import Column, String, DateTime, ForeignKey, Text
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, validates
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 
 from app.db import Base
@@ -46,3 +46,24 @@ class Invitation(Base, TimestampMixin, SoftDeleteMixin):
     def is_valid(self) -> bool:
         """Check if the invitation is valid (not expired)."""
         return not self.is_expired
+
+    @validates("projects")
+    def _normalize_projects(self, key, value):
+        """Ensure projects JSON is serializable (convert UUIDs to strings)."""
+        if value is None:
+            return None
+        normalized = []
+        for item in value:
+            if isinstance(item, dict):
+                new_item = dict(item)
+                if "id" in new_item:
+                    try:
+                        new_item["id"] = (
+                            str(new_item["id"]) if new_item["id"] is not None else None
+                        )
+                    except Exception:
+                        pass
+                normalized.append(new_item)
+            else:
+                normalized.append(item)
+        return normalized
