@@ -20,3 +20,7 @@ class ChatConfig(BaseModel):
         default=None,
         description="Initial state for the workflow",
     )
+    session_id: Optional[str] = Field(
+        default=None,
+        description="The ID of the session",
+    )

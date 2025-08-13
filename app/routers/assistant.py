@@ -1,6 +1,7 @@
 import asyncio
 import logging
-from typing import Annotated, AsyncGenerator, Union
+from typing import Annotated, Any, AsyncGenerator, Dict, Union
+import uuid
 
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi import APIRouter, Depends, HTTPException
@@ -30,10 +31,21 @@ from sqlalchemy.orm import Session
 from app.models.project import Project
 from app.routers.utils.dependencies import get_access_token, get_project_by_id
 
+router = APIRouter(prefix="/projects/{project_id}/assistant")
+
+
+@router.post("/init")
+def init_assistant(
+    project: Project = Depends(get_project_by_id),
+    current_user=Depends(get_current_user),
+) -> Dict[str, Any]:
+    # TODO: We should store this session in the database and associate with the chat later.
+    return {
+        "session_id": str(uuid.uuid4()),
+    }
+
 
 def assistant_router() -> APIRouter:
-    router = APIRouter(prefix="/projects/{project_id}/assistant")
-
     @router.post("")
     async def chat(
         request: ChatRequest,
@@ -79,11 +91,14 @@ def assistant_router() -> APIRouter:
             workflow = await workflow_manager.create_workflow(chat_request=request)
             logger.debug("Chat route: Created workflow successfully")
 
+            # TODO: Should we start a new session if the session_id is not provided?
+            session_id = request.config.session_id or str(uuid.uuid4())
+
             workflow_handler = workflow.run(
                 user_msg=user_message.content,
                 chat_history=chat_history,
                 memory=workflow_manager.index_manager.get_chat_memory(
-                    str(project.id), current_user.id
+                    session_id,
                 ),
             )
             logger.debug(
