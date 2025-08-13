@@ -1,10 +1,12 @@
 from datetime import datetime, timezone
+from typing import cast
 from uuid import uuid4
 from sqlalchemy import Column, String, DateTime, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 
 from app.db import Base
+from sqlalchemy.dialects.postgresql import JSONB
 from app.constants.membership import MembershipRoles
 from app.models.mixins import SoftDeleteMixin, TimestampMixin
 
@@ -23,6 +25,8 @@ class Invitation(Base, TimestampMixin, SoftDeleteMixin):
         PostgresUUID(as_uuid=True), ForeignKey("users.id"), nullable=False
     )
     expires_at = Column(DateTime, nullable=False)
+    # Optional list of project assignments: [{"id": UUID, "role": str}]
+    projects = Column(JSONB, nullable=True, server_default="[]")
 
     # Relationships
     workspace = relationship("Workspace", back_populates="invitations")
@@ -33,10 +37,10 @@ class Invitation(Base, TimestampMixin, SoftDeleteMixin):
     @property
     def is_expired(self) -> bool:
         """Check if the invitation has expired."""
-        expires_at = self.expires_at
-        if expires_at.tzinfo is None:
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-        return datetime.now(timezone.utc) > expires_at
+        expires_at_dt = cast(datetime, self.expires_at)
+        if expires_at_dt.tzinfo is None:
+            expires_at_dt = expires_at_dt.replace(tzinfo=timezone.utc)
+        return datetime.now(timezone.utc) > expires_at_dt
 
     @property
     def is_valid(self) -> bool:

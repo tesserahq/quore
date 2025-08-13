@@ -1,5 +1,6 @@
 from typing import Optional
 from uuid import UUID
+from typing import cast, Optional as _Optional
 from sqlalchemy.orm import Session
 
 from app.services.invitation_service import InvitationService
@@ -38,11 +39,12 @@ class ResendInvitationCommand:
 
             # Store the original invitation data
             invitation_data = InvitationCreate(
-                email=original_invitation.email,
-                workspace_id=original_invitation.workspace_id,
-                role=original_invitation.role,
-                message=original_invitation.message,
-                inviter_id=original_invitation.inviter_id,
+                email=cast(str, original_invitation.email),
+                workspace_id=cast(UUID, original_invitation.workspace_id),
+                role=cast(str, original_invitation.role),
+                message=cast(_Optional[str], original_invitation.message),
+                inviter_id=cast(UUID, original_invitation.inviter_id),
+                projects=getattr(original_invitation, "projects", None),
             )
 
             # Delete the existing invitation

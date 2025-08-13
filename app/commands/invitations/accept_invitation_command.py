@@ -7,6 +7,8 @@ from app.services.membership_service import MembershipService
 from app.models.membership import Membership
 from app.schemas.membership import MembershipCreate
 from app.services.user_service import UserService
+from app.services.project_membership_service import ProjectMembershipService
+from app.schemas.project_membership import ProjectMembershipCreate
 from app.exceptions.invitation_exceptions import (
     InvitationException,
     InvitationNotFoundError,
@@ -14,6 +16,7 @@ from app.exceptions.invitation_exceptions import (
     InvitationUnauthorizedError,
     UserNotFoundError,
 )
+from app.constants.membership import MembershipRoles
 
 
 class AcceptInvitationCommand:
@@ -26,6 +29,7 @@ class AcceptInvitationCommand:
         self.invitation_service = InvitationService(db)
         self.membership_service = MembershipService(db)
         self.user_service = UserService(db)
+        self.project_membership_service = ProjectMembershipService(db)
 
     def execute(
         self, invitation_id: UUID, accepted_by_id: UUID
@@ -61,8 +65,6 @@ class AcceptInvitationCommand:
                 )
 
             # Store invitation data before accepting (which will delete it)
-            from uuid import UUID
-
             workspace_id = UUID(str(invitation.workspace_id))
             role = str(invitation.role)
             inviter_id = UUID(str(invitation.inviter_id))
@@ -72,15 +74,31 @@ class AcceptInvitationCommand:
                 invitation_id
             )
 
-            # Create membership
+            # Determine workspace role: if this is a "project invitation", use Project member; otherwise use requested role
+            project_assignments = getattr(invitation, "projects", None) or []
+            workspace_role = (
+                MembershipRoles.PROJECT_MEMBER if project_assignments else role
+            )
+
+            # Create workspace membership
             membership_data = MembershipCreate(
                 user_id=accepted_by_id,
                 workspace_id=workspace_id,
-                role=role,
+                role=workspace_role,
                 created_by_id=inviter_id,
             )
 
             membership = self.membership_service.create_membership(membership_data)
+
+            # If the invitation includes project assignments, create project memberships too
+            for assignment in project_assignments:
+                pm_data = ProjectMembershipCreate(
+                    user_id=accepted_by_id,
+                    project_id=assignment.get("id"),
+                    role=assignment.get("role", MembershipRoles.COLLABORATOR),
+                    created_by_id=inviter_id,
+                )
+                self.project_membership_service.create_project_membership(pm_data)
 
             return membership
 
