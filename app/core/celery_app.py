@@ -1,12 +1,14 @@
+# pyright: reportMissingTypeStubs=false
 from celery import Celery
 from app.config import get_settings
 
 settings = get_settings()
 
-celery_app = Celery(
-    "worker",
-    broker=f"redis://{settings.redis_host}:{settings.redis_port}/0",
-    backend=f"redis://{settings.redis_host}:{settings.redis_port}/0",
+celery_app = Celery("worker")
+
+celery_app.conf.update(
+    broker_url=f"redis://{settings.redis_host}:{settings.redis_port}/0",
+    result_backend=f"redis://{settings.redis_host}:{settings.redis_port}/0",
 )
 
 # Optional configuration
@@ -18,4 +20,4 @@ celery_app.conf.update(
     enable_utc=True,
 )
 
-celery_app.autodiscover_tasks(["app.tasks"])
+celery_app.autodiscover_tasks(["app.tasks"])  # ensure tasks are registered explicitly

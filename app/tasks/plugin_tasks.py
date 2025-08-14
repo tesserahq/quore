@@ -5,7 +5,7 @@ from app.core.plugin_manager.manager import PluginManager
 from app.constants.plugin_states import PluginState
 from app.db import SessionLocal
 from app.services.plugin_service import PluginService
-from app.tasks import celery_app
+from app.core.celery_app import celery_app
 
 
 @celery_app.task
