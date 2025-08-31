@@ -222,3 +222,31 @@ def test_get_nodes_nonexistent_project(client):
     response = client.get(f"/projects/{non_existent_id}/nodes")
     assert response.status_code == 404
     assert response.json()["detail"] == "Project not found"
+
+
+def test_delete_project_membership(client, setup_project_membership):
+    """Test DELETE /projects/{project_id}/memberships/{membership_id} endpoint."""
+    membership = setup_project_membership
+
+    # Delete membership
+    response = client.delete(
+        f"/projects/{membership.project_id}/memberships/{membership.id}"
+    )
+    assert response.status_code == 204
+
+    # Verify membership no longer appears in the project's membership list
+    list_response = client.get(f"/projects/{membership.project_id}/memberships")
+    assert list_response.status_code == 200
+    data = list_response.json()
+    assert "data" in data
+    assert all(m["id"] != str(membership.id) for m in data["data"])
+
+
+def test_delete_project_membership_not_found(client, setup_project):
+    """Test DELETE /projects/{project_id}/memberships/{membership_id} with non-existent membership."""
+    project = setup_project
+    fake_uuid = "00000000-0000-0000-0000-000000000000"
+
+    response = client.delete(f"/projects/{project.id}/memberships/{fake_uuid}")
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Project membership not found"
