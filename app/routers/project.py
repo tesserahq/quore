@@ -40,6 +40,7 @@ from app.schemas.project_membership import (
 from app.schemas.common import ListResponse
 from app.models.project_membership import ProjectMembership
 from app.core.index_manager import IndexManager
+from app.services.node_service import NodeService
 
 router = APIRouter(prefix="/projects", tags=["workspace-projects"])
 
@@ -50,69 +51,11 @@ def nodes(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    service = ProjectService(db)
-    nodes = service.get_nodes(project_id=UUID(str(project.id)))
-    node_responses = []
-    for node in nodes:
-        node_dict = node.__dict__.copy()
-
-        # Normalize metadata
-        raw_metadata = node_dict.get("metadata_")
-        if not isinstance(raw_metadata, dict):
-            metadata: Optional[dict] = None
-        else:
-            metadata = raw_metadata
-
-        # Extract labels and doc_id
-        labels: Optional[dict] = None
-        doc_id: Optional[str] = None
-
-        if metadata:
-            # Labels from top-level metadata
-            labels_value = metadata.get("labels")
-            if isinstance(labels_value, dict):
-                labels = labels_value
-
-            # doc_id from common keys
-            for key in ("doc_id", "document_id", "ref_doc_id"):
-                value = metadata.get(key)
-                if isinstance(value, str) and value:
-                    doc_id = value
-                    break
-
-            # Fallback: parse _node_content JSON string if present
-            if (labels is None or doc_id is None) and isinstance(
-                metadata.get("_node_content"), str
-            ):
-                try:
-                    inner = json.loads(metadata["_node_content"])  # type: ignore[index]
-                    if labels is None:
-                        inner_labels = (
-                            inner.get("metadata", {}).get("labels")
-                            if isinstance(inner.get("metadata"), dict)
-                            else None
-                        )
-                        if isinstance(inner_labels, dict):
-                            labels = inner_labels
-                    if doc_id is None:
-                        for key in ("doc_id", "document_id", "ref_doc_id"):
-                            value = inner.get(key)
-                            if isinstance(value, str) and value:
-                                doc_id = value
-                                break
-                except Exception:
-                    # Ignore parsing issues; keep labels/doc_id as None
-                    pass
-
-        response_payload = {
-            "id": node_dict.get("id"),
-            "text": node_dict.get("text"),
-            "node_id": node_dict.get("node_id"),
-            "doc_id": doc_id,
-            "labels": labels,
-        }
-
-        node_responses.append(NodeResponse.model_validate(response_payload))
+    project_service = ProjectService(db)
+    node_service = NodeService(db)
+    # project is provided by dependency already; use NodeService to fetch nodes
+    nodes = node_service.get_nodes(project)
+    node_responses = [node_service.build_node_response(n) for n in nodes]
     return NodeListResponse(data=node_responses)
 
 
