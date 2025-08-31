@@ -69,12 +69,7 @@ class ProjectService(SoftDeleteService[Project]):
             return self.delete_record(project_id)
         return False
 
-    def get_nodes(self, project_id: UUID) -> List[Any]:
-        project = self.get_project(project_id)
-        if not project:
-            raise ResourceNotFoundError(f"Project with ID {project_id} not found")
-        Node = get_node_model(project)
-        return self.db.query(Node).all()
+    # moved to NodeService
 
     def search(self, filters: Dict[str, Any]) -> List[ProjectSchema]:
         """

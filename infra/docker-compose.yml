@@ -5,7 +5,7 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/quore
       - REDIS_URL=redis://redis:6379/0
-    env_file: ".env"
+    env_file: ".quore.env"
     depends_on:
       - db
       - redis
@@ -64,11 +64,6 @@ services:
   bauman-mcp:
     image: mustela/bauman-mcp:main
     pull_policy: always
-
-  estate-buddy-mcp-server:
-    image: mustela/estate-buddy-mcp-server:main
-    pull_policy: always
-    env_file: ".env"
 
   celery_worker:
     image: mustela/quore:main
@@ -133,7 +128,9 @@ services:
       - .linden-portal.env
 
   nginx:
-    image: nginx:alpine
+    image: nginx:1.28.0-alpine
+    environment:
+      - DISABLE_IPV6=true
     ports:
       - "80:80"
     volumes:

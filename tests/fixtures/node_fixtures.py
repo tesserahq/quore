@@ -62,7 +62,11 @@ def setup_nodes(db: Session, setup_project, faker, count: int = 3):
     for _ in range(count):
         node_data = {
             "text": faker.text(200),
-            "metadata_": {"source": faker.url()},
+            "metadata_": {
+                "source": faker.url(),
+                "labels": {"color": "red"},
+                "doc_id": "test",
+            },
             "node_id": faker.uuid4(),
             "embedding": [0.0] * 1536,  # Mock embedding dimension
         }

@@ -212,6 +212,8 @@ def test_get_project_nodes(client, setup_project, setup_nodes):
         response_node = response_nodes[str(node.id)]
         assert response_node["text"] == node.text
         assert response_node["node_id"] == node.node_id
+        assert response_node["doc_id"] == "test"
+        assert response_node["labels"] == {"color": "red"}
 
 
 def test_get_nodes_nonexistent_project(client):

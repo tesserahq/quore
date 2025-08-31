@@ -40,6 +40,7 @@ from app.schemas.project_membership import (
 from app.schemas.common import ListResponse
 from app.models.project_membership import ProjectMembership
 from app.core.index_manager import IndexManager
+from app.services.node_service import NodeService
 
 router = APIRouter(prefix="/projects", tags=["workspace-projects"])
 
@@ -50,18 +51,11 @@ def nodes(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    service = ProjectService(db)
-    nodes = service.get_nodes(project_id=UUID(str(project.id)))
-    node_responses = []
-    for node in nodes:
-        node_dict = node.__dict__.copy()
-        # Ensure metadata_ is a dict or None
-        if (
-            not isinstance(node_dict.get("metadata_"), dict)
-            and node_dict.get("metadata_") is not None
-        ):
-            node_dict["metadata_"] = None
-        node_responses.append(NodeResponse.model_validate(node_dict))
+    project_service = ProjectService(db)
+    node_service = NodeService(db)
+    # project is provided by dependency already; use NodeService to fetch nodes
+    nodes = node_service.get_nodes(project)
+    node_responses = [node_service.build_node_response(n) for n in nodes]
     return NodeListResponse(data=node_responses)
 
 
