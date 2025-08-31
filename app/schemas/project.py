@@ -139,11 +139,15 @@ class ProjectSearchResponse(BaseModel):
 class NodeResponse(BaseModel):
     id: int = Field(..., description="The unique identifier of the node")
     text: str = Field(..., description="The text content of the node")
-    metadata: Optional[Dict[str, Any]] = Field(
-        None, description="Additional metadata associated with the node"
-    )
+
     node_id: Optional[str] = Field(
         None, description="Optional external node identifier"
+    )
+    doc_id: Optional[str] = Field(
+        None, description="Document identifier associated with the node, when available"
+    )
+    labels: Optional[Dict[str, Any]] = Field(
+        None, description="Labels associated with the node, when available"
     )
 
     class Config:

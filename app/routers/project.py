@@ -55,13 +55,64 @@ def nodes(
     node_responses = []
     for node in nodes:
         node_dict = node.__dict__.copy()
-        # Ensure metadata_ is a dict or None
-        if (
-            not isinstance(node_dict.get("metadata_"), dict)
-            and node_dict.get("metadata_") is not None
-        ):
-            node_dict["metadata_"] = None
-        node_responses.append(NodeResponse.model_validate(node_dict))
+
+        # Normalize metadata
+        raw_metadata = node_dict.get("metadata_")
+        if not isinstance(raw_metadata, dict):
+            metadata: Optional[dict] = None
+        else:
+            metadata = raw_metadata
+
+        # Extract labels and doc_id
+        labels: Optional[dict] = None
+        doc_id: Optional[str] = None
+
+        if metadata:
+            # Labels from top-level metadata
+            labels_value = metadata.get("labels")
+            if isinstance(labels_value, dict):
+                labels = labels_value
+
+            # doc_id from common keys
+            for key in ("doc_id", "document_id", "ref_doc_id"):
+                value = metadata.get(key)
+                if isinstance(value, str) and value:
+                    doc_id = value
+                    break
+
+            # Fallback: parse _node_content JSON string if present
+            if (labels is None or doc_id is None) and isinstance(
+                metadata.get("_node_content"), str
+            ):
+                try:
+                    inner = json.loads(metadata["_node_content"])  # type: ignore[index]
+                    if labels is None:
+                        inner_labels = (
+                            inner.get("metadata", {}).get("labels")
+                            if isinstance(inner.get("metadata"), dict)
+                            else None
+                        )
+                        if isinstance(inner_labels, dict):
+                            labels = inner_labels
+                    if doc_id is None:
+                        for key in ("doc_id", "document_id", "ref_doc_id"):
+                            value = inner.get(key)
+                            if isinstance(value, str) and value:
+                                doc_id = value
+                                break
+                except Exception:
+                    # Ignore parsing issues; keep labels/doc_id as None
+                    pass
+
+        response_payload = {
+            "id": node_dict.get("id"),
+            "text": node_dict.get("text"),
+            "node_id": node_dict.get("node_id"),
+            "doc_id": doc_id,
+            "labels": labels,
+        }
+
+        node_responses.append(NodeResponse.model_validate(response_payload))
     return NodeListResponse(data=node_responses)
 
 
