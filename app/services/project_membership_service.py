@@ -52,7 +52,10 @@ class ProjectMembershipService(SoftDeleteService[ProjectMembership]):
     ) -> List[ProjectMembership]:
         return (
             self.db.query(ProjectMembership)
-            .options(joinedload(ProjectMembership.user))
+            .options(
+                joinedload(ProjectMembership.user),
+                joinedload(ProjectMembership.created_by),
+            )
             .filter(ProjectMembership.project_id == project_id)
             .offset(skip)
             .limit(limit)

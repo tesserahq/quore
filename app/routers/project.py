@@ -36,6 +36,7 @@ from app.services.project_membership_service import ProjectMembershipService
 from app.schemas.project_membership import (
     ProjectMembershipUpdate,
     ProjectMembershipInDB,
+    ProjectMembershipResponse,
 )
 from app.schemas.common import ListResponse
 from app.models.project_membership import ProjectMembership
@@ -87,7 +88,7 @@ def search_projects(
 
 
 @router.get(
-    "/{project_id}/memberships", response_model=ListResponse[ProjectMembershipInDB]
+    "/{project_id}/memberships", response_model=ListResponse[ProjectMembershipResponse]
 )
 def list_project_memberships(
     project: ProjectModel = Depends(get_project_by_id),
