@@ -49,13 +49,15 @@ router = APIRouter(prefix="/projects", tags=["workspace-projects"])
 @router.get("/{project_id}/nodes", response_model=NodeListResponse)
 def nodes(
     project: ProjectModel = Depends(get_project_by_id),
+    skip: int = 0,
+    limit: int = 100,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
     project_service = ProjectService(db)
     node_service = NodeService(db)
     # project is provided by dependency already; use NodeService to fetch nodes
-    nodes = node_service.get_nodes(project)
+    nodes = node_service.get_nodes(project, skip=skip, limit=limit)
     node_responses = [node_service.build_node_response(n) for n in nodes]
     return NodeListResponse(data=node_responses)
 
@@ -155,10 +157,10 @@ def get_project_membership(
     current_user=Depends(get_current_user),
 ):
     service = ProjectMembershipService(db)
-    membership = service.get_project_membership(UUID(str(membership.id)))
-    if membership is None:
+    db_membership = service.get_project_membership(UUID(str(membership.id)))
+    if db_membership is None:
         raise HTTPException(status_code=404, detail="Project membership not found")
-    return membership
+    return db_membership
 
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)

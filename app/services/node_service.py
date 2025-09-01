@@ -15,10 +15,10 @@ class NodeService:
     def __init__(self, db: Session):
         self.db = db
 
-    def get_nodes(self, project: Project) -> List[Any]:
-        """Return all nodes for a given project using the dynamic Node model."""
+    def get_nodes(self, project: Project, skip: int = 0, limit: int = 100) -> List[Any]:
+        """Return nodes for a given project using the dynamic Node model with pagination."""
         Node = get_node_model(project)
-        return self.db.query(Node).all()
+        return self.db.query(Node).offset(skip).limit(limit).all()
 
     @staticmethod
     def build_node_response(node: Any) -> NodeResponse:
