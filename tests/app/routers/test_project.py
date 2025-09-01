@@ -250,3 +250,28 @@ def test_delete_project_membership_not_found(client, setup_project):
     response = client.delete(f"/projects/{project.id}/memberships/{fake_uuid}")
     assert response.status_code == 404
     assert response.json()["detail"] == "Project membership not found"
+
+
+def test_get_project_membership(client, setup_project_membership):
+    """Test GET /projects/{project_id}/memberships/{membership_id} endpoint."""
+    membership = setup_project_membership
+
+    response = client.get(
+        f"/projects/{membership.project_id}/memberships/{membership.id}"
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == str(membership.id)
+    assert data["user_id"] == str(membership.user_id)
+    assert data["project_id"] == str(membership.project_id)
+    assert data["role"] == membership.role
+
+
+def test_get_project_membership_not_found(client, setup_project):
+    """Test GET /projects/{project_id}/memberships/{membership_id} with non-existent membership."""
+    project = setup_project
+    fake_uuid = "00000000-0000-0000-0000-000000000000"
+
+    response = client.get(f"/projects/{project.id}/memberships/{fake_uuid}")
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Project membership not found"

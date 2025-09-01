@@ -145,6 +145,22 @@ def update_project_membership(
     return updated
 
 
+@router.get(
+    "/{project_id}/memberships/{membership_id}",
+    response_model=ProjectMembershipResponse,
+)
+def get_project_membership(
+    membership: ProjectMembership = Depends(get_project_membership_by_id),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    service = ProjectMembershipService(db)
+    membership = service.get_project_membership(UUID(str(membership.id)))
+    if membership is None:
+        raise HTTPException(status_code=404, detail="Project membership not found")
+    return membership
+
+
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_project(
     project: ProjectModel = Depends(get_project_by_id),
