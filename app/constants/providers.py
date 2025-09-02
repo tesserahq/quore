@@ -82,6 +82,7 @@ def get_embedding_provider(
     except KeyError:
         raise ValueError(f"Unknown embedding provider: {provider_name}")
 
+
 def get_llm_models(provider_name: str) -> list[dict]:
     """
     Returns a list of available LLM models for the specified provider.
@@ -124,7 +125,6 @@ def get_llm_models(provider_name: str) -> list[dict]:
                 "llm": "deepseek-r1:8b",
                 "default": False,
             },
-            
         ],
         MOCK_PROVIDER: [
             {
@@ -134,6 +134,7 @@ def get_llm_models(provider_name: str) -> list[dict]:
         ],
     }
     return provider_models[provider_name.lower()]
+
 
 def get_embedding_models(provider_name: str, include_mock: bool = False) -> list[dict]:
     """

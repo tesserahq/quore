@@ -103,28 +103,13 @@ class WorkflowManager:
 
         self.logger.info(f"Creating workflow with {len(all_tools)} total tools")
 
-        # llm = self.index_manager.llm()
-        # resp = llm.complete("Who is Paul Graham?")
-        # print(resp)
-        
-
-        # workflow = FunctionAgent(
-        #     tools=all_tools,
-        #     llm=self.index_manager.llm(),
-        #     system_prompt=str(system_prompt),
-        #     verbose=True
-        # )
-        
-        # response = await agent.run(user_msg="What is the weather in San Francisco?")
-        # print(str(response))
-
         workflow = AgentWorkflow.from_tools_or_functions(
             tools_or_functions=all_tools,
             # Revise this, the llm should come from the project settings
             llm=self.index_manager.llm(),
             system_prompt=str(system_prompt),
             initial_state=self.initial_state,
-            verbose=True
+            verbose=True,
         )
 
         return workflow
@@ -132,7 +117,7 @@ class WorkflowManager:
     def system_tools(self):
         return [*get_datetime_tools(), *get_debug_tools()]
 
-    def enabled_plugins(self): 
+    def enabled_plugins(self):
         plugin_service = PluginService(self.db_session)
         return plugin_service.get_project_plugins(self.project.id)
 

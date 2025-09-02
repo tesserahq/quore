@@ -233,6 +233,7 @@ class IndexManager:
             self.project.llm_provider,
             model_name=self.project.llm,
             api_key=self.llm_api_key(),
+            base_url=self.settings.ollama_base_url,
         )
 
     def llm_api_key(self):

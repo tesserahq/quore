@@ -55,8 +55,11 @@ def assistant_router() -> APIRouter:
         token: str = Depends(get_access_token),
     ) -> StreamingResponse:
         logger = get_logger()
-        debug_mode = request.config and request.config.debug_mode
-        
+        debug_mode = bool(
+            getattr(request, "config", None)
+            and getattr(request.config, "debug_mode", False)
+        )
+
         logger.info(f"Chat route: Starting chat request for project {project.id}")
 
         # Enable debug logging if debug mode is enabled
@@ -72,12 +75,12 @@ def assistant_router() -> APIRouter:
             db_session=db_session,
             project=project,
             access_token=token,
-            system_prompt_id=request.config.system_prompt_id,
-            initial_state=request.config.initial_state,
+            system_prompt_id=getattr(request.config, "system_prompt_id", None),
+            initial_state=getattr(request.config, "initial_state", None),
         )
 
         workflow_manager = WorkflowManager(context)
-       
+
         user_message = request.messages[-1].to_llamaindex_message()
         chat_history = [
             message.to_llamaindex_message() for message in request.messages[:-1]
@@ -91,7 +94,7 @@ def assistant_router() -> APIRouter:
         logger.info("Chat route: Created workflow successfully")
 
         # TODO: Should we start a new session if the session_id is not provided?
-        session_id = request.config.session_id or str(uuid.uuid4())
+        session_id = getattr(request.config, "session_id", None) or str(uuid.uuid4())
 
         workflow_handler = workflow.run(
             user_msg=user_message.content,
@@ -108,13 +111,15 @@ def assistant_router() -> APIRouter:
         callbacks: list[EventCallback] = [
             SourceNodesFromToolCall(),
         ]
-        
+
         # Add debug callback if debug mode is enabled
         if debug_mode:
             logger.info("Chat route: Adding tool debug callback")
             callbacks.append(ToolDebugCallback(logger))
 
-        if request.config and request.config.next_question_suggestions:
+        if getattr(request, "config", None) and getattr(
+            request.config, "next_question_suggestions", False
+        ):
             logger.info("Chat route: Adding next question suggestions callback")
             callbacks.append(SuggestNextQuestions(db_session, project, request))
         stream_handler = StreamHandler(
@@ -126,7 +131,6 @@ def assistant_router() -> APIRouter:
         return VercelStreamResponse(
             content_generator=_stream_content(stream_handler, request, logger),
         )
-        
 
     return router
 
@@ -167,7 +171,9 @@ async def _stream_content(
     logger.info("Stream content: Starting to process stream events")
     async for event in handler.stream_events():
         logger.info(f"Stream content: Processing {type(event).__name__} event")
-        logger.info(f"Stream content: isinstance(event, (AgentStream, StopEvent)): {isinstance(event, (AgentStream, StopEvent))}")
+        logger.info(
+            f"Stream content: isinstance(event, (AgentStream, StopEvent)): {isinstance(event, (AgentStream, StopEvent))}"
+        )
         if isinstance(event, (AgentStream, StopEvent)):
             async for chunk in _text_stream(event):
                 logger.info(f"Stream content: Processing chunk: {chunk}")
@@ -185,7 +191,9 @@ async def _stream_content(
         else:
             # Ignore unnecessary agent workflow events
             if not isinstance(event, (AgentInput, AgentSetup)):
-                logger.info(f"Stream content: Processing other event type: {type(event).__name__}")
+                logger.info(
+                    f"Stream content: Processing other event type: {type(event).__name__}"
+                )
                 yield VercelStreamResponse.convert_data(event.model_dump())
 
     # except asyncio.CancelledError:
