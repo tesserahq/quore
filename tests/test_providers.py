@@ -29,7 +29,7 @@ def test_get_embedding_models_ollama():
     """Test getting Ollama embedding models."""
     models = get_embedding_models(OLLAMA_PROVIDER)
     assert len(models) == 1
-    assert models[0]["embed_model"] == "nomic-embed-text"
+    assert models[0]["embed_model"] == "nomic-embed-text:v1.5"
 
 
 def test_get_embedding_models_mock_without_include():
