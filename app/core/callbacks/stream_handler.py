@@ -27,33 +27,36 @@ class StreamHandler:
 
     async def stream_events(self) -> AsyncGenerator[Any, None]:
         """Stream events through the processor chain."""
-        try:
-            async for event in self.workflow_handler.stream_events():
-                events_to_process = [event]
-                for callback in self.callbacks:
-                    next_events: list[Any] = []
-                    for evt in events_to_process:
-                        callback_output = await callback.run(evt)
-                        if isinstance(callback_output, (list, tuple)):
-                            next_events.extend(callback_output)
-                        elif callback_output is not None:
-                            next_events.append(callback_output)
-                    events_to_process = next_events
-
-                # Yield all processed events
-                for evt in events_to_process:
-                    yield evt
-
-            # After all events are processed, call on_complete for each callback
+        logger.info(f"Streaming events")
+        async for event in self.workflow_handler.stream_events():
+            events_to_process = [event]
+            logger.info(f"Events to process: {events_to_process}")
             for callback in self.callbacks:
-                result = await callback.on_complete(self.accumulated_text)
-                if result:
-                    yield result
+                logger.info(f"Processing callback: {callback}")
+                next_events: list[Any] = []
+                for evt in events_to_process:
+                    callback_output = await callback.run(evt)
+                    if isinstance(callback_output, (list, tuple)):
+                        next_events.extend(callback_output)
+                    elif callback_output is not None:
+                        next_events.append(callback_output)
+                events_to_process = next_events
 
-        except Exception:
-            # Make sure to cancel the workflow on error
-            await self.workflow_handler.cancel_run()
-            raise
+            # Yield all processed events
+            for evt in events_to_process:
+                yield evt
+
+        # After all events are processed, call on_complete for each callback
+        for callback in self.callbacks:
+            result = await callback.on_complete(self.accumulated_text)
+            if result:
+                yield result
+        # try:
+        # except Exception:
+        #     # Make sure to cancel the workflow on error
+        #     await self.workflow_handler.cancel_run()
+        #     print("error en stream_handler")
+        #     raise
 
     def accumulate_text(self, text: str) -> None:
         """Accumulate text from the workflow handler."""

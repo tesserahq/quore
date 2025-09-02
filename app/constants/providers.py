@@ -33,7 +33,7 @@ logger = get_logger()
 
 
 def get_llm_provider(
-    provider_name: str, model_name: str, api_key: Optional[str] = None
+    provider_name: str, model_name: str, api_key: Optional[str] = None, **kwargs
 ):
     logger.debug(
         f"Creating LLM provider: {provider_name}, model: {model_name}, api_key present: {api_key is not None}",
@@ -43,6 +43,7 @@ def get_llm_provider(
         OPENAI_PROVIDER: lambda: OpenAI(model=model_name, api_key=api_key),
         OLLAMA_PROVIDER: lambda: Ollama(
             model=model_name,
+            base_url=kwargs.get("base_url", "http://localhost:11434"),
         ),
         HUGGINGFACE_PROVIDER: lambda: HuggingFaceLLM(
             model=model_name,
@@ -81,6 +82,58 @@ def get_embedding_provider(
     except KeyError:
         raise ValueError(f"Unknown embedding provider: {provider_name}")
 
+def get_llm_models(provider_name: str) -> list[dict]:
+    """
+    Returns a list of available LLM models for the specified provider.
+    """
+    provider_models = {
+        OPENAI_PROVIDER: [
+            {
+                "llm": "gpt-4o",
+                "default": True,
+            }
+        ],
+        HUGGINGFACE_PROVIDER: [
+            {
+                "llm": "sentence-transformers/all-MiniLM-L6-v2",
+                "default": True,
+            }
+        ],
+        OLLAMA_PROVIDER: [
+            {
+                "llm": "llama3.1:8b",
+                "default": False,
+            },
+            {
+                "llm": "gemma3:4b",
+                "default": False,
+            },
+            {
+                "llm": "gemma2:9b",
+                "default": False,
+            },
+            {
+                "llm": "gemma:2b",
+                "default": False,
+            },
+            {
+                "llm": "gemma:7b",
+                "default": False,
+            },
+            {
+                "llm": "deepseek-r1:8b",
+                "default": False,
+            },
+            
+        ],
+        MOCK_PROVIDER: [
+            {
+                "llm": "mock",
+                "default": True,
+            }
+        ],
+    }
+    return provider_models[provider_name.lower()]
 
 def get_embedding_models(provider_name: str, include_mock: bool = False) -> list[dict]:
     """
@@ -148,7 +201,7 @@ def get_embedding_models(provider_name: str, include_mock: bool = False) -> list
         ],
         OLLAMA_PROVIDER: [
             {
-                "embed_model": "nomic-embed-text",
+                "embed_model": "nomic-embed-text:v1.5",
                 "default_embed_dim": 768,
                 "available_dimensions": [768],
                 "max_tokens": 8192,

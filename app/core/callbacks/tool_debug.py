@@ -19,6 +19,8 @@ class ToolDebugCallback(EventCallback):
 
     async def run(self, event: Any) -> Any:
         """Process events and log tool execution details."""
+        
+        self.logger.info(f"ToolDebugCallback: {event}")
 
         # Log tool calls when they're initiated
         if isinstance(event, ToolCall):

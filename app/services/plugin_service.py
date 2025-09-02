@@ -149,11 +149,8 @@ class PluginService(SoftDeleteService[Plugin]):
         """Get all enabled plugins for a project."""
         project = self.db.query(Project).filter(Project.id == project_id).first()
 
-        print("project")
         if not project:
             return []
-
-        print("paso")
 
         # Get all plugins from the project's workspace
         global_workspace_plugins = self.get_global_workspace_plugins(

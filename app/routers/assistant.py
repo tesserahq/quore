@@ -56,8 +56,8 @@ def assistant_router() -> APIRouter:
     ) -> StreamingResponse:
         logger = get_logger()
         debug_mode = request.config and request.config.debug_mode
-
-        logger.debug(f"Chat route: Starting chat request for project {project.id}")
+        
+        logger.info(f"Chat route: Starting chat request for project {project.id}")
 
         # Enable debug logging if debug mode is enabled
         if debug_mode:
@@ -77,59 +77,56 @@ def assistant_router() -> APIRouter:
         )
 
         workflow_manager = WorkflowManager(context)
+       
+        user_message = request.messages[-1].to_llamaindex_message()
+        chat_history = [
+            message.to_llamaindex_message() for message in request.messages[:-1]
+        ]
+        logger.info(
+            f"Chat route: Processing chat request with {len(chat_history)} messages in history"
+        )
 
-        try:
-            user_message = request.messages[-1].to_llamaindex_message()
-            chat_history = [
-                message.to_llamaindex_message() for message in request.messages[:-1]
-            ]
-            logger.debug(
-                f"Chat route: Processing chat request with {len(chat_history)} messages in history"
-            )
+        # TODO: review why we are passing the request object here
+        workflow = await workflow_manager.create_workflow(chat_request=request)
+        logger.info("Chat route: Created workflow successfully")
 
-            # TODO: review why we are passing the request object here
-            workflow = await workflow_manager.create_workflow(chat_request=request)
-            logger.debug("Chat route: Created workflow successfully")
+        # TODO: Should we start a new session if the session_id is not provided?
+        session_id = request.config.session_id or str(uuid.uuid4())
 
-            # TODO: Should we start a new session if the session_id is not provided?
-            session_id = request.config.session_id or str(uuid.uuid4())
+        workflow_handler = workflow.run(
+            user_msg=user_message.content,
+            chat_history=chat_history,
+            memory=workflow_manager.index_manager.get_chat_memory(
+                session_id,
+            ),
+        )
+        logger.info(
+            "Chat route: Started workflow execution with user message: %s",
+            user_message.content,
+        )
 
-            workflow_handler = workflow.run(
-                user_msg=user_message.content,
-                chat_history=chat_history,
-                memory=workflow_manager.index_manager.get_chat_memory(
-                    session_id,
-                ),
-            )
-            logger.debug(
-                "Chat route: Started workflow execution with user message: %s",
-                user_message.content,
-            )
+        callbacks: list[EventCallback] = [
+            SourceNodesFromToolCall(),
+        ]
+        
+        # Add debug callback if debug mode is enabled
+        if debug_mode:
+            logger.info("Chat route: Adding tool debug callback")
+            callbacks.append(ToolDebugCallback(logger))
 
-            callbacks: list[EventCallback] = [
-                SourceNodesFromToolCall(),
-            ]
+        if request.config and request.config.next_question_suggestions:
+            logger.info("Chat route: Adding next question suggestions callback")
+            callbacks.append(SuggestNextQuestions(db_session, project, request))
+        stream_handler = StreamHandler(
+            workflow_handler=workflow_handler,
+            callbacks=callbacks,
+        )
+        logger.info("Chat route: Initialized stream handler with callbacks")
 
-            # Add debug callback if debug mode is enabled
-            if debug_mode:
-                logger.info("🔧 Debug mode enabled - adding tool debug callback")
-                callbacks.append(ToolDebugCallback(logger))
-
-            if request.config and request.config.next_question_suggestions:
-                logger.debug("Chat route: Adding next question suggestions callback")
-                callbacks.append(SuggestNextQuestions(db_session, project, request))
-            stream_handler = StreamHandler(
-                workflow_handler=workflow_handler,
-                callbacks=callbacks,
-            )
-            logger.debug("Chat route: Initialized stream handler with callbacks")
-
-            return VercelStreamResponse(
-                content_generator=_stream_content(stream_handler, request, logger),
-            )
-        except Exception as e:
-            logger.error(f"Chat route: Error in chat endpoint: {str(e)}", exc_info=True)
-            raise HTTPException(status_code=500, detail=str(e))
+        return VercelStreamResponse(
+            content_generator=_stream_content(stream_handler, request, logger),
+        )
+        
 
     return router
 
@@ -139,59 +136,64 @@ async def _stream_content(
     request: ChatRequest,
     logger: logging.Logger,
 ) -> AsyncGenerator[str, None]:
-    logger.debug("Starting content streaming")
+    logger.info("Starting content streaming")
 
     async def _text_stream(
         event: Union[AgentStream, StopEvent],
     ) -> AsyncGenerator[str, None]:
+        logger.info(f"Text stream: Processing {type(event).__name__} event")
         if isinstance(event, AgentStream):
             # Normally, if the stream is a tool call, the delta is always empty
             # so it's not a text stream.
+            logger.info(f"Event.tool_calls: {event.tool_calls}")
+            logger.info(f"Event.delta: {event.delta}")
             if len(event.tool_calls) == 0:
-                logger.debug(f"Streaming text delta: {event.delta}")
+                logger.info(f"Streaming text delta: {event.delta}")
                 yield event.delta
         elif isinstance(event, StopEvent):
-            logger.debug("Received StopEvent")
+            logger.info("Received StopEvent")
             if isinstance(event.result, str):
-                logger.debug(f"Streaming final result string: {event.result}")
+                logger.info(f"Streaming final result string: {event.result}")
                 yield event.result
             elif isinstance(event.result, AsyncGenerator):
-                logger.debug("Streaming final result from AsyncGenerator")
+                logger.info("Streaming final result from AsyncGenerator")
                 async for chunk in event.result:
                     if isinstance(chunk, str):
                         yield chunk
                     elif hasattr(chunk, "delta") and chunk.delta:
                         yield chunk.delta
 
-    try:
-        logger.debug("Starting to process stream events")
-        async for event in handler.stream_events():
-            if isinstance(event, (AgentStream, StopEvent)):
-                logger.debug(f"Processing {type(event).__name__} event")
-                async for chunk in _text_stream(event):
-                    handler.accumulate_text(chunk)
-                    yield VercelStreamResponse.convert_text(chunk)
-            elif isinstance(event, dict):
-                logger.debug(f"Processing dictionary event: {event}")
-                yield VercelStreamResponse.convert_data(event)
-            elif hasattr(event, "to_response"):
-                logger.debug(
-                    f"Processing event with to_response method: {type(event).__name__}"
-                )
-                event_response = event.to_response()
-                yield VercelStreamResponse.convert_data(event_response)
-            else:
-                # Ignore unnecessary agent workflow events
-                if not isinstance(event, (AgentInput, AgentSetup)):
-                    logger.debug(f"Processing other event type: {type(event).__name__}")
-                    yield VercelStreamResponse.convert_data(event.model_dump())
+    # try:
+    logger.info("Stream content: Starting to process stream events")
+    async for event in handler.stream_events():
+        logger.info(f"Stream content: Processing {type(event).__name__} event")
+        logger.info(f"Stream content: isinstance(event, (AgentStream, StopEvent)): {isinstance(event, (AgentStream, StopEvent))}")
+        if isinstance(event, (AgentStream, StopEvent)):
+            async for chunk in _text_stream(event):
+                logger.info(f"Stream content: Processing chunk: {chunk}")
+                handler.accumulate_text(chunk)
+                yield VercelStreamResponse.convert_text(chunk)
+        elif isinstance(event, dict):
+            logger.info(f"Stream content: Processing dictionary event: {event}")
+            yield VercelStreamResponse.convert_data(event)
+        elif hasattr(event, "to_response"):
+            logger.info(
+                f"Stream content: Processing event with to_response method: {type(event).__name__}"
+            )
+            event_response = event.to_response()
+            yield VercelStreamResponse.convert_data(event_response)
+        else:
+            # Ignore unnecessary agent workflow events
+            if not isinstance(event, (AgentInput, AgentSetup)):
+                logger.info(f"Stream content: Processing other event type: {type(event).__name__}")
+                yield VercelStreamResponse.convert_data(event.model_dump())
 
-    except asyncio.CancelledError:
-        logger.warning("Client cancelled the request!")
-        await handler.cancel_run()
-    except Exception as e:
-        logger.error(f"Error in stream response: {e}", exc_info=True)
-        yield VercelStreamResponse.convert_error(str(e))
-        await handler.cancel_run()
-    finally:
-        logger.debug("Finished content streaming")
+    # except asyncio.CancelledError:
+    #     logger.warning("Client cancelled the request!")
+    #     await handler.cancel_run()
+    # except Exception as e:
+    #     logger.error(f"Error in stream response: {e}", exc_info=True)
+    #     yield VercelStreamResponse.convert_error(str(e))
+    #     await handler.cancel_run()
+    # finally:
+    #     logger.info("Finished content streaming")

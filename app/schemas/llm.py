@@ -16,10 +16,16 @@ class EmbeddingModel(BaseModel):
     hnsw_ef_search: Optional[int] = None
     hnsw_dist_method: Optional[str] = None
     hnsw_ef_construction: Optional[int] = None
+    
+class LLModel(BaseModel):
+    """Model for LLM information."""
+    llm: str
+    default: Optional[bool] = None
 
 
 class Provider(BaseModel):
     """Model for provider information."""
 
     name: str
+    available_llms: List[LLModel]
     embedding_models: List[EmbeddingModel]
