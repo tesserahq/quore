@@ -19,6 +19,7 @@ from llama_index.core.tools import FunctionTool
 from mcp.types import Tool as MCPTool
 from llama_index.tools.mcp import aget_tools_from_mcp_url
 from llama_index.tools.mcp import BasicMCPClient
+from llama_index.core.agent.workflow import FunctionAgent
 
 
 class WorkflowManager:
@@ -108,9 +109,9 @@ class WorkflowManager:
             llm=self.index_manager.llm(),
             system_prompt=str(system_prompt),
             initial_state=self.initial_state,
+            verbose=True,
         )
 
-        self.logger.info("AgentWorkflow created successfully")
         return workflow
 
     def system_tools(self):

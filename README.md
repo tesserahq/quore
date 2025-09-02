@@ -101,6 +101,13 @@ poetry run celery -A app.core.celery_app.celery_app worker --loglevel=info
 poetry run celery -A app.core.celery_app.celery_app flower
 ```
 
+## Ollama
+
+Models: 
+
+* llama3.1:8b
+* nomic-embed-text:v1.5
+
 ### Docker Compose
 
 The application can also be run using Docker Compose, which includes all necessary services:
@@ -128,3 +135,4 @@ This will start:
 ## 🙌 Acknowledgments
 
 Inspired by the work of [LangChain](https://github.com/langchain-ai/langchain), [LlamaIndex](https://github.com/jerryjliu/llama_index), and the [MCP community](https://modelcontext.org/).
+

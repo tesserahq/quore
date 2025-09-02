@@ -50,6 +50,9 @@ class Settings(BaseSettings):
     default_hnsw_dist_method: str = "vector_cosine_ops"
     default_system_prompt: str = "You are a helpful assistant."
     openai_api_key: str = Field(default="", json_schema_extra={"env": "ENV"})
+    ollama_base_url: str = Field(
+        default="http://localhost:11434", json_schema_extra={"env": "OLLAMA_BASE_URL"}
+    )
     redis_host: str = Field(
         default="localhost", json_schema_extra={"env": "REDIS_HOST"}
     )
