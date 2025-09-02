@@ -34,6 +34,7 @@ class WorkflowManager:
         self.access_token = context.access_token
         self.system_prompt_id = context.system_prompt_id
         self.initial_state = context.initial_state or {}
+        self.disable_tools = context.disable_tools
 
     # def wrap_tool_with_context(tool, initial_state):
     #     def tool_with_context(input: dict):
@@ -98,13 +99,16 @@ class WorkflowManager:
                 )
             )
 
-        tools = await self.get_tools()
-        all_tools = [query_tool, *tools]
+        if self.disable_tools:
+            tools = []
+        else:
+            tools = await self.get_tools()
+            tools.append(query_tool)
 
-        self.logger.info(f"Creating workflow with {len(all_tools)} total tools")
+        self.logger.info(f"Creating workflow with {len(tools)} total tools")
 
         workflow = AgentWorkflow.from_tools_or_functions(
-            tools_or_functions=all_tools,
+            tools_or_functions=tools,
             # Revise this, the llm should come from the project settings
             llm=self.index_manager.llm(),
             system_prompt=str(system_prompt),
@@ -115,7 +119,7 @@ class WorkflowManager:
         return workflow
 
     def system_tools(self):
-        return [*get_datetime_tools(), *get_debug_tools()]
+        return [*get_datetime_tools()]
 
     def enabled_plugins(self):
         plugin_service = PluginService(self.db_session)

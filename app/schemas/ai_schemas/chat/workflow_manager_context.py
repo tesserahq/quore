@@ -35,5 +35,10 @@ class WorkflowManagerContext(BaseModel):
         description="Initial state for the workflow",
     )
 
+    disable_tools: bool = Field(
+        default=False,
+        description="Whether to disable tools",
+    )
+
     class Config:
         arbitrary_types_allowed = True  # Allow SQLAlchemy Session and Project objects

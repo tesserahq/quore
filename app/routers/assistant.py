@@ -59,6 +59,10 @@ def assistant_router() -> APIRouter:
             getattr(request, "config", None)
             and getattr(request.config, "debug_mode", False)
         )
+        disable_tools = bool(
+            getattr(request, "config", None)
+            and getattr(request.config, "disable_tools", False)
+        )
 
         logger.info(f"Chat route: Starting chat request for project {project.id}")
 
@@ -77,6 +81,7 @@ def assistant_router() -> APIRouter:
             access_token=token,
             system_prompt_id=getattr(request.config, "system_prompt_id", None),
             initial_state=getattr(request.config, "initial_state", None),
+            disable_tools=disable_tools,
         )
 
         workflow_manager = WorkflowManager(context)
