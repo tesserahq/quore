@@ -8,6 +8,7 @@ from llama_index.llms.ollama import Ollama
 from llama_index.llms.huggingface import HuggingFaceLLM
 from llama_index.core.llms.mock import MockLLM
 from app.core.logging_config import get_logger
+from app.config import get_settings
 
 OPENAI_PROVIDER = "openai"
 HUGGINGFACE_PROVIDER = "huggingface"
@@ -43,7 +44,7 @@ def get_llm_provider(
         OPENAI_PROVIDER: lambda: OpenAI(model=model_name, api_key=api_key),
         OLLAMA_PROVIDER: lambda: Ollama(
             model=model_name,
-            base_url=kwargs.get("base_url", "http://localhost:11434"),
+            base_url=kwargs.get("base_url", get_settings().ollama_base_url),
         ),
         HUGGINGFACE_PROVIDER: lambda: HuggingFaceLLM(
             model=model_name,
@@ -62,14 +63,17 @@ def get_llm_provider(
 
 
 def get_embedding_provider(
-    provider_name: str, model_name: str, api_key: Optional[str] = None
+    provider_name: str, model_name: str, api_key: Optional[str] = None, **kwargs
 ):
     provider_map = {
         OPENAI_PROVIDER: lambda: OpenAIEmbedding(
             model_name=model_name, api_key=api_key
         ),
         HUGGINGFACE_PROVIDER: lambda: HuggingFaceEmbedding(model_name=model_name),
-        OLLAMA_PROVIDER: lambda: OllamaEmbedding(model_name=model_name),
+        OLLAMA_PROVIDER: lambda: OllamaEmbedding(
+            model_name=model_name,
+            base_url=kwargs.get("base_url", get_settings().ollama_base_url),
+        ),
         MOCK_PROVIDER: lambda: MockEmbedding(embed_dim=1536),
     }
     try:
