@@ -133,8 +133,27 @@ def assistant_router() -> APIRouter:
         )
         logger.info("Chat route: Initialized stream handler with callbacks")
 
+        # Prefetch first event to ensure startup errors return proper HTTP status
+        iterator = stream_handler.stream_events()
+        try:
+            first_event = await anext(iterator)
+        except asyncio.CancelledError:
+            logger.warning("Client cancelled before stream started")
+            await stream_handler.cancel_run()
+            raise HTTPException(status_code=499, detail="Client cancelled the request")
+        except Exception as e:
+            logger.error(f"Failed to start workflow stream: {e}", exc_info=True)
+            await stream_handler.cancel_run()
+            raise HTTPException(status_code=500, detail=str(e))
+
         return VercelStreamResponse(
-            content_generator=_stream_content(stream_handler, request, logger),
+            content_generator=_stream_content(
+                stream_handler,
+                request,
+                logger,
+                iterator=iterator,
+                prefetched_event=first_event,
+            ),
         )
 
     return router
@@ -144,6 +163,9 @@ async def _stream_content(
     handler: StreamHandler,
     request: ChatRequest,
     logger: logging.Logger,
+    *,
+    iterator: AsyncGenerator[Any, None] | None = None,
+    prefetched_event: Any | None = None,
 ) -> AsyncGenerator[str, None]:
     logger.info("Starting content streaming")
 
@@ -172,7 +194,38 @@ async def _stream_content(
 
     try:
         logger.info("Stream content: Starting to process stream events")
-        async for event in handler.stream_events():
+        events_iter = iterator or handler.stream_events()
+        # If we have a prefetched event, process it first
+        if prefetched_event is not None:
+            event = prefetched_event
+            logger.info(f"Stream content: Processing {type(event).__name__} event")
+            logger.info(
+                f"Stream content: isinstance(event, (AgentStream, StopEvent)): {isinstance(event, (AgentStream, StopEvent))}"
+            )
+            if isinstance(event, (AgentStream, StopEvent)):
+                async for chunk in _text_stream(event):
+                    logger.info(f"Stream content: Processing chunk: {chunk}")
+                    handler.accumulate_text(chunk)
+                    yield VercelStreamResponse.convert_text(chunk)
+            elif isinstance(event, dict):
+                logger.info(f"Stream content: Processing dictionary event: {event}")
+                yield VercelStreamResponse.convert_data(event)
+            elif hasattr(event, "to_response"):
+                logger.info(
+                    f"Stream content: Processing event with to_response method: {type(event).__name__}"
+                )
+                event_response = event.to_response()
+                yield VercelStreamResponse.convert_data(event_response)
+            else:
+                # Ignore unnecessary agent workflow events
+                if not isinstance(event, (AgentInput, AgentSetup)):
+                    logger.info(
+                        f"Stream content: Processing other event type: {type(event).__name__}"
+                    )
+                    yield VercelStreamResponse.convert_data(event.model_dump())
+
+        # Continue with the remaining events from the iterator
+        async for event in events_iter:
             logger.info(f"Stream content: Processing {type(event).__name__} event")
             logger.info(
                 f"Stream content: isinstance(event, (AgentStream, StopEvent)): {isinstance(event, (AgentStream, StopEvent))}"
