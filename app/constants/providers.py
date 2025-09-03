@@ -45,7 +45,10 @@ def get_llm_provider(
         OLLAMA_PROVIDER: lambda: Ollama(
             model=model_name,
             base_url=kwargs.get("base_url", get_settings().ollama_base_url),
-            keep_alive="20m",
+            keep_alive=kwargs.get("request_timeout", get_settings().ollama_keep_alive),
+            request_timeout=kwargs.get(
+                "request_timeout", get_settings().ollama_request_timeout
+            ),
         ),
         HUGGINGFACE_PROVIDER: lambda: HuggingFaceLLM(
             model=model_name,
@@ -115,7 +118,11 @@ def get_llm_models(provider_name: str) -> list[dict]:
                 "default": False,
             },
             {
-                "llm": "deepseek-r1:8b",
+                "llm": "mistral:7b",
+                "default": False,
+            },
+            {
+                "llm": "qwen3:8b",
                 "default": False,
             },
         ],

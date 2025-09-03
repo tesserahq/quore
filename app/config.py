@@ -53,6 +53,12 @@ class Settings(BaseSettings):
     ollama_base_url: str = Field(
         default="http://localhost:11434", json_schema_extra={"env": "OLLAMA_BASE_URL"}
     )
+    ollama_keep_alive: str = Field(
+        default="20m", json_schema_extra={"env": "OLLAMA_KEEP_ALIVE"}
+    )
+    ollama_request_timeout: int = Field(
+        default=60, json_schema_extra={"env": "OLLAMA_REQUEST_TIMEOUT"}
+    )
     redis_host: str = Field(
         default="localhost", json_schema_extra={"env": "REDIS_HOST"}
     )

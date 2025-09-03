@@ -159,6 +159,15 @@ async def _stream_content(
                 yield event.delta
         elif isinstance(event, StopEvent):
             logger.info("Received StopEvent")
+            # Log the StopEvent result for diagnosis when completion is empty
+            try:
+                logger.info(
+                    "StopEvent.result type=%s, value=%r",
+                    type(event.result).__name__,
+                    event.result,
+                )
+            except Exception:
+                logger.info("StopEvent.result could not be logged (non-serializable)")
             if isinstance(event.result, str):
                 logger.info(f"Streaming final result string: {event.result}")
                 yield event.result
@@ -169,6 +178,35 @@ async def _stream_content(
                         yield chunk
                     elif hasattr(chunk, "delta") and chunk.delta:
                         yield chunk.delta
+            else:
+                # Surface potential errors embedded in StopEvent results
+                try:
+                    if isinstance(event.result, Exception):
+                        logger.error(
+                            "StopEvent contained exception: %s",
+                            event.result,
+                            exc_info=True,
+                        )
+                        yield VercelStreamResponse.convert_error(str(event.result))
+                    elif isinstance(event.result, dict):
+                        possible_error = (
+                            event.result.get("error")
+                            or event.result.get("message")
+                            or event.result.get("detail")
+                        )
+                        if possible_error:
+                            logger.error(
+                                f"StopEvent contained error payload: {possible_error}"
+                            )
+                            yield VercelStreamResponse.convert_error(
+                                str(possible_error)
+                            )
+                except Exception as inner_e:
+                    logger.error(
+                        "Failed to process StopEvent result for error propagation: %s",
+                        inner_e,
+                        exc_info=True,
+                    )
 
     try:
         logger.info("Stream content: Starting to process stream events")

@@ -63,12 +63,13 @@ class WorkflowManager:
         # https://www.llamaindex.ai/blog/introducing-agentworkflow-a-powerful-system-for-building-ai-agent-systems
 
         # Determine which system prompt to use
+        system_prompt_text: str
         if self.system_prompt_id:
             # Use the specified system prompt from the prompts table
             prompt_service = PromptService(self.db_session)
             prompt = prompt_service.get_prompt_by_id_or_prompt_id(self.system_prompt_id)
             if prompt:
-                system_prompt = prompt.prompt
+                system_prompt_text = str(prompt.prompt)
                 self.logger.info(
                     f"Using system prompt from prompt ID: {self.system_prompt_id}"
                 )
@@ -76,7 +77,7 @@ class WorkflowManager:
                 self.logger.warning(
                     f"System prompt with ID {self.system_prompt_id} not found, falling back to defaults"
                 )
-                system_prompt = (
+                system_prompt_text = (
                     str(self.project.system_prompt)
                     if getattr(self.project, "system_prompt", None)
                     else (
@@ -88,7 +89,7 @@ class WorkflowManager:
                 )
         else:
             # Use project's default system prompt, then workspace, then global default
-            system_prompt = (
+            system_prompt_text = (
                 str(self.project.system_prompt)
                 if getattr(self.project, "system_prompt", None)
                 else (
@@ -107,11 +108,36 @@ class WorkflowManager:
 
         self.logger.info(f"Creating workflow with {len(tools)} total tools")
 
+        # Instantiate LLM once
+        llm_instance = self.index_manager.llm()
+
+        # Preflight: detect known Ollama models that don't support tools and fail fast
+        try:
+            model_name = getattr(llm_instance, "model", "")
+            provider_name = getattr(self.project, "llm_provider", "").lower()
+            if not self.disable_tools and len(tools) > 0 and provider_name == "ollama":
+                if isinstance(model_name, str) and (
+                    "deepseek-r1" in model_name.lower()
+                ):
+                    error_msg = (
+                        f"Selected Ollama model '{model_name}' does not support tools. "
+                        "Disable tools or choose a tool-capable model."
+                    )
+                    self.logger.error(error_msg)
+                    raise RuntimeError(error_msg)
+        except Exception as preflight_e:
+            # If preflight raised intentionally, bubble it up; otherwise log and continue
+            if isinstance(preflight_e, RuntimeError):
+                raise
+            self.logger.warning(
+                f"Tool capability preflight check skipped: {preflight_e}"
+            )
+
         workflow = AgentWorkflow.from_tools_or_functions(
             tools_or_functions=tools,
             # Revise this, the llm should come from the project settings
-            llm=self.index_manager.llm(),
-            system_prompt=str(system_prompt),
+            llm=llm_instance,
+            system_prompt=system_prompt_text,
             initial_state=self.initial_state,
             verbose=True,
         )
