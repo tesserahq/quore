@@ -84,7 +84,7 @@ def get_workspace_stats(
 ):
     """Get comprehensive statistics for a workspace."""
     service = WorkspaceService(db)
-    stats = service.get_workspace_stats(workspace.id)
+    stats = service.get_workspace_stats_for_user(workspace.id, current_user.id)
 
     if not stats:
         raise HTTPException(status_code=404, detail="Workspace not found")

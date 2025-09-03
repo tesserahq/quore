@@ -155,9 +155,7 @@ async def _stream_content(
             # Normally, if the stream is a tool call, the delta is always empty
             # so it's not a text stream.
             logger.info(f"Event.tool_calls: {event.tool_calls}")
-            logger.info(f"Event.delta: {event.delta}")
             if len(event.tool_calls) == 0:
-                logger.info(f"Streaming text delta: {event.delta}")
                 yield event.delta
         elif isinstance(event, StopEvent):
             logger.info("Received StopEvent")
@@ -172,41 +170,41 @@ async def _stream_content(
                     elif hasattr(chunk, "delta") and chunk.delta:
                         yield chunk.delta
 
-    # try:
-    logger.info("Stream content: Starting to process stream events")
-    async for event in handler.stream_events():
-        logger.info(f"Stream content: Processing {type(event).__name__} event")
-        logger.info(
-            f"Stream content: isinstance(event, (AgentStream, StopEvent)): {isinstance(event, (AgentStream, StopEvent))}"
-        )
-        if isinstance(event, (AgentStream, StopEvent)):
-            async for chunk in _text_stream(event):
-                logger.info(f"Stream content: Processing chunk: {chunk}")
-                handler.accumulate_text(chunk)
-                yield VercelStreamResponse.convert_text(chunk)
-        elif isinstance(event, dict):
-            logger.info(f"Stream content: Processing dictionary event: {event}")
-            yield VercelStreamResponse.convert_data(event)
-        elif hasattr(event, "to_response"):
+    try:
+        logger.info("Stream content: Starting to process stream events")
+        async for event in handler.stream_events():
+            logger.info(f"Stream content: Processing {type(event).__name__} event")
             logger.info(
-                f"Stream content: Processing event with to_response method: {type(event).__name__}"
+                f"Stream content: isinstance(event, (AgentStream, StopEvent)): {isinstance(event, (AgentStream, StopEvent))}"
             )
-            event_response = event.to_response()
-            yield VercelStreamResponse.convert_data(event_response)
-        else:
-            # Ignore unnecessary agent workflow events
-            if not isinstance(event, (AgentInput, AgentSetup)):
+            if isinstance(event, (AgentStream, StopEvent)):
+                async for chunk in _text_stream(event):
+                    logger.info(f"Stream content: Processing chunk: {chunk}")
+                    handler.accumulate_text(chunk)
+                    yield VercelStreamResponse.convert_text(chunk)
+            elif isinstance(event, dict):
+                logger.info(f"Stream content: Processing dictionary event: {event}")
+                yield VercelStreamResponse.convert_data(event)
+            elif hasattr(event, "to_response"):
                 logger.info(
-                    f"Stream content: Processing other event type: {type(event).__name__}"
+                    f"Stream content: Processing event with to_response method: {type(event).__name__}"
                 )
-                yield VercelStreamResponse.convert_data(event.model_dump())
+                event_response = event.to_response()
+                yield VercelStreamResponse.convert_data(event_response)
+            else:
+                # Ignore unnecessary agent workflow events
+                if not isinstance(event, (AgentInput, AgentSetup)):
+                    logger.info(
+                        f"Stream content: Processing other event type: {type(event).__name__}"
+                    )
+                    yield VercelStreamResponse.convert_data(event.model_dump())
 
-    # except asyncio.CancelledError:
-    #     logger.warning("Client cancelled the request!")
-    #     await handler.cancel_run()
-    # except Exception as e:
-    #     logger.error(f"Error in stream response: {e}", exc_info=True)
-    #     yield VercelStreamResponse.convert_error(str(e))
-    #     await handler.cancel_run()
-    # finally:
-    #     logger.info("Finished content streaming")
+    except asyncio.CancelledError:
+        logger.warning("Client cancelled the request!")
+        await handler.cancel_run()
+    except Exception as e:
+        logger.error(f"Error in stream response: {e}", exc_info=True)
+        yield VercelStreamResponse.convert_error(str(e))
+        await handler.cancel_run()
+    finally:
+        logger.info("Finished content streaming")

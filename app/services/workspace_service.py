@@ -1,4 +1,5 @@
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, cast
+from datetime import datetime
 from uuid import UUID
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, case
@@ -25,6 +26,7 @@ from app.utils.db.filtering import apply_filters
 from app.services.workspace_prune_service import WorkspacePruneService
 from app.services.soft_delete_service import SoftDeleteService
 from app.exceptions.workspace_exceptions import WorkspaceLockedError
+from app.services.membership_service import MembershipService
 
 """
 Module providing the WorkspaceService class for managing Workspace entities.
@@ -134,9 +136,6 @@ class WorkspaceService(SoftDeleteService[Workspace]):
         """
         Get comprehensive statistics for a workspace with optimized queries.
 
-        Args:
-            workspace_id: UUID of the workspace to get stats for
-
         Returns:
             WorkspaceStats: Statistics for the workspace or None if workspace doesn't exist
         """
@@ -168,7 +167,10 @@ class WorkspaceService(SoftDeleteService[Workspace]):
         )
         recent_projects = [
             ProjectSummary(
-                id=p.id, name=p.name, description=p.description, updated_at=p.updated_at
+                id=cast(UUID, p.id),
+                name=cast(str, p.name),
+                description=cast(Optional[str], p.description),
+                updated_at=cast(datetime, p.updated_at),
             )
             for p in recent_projects_query.all()
         ]
@@ -181,7 +183,12 @@ class WorkspaceService(SoftDeleteService[Workspace]):
             .limit(5)
         )
         recent_prompts = [
-            PromptSummary(id=p.id, name=p.name, type=p.type, updated_at=p.updated_at)
+            PromptSummary(
+                id=cast(UUID, p.id),
+                name=cast(str, p.name),
+                type=cast(str, p.type),
+                updated_at=cast(datetime, p.updated_at),
+            )
             for p in recent_prompts_query.all()
         ]
 
@@ -210,8 +217,10 @@ class WorkspaceService(SoftDeleteService[Workspace]):
         )
 
         plugin_stats = PluginStats(
-            total_enabled=plugin_stats_query.enabled or 0,
-            total_disabled=plugin_stats_query.disabled or 0,
+            total_enabled=(plugin_stats_query.enabled if plugin_stats_query else 0)
+            or 0,
+            total_disabled=(plugin_stats_query.disabled if plugin_stats_query else 0)
+            or 0,
         )
 
         # Count total credentials
@@ -230,7 +239,10 @@ class WorkspaceService(SoftDeleteService[Workspace]):
         )
         recent_credentials = [
             CredentialSummary(
-                id=c.id, name=c.name, type=c.type, updated_at=c.updated_at
+                id=cast(UUID, c.id),
+                name=cast(str, c.name),
+                type=cast(str, c.type),
+                updated_at=cast(datetime, c.updated_at),
             )
             for c in recent_credentials_query.all()
         ]
@@ -250,6 +262,133 @@ class WorkspaceService(SoftDeleteService[Workspace]):
         prompt_stats = PromptStats(
             total_prompts=total_prompts or 0,
             recent_prompts=recent_prompts,
+        )
+
+        return WorkspaceStats(
+            project_stats=project_stats,
+            prompt_stats=prompt_stats,
+            plugin_stats=plugin_stats,
+            credential_stats=credential_stats,
+        )
+
+    def get_workspace_stats_for_user(
+        self, workspace_id: UUID, user_id: UUID
+    ) -> Optional[WorkspaceStats]:
+        """
+        Get workspace statistics filtered by the requesting user's accessible projects.
+        Other stats (prompts, plugins, credentials) are counted at the workspace level.
+        """
+        # Verify workspace exists
+        workspace = self.get_workspace(workspace_id)
+        if not workspace:
+            return None
+
+        membership_service = MembershipService(self.db)
+        accessible_projects = membership_service.get_accessible_projects_for_user(
+            workspace_id, user_id
+        )
+        accessible_project_ids = [p.id for p in accessible_projects]
+
+        # Project stats filtered by access
+        total_projects = len(accessible_project_ids)
+        if total_projects == 0:
+            recent_projects = []
+        else:
+            recent_projects_query = (
+                self.db.query(Project)
+                .filter(Project.id.in_(accessible_project_ids))
+                .order_by(desc(Project.updated_at))
+                .limit(5)
+            )
+            recent_projects = [
+                ProjectSummary(
+                    id=cast(UUID, p.id),
+                    name=cast(str, p.name),
+                    description=cast(Optional[str], p.description),
+                    updated_at=cast(datetime, p.updated_at),
+                )
+                for p in recent_projects_query.all()
+            ]
+
+        # Reuse remaining stats from unfiltered helper path
+        total_prompts = (
+            self.db.query(func.count(Prompt.id))
+            .filter(Prompt.workspace_id == workspace_id)
+            .scalar()
+        )
+
+        recent_prompts_query = (
+            self.db.query(Prompt)
+            .filter(Prompt.workspace_id == workspace_id)
+            .order_by(desc(Prompt.updated_at))
+            .limit(5)
+        )
+        recent_prompts = [
+            PromptSummary(
+                id=cast(UUID, p.id),
+                name=cast(str, p.name),
+                type=cast(str, p.type),
+                updated_at=cast(datetime, p.updated_at),
+            )
+            for p in recent_prompts_query.all()
+        ]
+
+        enabled_states = [PluginState.RUNNING, PluginState.IDLE, PluginState.STARTING]
+        disabled_states = [
+            PluginState.STOPPED,
+            PluginState.ERROR,
+            PluginState.REGISTERED,
+            PluginState.INITIALIZING,
+        ]
+        plugin_stats_query = (
+            self.db.query(
+                func.count(case((Plugin.state.in_(enabled_states), 1))).label(
+                    "enabled"
+                ),
+                func.count(case((Plugin.state.in_(disabled_states), 1))).label(
+                    "disabled"
+                ),
+            )
+            .filter(Plugin.workspace_id == workspace_id)
+            .first()
+        )
+        plugin_stats = PluginStats(
+            total_enabled=(plugin_stats_query.enabled if plugin_stats_query else 0)
+            or 0,
+            total_disabled=(plugin_stats_query.disabled if plugin_stats_query else 0)
+            or 0,
+        )
+
+        total_credentials = (
+            self.db.query(func.count(Credential.id))
+            .filter(Credential.workspace_id == workspace_id)
+            .scalar()
+        )
+        recent_credentials_query = (
+            self.db.query(Credential)
+            .filter(Credential.workspace_id == workspace_id)
+            .order_by(desc(Credential.updated_at))
+            .limit(5)
+        )
+        recent_credentials = [
+            CredentialSummary(
+                id=cast(UUID, c.id),
+                name=cast(str, c.name),
+                type=cast(str, c.type),
+                updated_at=cast(datetime, c.updated_at),
+            )
+            for c in recent_credentials_query.all()
+        ]
+
+        project_stats = ProjectStats(
+            total_projects=total_projects or 0, recent_projects=recent_projects
+        )
+        prompt_stats = PromptStats(
+            total_prompts=total_prompts or 0, recent_prompts=recent_prompts
+        )
+        credential_stats = CredentialStats(
+            total_credentials=total_credentials or 0,
+            recent_credentials=recent_credentials,
         )
 
         return WorkspaceStats(
