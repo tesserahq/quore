@@ -47,6 +47,38 @@ class WorkflowManager:
 
     #     return tool_with_context
 
+    def _fallback_system_prompt(self) -> str:
+        """Project → workspace → global default."""
+        project_prompt = getattr(self.project, "system_prompt", None)
+        if project_prompt:
+            return str(project_prompt)
+
+        workspace = getattr(self.project, "workspace", None)
+        workspace_prompt = (
+            getattr(workspace, "system_prompt", None) if workspace else None
+        )
+        if workspace_prompt:
+            return str(workspace_prompt)
+
+        return get_settings().default_system_prompt
+
+    def _resolve_system_prompt(self) -> str:
+        """Use explicit ID if available, else fallback chain."""
+        if self.system_prompt_id:
+            prompt_service = PromptService(self.db_session)
+            prompt = prompt_service.get_prompt_by_id_or_prompt_id(self.system_prompt_id)
+            if prompt:
+                self.logger.info(
+                    f"Using system prompt from prompt ID: {self.system_prompt_id}"
+                )
+                return str(prompt.prompt)
+
+            self.logger.warning(
+                f"System prompt with ID {self.system_prompt_id} not found, falling back to defaults"
+            )
+
+        return self._fallback_system_prompt()
+
     async def create_workflow(
         self, chat_request: Optional[ChatRequest] = None
     ) -> AgentWorkflow:
@@ -63,42 +95,7 @@ class WorkflowManager:
         # https://www.llamaindex.ai/blog/introducing-agentworkflow-a-powerful-system-for-building-ai-agent-systems
 
         # Determine which system prompt to use
-        system_prompt_text: str
-        if self.system_prompt_id:
-            # Use the specified system prompt from the prompts table
-            prompt_service = PromptService(self.db_session)
-            prompt = prompt_service.get_prompt_by_id_or_prompt_id(self.system_prompt_id)
-            if prompt:
-                system_prompt_text = str(prompt.prompt)
-                self.logger.info(
-                    f"Using system prompt from prompt ID: {self.system_prompt_id}"
-                )
-            else:
-                self.logger.warning(
-                    f"System prompt with ID {self.system_prompt_id} not found, falling back to defaults"
-                )
-                system_prompt_text = (
-                    str(self.project.system_prompt)
-                    if getattr(self.project, "system_prompt", None)
-                    else (
-                        str(getattr(self.project.workspace, "system_prompt", None))
-                        if getattr(self.project, "workspace", None)
-                        and getattr(self.project.workspace, "system_prompt", None)
-                        else get_settings().default_system_prompt
-                    )
-                )
-        else:
-            # Use project's default system prompt, then workspace, then global default
-            system_prompt_text = (
-                str(self.project.system_prompt)
-                if getattr(self.project, "system_prompt", None)
-                else (
-                    str(getattr(self.project.workspace, "system_prompt", None))
-                    if getattr(self.project, "workspace", None)
-                    and getattr(self.project.workspace, "system_prompt", None)
-                    else get_settings().default_system_prompt
-                )
-            )
+        system_prompt_text: str = self._resolve_system_prompt()
 
         if self.disable_tools:
             tools = []

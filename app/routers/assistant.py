@@ -55,14 +55,9 @@ def assistant_router() -> APIRouter:
         token: str = Depends(get_access_token),
     ) -> StreamingResponse:
         logger = get_logger()
-        debug_mode = bool(
-            getattr(request, "config", None)
-            and getattr(request.config, "debug_mode", False)
-        )
-        disable_tools = bool(
-            getattr(request, "config", None)
-            and getattr(request.config, "disable_tools", False)
-        )
+        config = getattr(request, "config", None)
+        debug_mode = bool(getattr(config, "debug_mode", False))
+        disable_tools = bool(getattr(config, "disable_tools", False))
 
         logger.info(f"Chat route: Starting chat request for project {project.id}")
 
