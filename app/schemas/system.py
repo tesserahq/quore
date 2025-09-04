@@ -41,12 +41,16 @@ class LLMGroup(BaseModel):
     ollama_base_url: str
 
 
-class DataGroup(BaseModel):
+class GeneralGroup(BaseModel):
     default_data_dir: str
+    is_production: bool
+
+
+class DatabaseGroup(BaseModel):
     database_host: Optional[str]
     database_driver: Optional[str]
-    is_production: bool
-    is_test: bool
+    pool_size: int
+    max_overflow: int
 
 
 class TelemetryGroup(BaseModel):
@@ -69,7 +73,8 @@ class ExternalServicesGroup(BaseModel):
 class SystemSettingsGrouped(BaseModel):
     app: AppGroup
     llm: LLMGroup
-    data: DataGroup
+    database: DatabaseGroup
+    general: GeneralGroup
     telemetry: TelemetryGroup
     redis: RedisGroup
     services: ExternalServicesGroup

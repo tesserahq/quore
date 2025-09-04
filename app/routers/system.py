@@ -3,12 +3,13 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.core.system_setup import SystemSetup
 from app.schemas.system import (
+    GeneralGroup,
     SystemSetupResponse,
     ValidationStatus,
     SystemSettingsGrouped,
     AppGroup,
     LLMGroup,
-    DataGroup,
+    DatabaseGroup,
     TelemetryGroup,
     RedisGroup,
     ExternalServicesGroup,
@@ -80,12 +81,16 @@ def get_system_settings(
     except Exception:
         pass
 
-    data_group = DataGroup(
-        default_data_dir=s.default_data_dir,
+    database_group = DatabaseGroup(
         database_host=database_host,
         database_driver=database_driver,
+        pool_size=s.database_pool_size,
+        max_overflow=s.database_max_overflow,
+    )
+
+    general_group = GeneralGroup(
+        default_data_dir=s.default_data_dir,
         is_production=s.is_production,
-        is_test=s.is_test,
     )
 
     telemetry_group = TelemetryGroup(
@@ -108,7 +113,8 @@ def get_system_settings(
     grouped = SystemSettingsGrouped(
         app=app_group,
         llm=llm_group,
-        data=data_group,
+        database=database_group,
+        general=general_group,
         telemetry=telemetry_group,
         redis=redis_group,
         services=services_group,
