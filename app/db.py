@@ -11,7 +11,11 @@ from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 
 settings = get_settings()
 
-engine = create_engine(settings.database_url, pool_size=settings.database_pool_size, max_overflow=settings.database_max_overflow)
+engine = create_engine(
+    settings.database_url,
+    pool_size=settings.database_pool_size,
+    max_overflow=settings.database_max_overflow,
+)
 
 SQLAlchemyInstrumentor().instrument(
     enable_commenter=True, commenter_options={}, engine=engine
