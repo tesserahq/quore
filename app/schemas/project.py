@@ -75,6 +75,10 @@ class ProjectUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
     ingest_settings: Optional[Dict[str, Any]] = None
+    llm_provider: Optional[LLMProviderType] = None
+    embed_model: Optional[str] = None
+    llm: Optional[str] = None
+    labels: Optional[Dict[str, Any]] = None
     system_prompt: Optional[str] = Field(
         None, description="Optional system prompt for the project's AI assistant."
     )

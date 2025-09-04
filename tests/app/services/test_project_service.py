@@ -62,9 +62,12 @@ def test_update_project(db: Session, setup_project):
     service = ProjectService(db)
     project = setup_project
 
-    updated = service.update_project(project.id, ProjectUpdate(name="After"))
+    updated = service.update_project(
+        project.id, ProjectUpdate(name="After", llm="mock")
+    )
 
     assert updated.name == "After"
+    assert updated.llm == "mock"
 
 
 def test_delete_project(db: Session, setup_project):
