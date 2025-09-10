@@ -7,6 +7,8 @@ import rollbar
 from rollbar.logger import RollbarHandler
 from rollbar.contrib.fastapi import ReporterMiddleware as RollbarMiddleware
 
+from app.routers import summarize
+
 from .routers import (
     workspace,
     user,
@@ -87,6 +89,7 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
     app.include_router(assistant_router())
     app.include_router(system.router)
     app.include_router(invitation.router)
+    app.include_router(summarize.router)
 
     register_exception_handlers(app)
 
