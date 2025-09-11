@@ -29,7 +29,9 @@ class Prompt(Base, TimestampMixin, SoftDeleteMixin):
 
     # Constraints
     __table_args__ = (
-        UniqueConstraint("workspace_id", "prompt_id", name="uq_prompts_workspace_id_prompt_id"),
+        UniqueConstraint(
+            "workspace_id", "prompt_id", name="uq_prompts_workspace_id_prompt_id"
+        ),
     )
 
     def __repr__(self):

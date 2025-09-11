@@ -1,8 +1,8 @@
 """update prompts unique constraint
 
-Revision ID: c1a2b3c4d5e6
-Revises: 79b2291772fd, 2550d4723c64
-Create Date: 2025-09-11 00:00:00.000000
+Revision ID: 03599d07def1
+Revises: 8221a1580c54
+Create Date: 2025-09-11 11:06:23.187565
 
 """
 
@@ -13,9 +13,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "c1a2b3c4d5e6"
-# Merge the two heads to continue on a single linear history
-down_revision = ("79b2291772fd", "2550d4723c64")
+revision: str = "03599d07def1"
+down_revision: Union[str, None] = "8221a1580c54"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -36,8 +35,5 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Downgrade schema."""
     # Revert to old unique constraint on prompt_id only
-    op.drop_constraint(
-        "uq_prompts_workspace_id_prompt_id", "prompts", type_="unique"
-    )
+    op.drop_constraint("uq_prompts_workspace_id_prompt_id", "prompts", type_="unique")
     op.create_unique_constraint("uq_prompts_prompt_id", "prompts", ["prompt_id"])
-
