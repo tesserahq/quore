@@ -1,5 +1,5 @@
 from app.models.mixins import TimestampMixin, SoftDeleteMixin
-from sqlalchemy import Column, String, ForeignKey, Boolean
+from sqlalchemy import Column, String, Integer, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
@@ -20,6 +20,10 @@ class Workspace(Base, TimestampMixin, SoftDeleteMixin):
     created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     locked = Column(Boolean, default=False, nullable=False)
     system_prompt = Column(String, nullable=True)
+    default_llm_provider = Column(String, nullable=True)
+    default_embed_model = Column(String, nullable=True)
+    default_embed_dim = Column(Integer, nullable=True)
+    default_llm = Column(String, nullable=True)
 
     # Relationships
     created_by = relationship("User", back_populates="workspaces")

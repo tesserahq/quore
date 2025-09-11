@@ -17,10 +17,13 @@ def test_create_project(db: Session, setup_workspace):
         name="Test Project",
         workspace_id=workspace.id,
         description="My first project",
-        llm_provider=MOCK_PROVIDER,
+        llm_provider="mock",
         embed_model="mock",
         embed_dim=1536,
         llm="mock",
+        ingest_settings=None,
+        system_prompt=None,
+        labels=None,
     )
 
     project = service.create_project(project_in)
@@ -54,6 +57,7 @@ def test_get_project(db: Session, setup_project):
     project = setup_project
 
     retrieved_project = service.get_project(project.id)
+    assert retrieved_project is not None
     assert retrieved_project.id == project.id
     assert retrieved_project.name == project.name
 
@@ -63,9 +67,10 @@ def test_update_project(db: Session, setup_project):
     project = setup_project
 
     updated = service.update_project(
-        project.id, ProjectUpdate(name="After", llm="mock")
+        project.id, ProjectUpdate(name="After", llm="mock", system_prompt=None)
     )
 
+    assert updated is not None
     assert updated.name == "After"
     assert updated.llm == "mock"
 
@@ -159,3 +164,39 @@ def test_search_projects_case_insensitive(db: Session, setup_project):
     )
     assert len(results) == 1
     assert results[0].id == project.id
+
+
+def test_create_project_uses_workspace_defaults(db: Session, setup_workspace):
+    """When project fields are None, service should use workspace defaults."""
+    workspace = setup_workspace
+
+    # Set workspace default LLM settings
+    workspace.default_llm_provider = "mock"
+    workspace.default_embed_model = "mock-embed"
+    workspace.default_embed_dim = 4242
+    workspace.default_llm = "mock-llm"
+    db.add(workspace)
+    db.commit()
+    db.refresh(workspace)
+
+    service = ProjectService(db)
+
+    # Provide None for fields to trigger workspace defaults in the service
+    project_in = ProjectCreate(
+        name="Uses Workspace Defaults",
+        workspace_id=workspace.id,
+        llm_provider=None,
+        embed_model=None,
+        embed_dim=None,
+        llm=None,
+        ingest_settings=None,
+        system_prompt=None,
+        labels=None,
+    )
+
+    project = service.create_project(project_in)
+
+    assert project.llm_provider == workspace.default_llm_provider
+    assert project.embed_model == workspace.default_embed_model
+    assert project.embed_dim == workspace.default_embed_dim
+    assert project.llm == workspace.default_llm

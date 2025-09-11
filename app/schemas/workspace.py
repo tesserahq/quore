@@ -29,6 +29,18 @@ class WorkspaceBase(BaseModel):
     system_prompt: Optional[str] = Field(
         None, description="Optional system prompt for the workspace's AI assistant."
     )
+    default_llm_provider: Optional[str] = Field(
+        None, description="Optional default LLM provider for the workspace."
+    )
+    default_embed_model: Optional[str] = Field(
+        None, description="Optional default embedding model for the workspace."
+    )
+    default_embed_dim: Optional[int] = Field(
+        None, description="Optional default embedding dimension for the workspace."
+    )
+    default_llm: Optional[str] = Field(
+        None, description="Optional default LLM for the workspace."
+    )
 
 
 class WorkspaceCreate(WorkspaceBase):
@@ -58,6 +70,18 @@ class WorkspaceUpdate(BaseModel):
 
     system_prompt: Optional[str] = Field(
         None, description="Optional system prompt for the workspace's AI assistant."
+    )
+    default_llm_provider: Optional[str] = Field(
+        None, description="Optional default LLM provider for the workspace."
+    )
+    default_embed_model: Optional[str] = Field(
+        None, description="Optional default embedding model for the workspace."
+    )
+    default_embed_dim: Optional[int] = Field(
+        None, description="Optional default embedding dimension for the workspace."
+    )
+    default_llm: Optional[str] = Field(
+        None, description="Optional default LLM for the workspace."
     )
 
 

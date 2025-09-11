@@ -42,19 +42,19 @@ class ProjectBase(BaseModel):
         None,
         description="Optional configuration for data ingestion settings and parameters.",
     )
-    llm_provider: LLMProviderType = Field(
+    llm_provider: Optional[LLMProviderType] = Field(
         default=cast(LLMProviderType, OPENAI_PROVIDER),
         description="The LLM provider to use for this project. Defaults to OpenAI.",
     )
-    embed_model: str = Field(
+    embed_model: Optional[str] = Field(
         default_factory=lambda: get_settings().default_embed_model,
         description="The embedding model to use for vector embeddings. Defaults to the system's default embedding model.",
     )
-    embed_dim: int = Field(
+    embed_dim: Optional[int] = Field(
         default_factory=lambda: get_settings().default_embed_dim,
         description="The dimension of the embedding vectors. Defaults to the system's default embedding dimension.",
     )
-    llm: str = Field(
+    llm: Optional[str] = Field(
         default_factory=lambda: get_settings().default_llm,
         description="The specific LLM model to use for this project. Defaults to the system's default LLM.",
     )

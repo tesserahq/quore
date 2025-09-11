@@ -23,12 +23,20 @@ class ProjectService(SoftDeleteService[Project]):
 
     def create_project(self, project: ProjectCreate) -> Project:
         # Validate workspace exists
-        if project.workspace_id:
-            workspace = self.workspace_service.get_workspace(project.workspace_id)
-            if not workspace:
-                raise ResourceNotFoundError(
-                    f"Workspace with ID {project.workspace_id} not found"
-                )
+        workspace = self.workspace_service.get_workspace(project.workspace_id)
+        if not workspace:
+            raise ResourceNotFoundError(
+                f"Workspace with ID {project.workspace_id} not found"
+            )
+
+        if project.llm_provider is None:
+            project.llm_provider = workspace.default_llm_provider
+        if project.embed_model is None:
+            project.embed_model = workspace.default_embed_model
+        if project.embed_dim is None:
+            project.embed_dim = workspace.default_embed_dim
+        if project.llm is None:
+            project.llm = workspace.default_llm
 
         data = project.model_dump()
 
