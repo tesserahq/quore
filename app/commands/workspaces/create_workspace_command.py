@@ -1,4 +1,3 @@
-from app.models import workspace
 from app.schemas.membership import MembershipCreate
 from app.schemas.workspace import Workspace, WorkspaceCreate
 from app.services.membership_service import MembershipService

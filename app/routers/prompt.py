@@ -1,8 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
 from uuid import UUID
-import logging
 
 from app.db import get_db
 from app.schemas.prompt import Prompt, PromptCreate, PromptUpdate

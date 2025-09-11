@@ -4,7 +4,6 @@ from llama_index.llms.ollama import Ollama
 from llama_index.core.agent.workflow import AgentWorkflow
 from llama_index.core.tools import FunctionTool
 import asyncio
-from typing import Any, AsyncGenerator, Union
 
 
 def echo(text: str) -> str:

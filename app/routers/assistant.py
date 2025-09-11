@@ -1,10 +1,9 @@
 import asyncio
 import logging
-from typing import Annotated, Any, AsyncGenerator, Dict, Union
+from typing import Any, AsyncGenerator, Dict, Union
 import uuid
 
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
 from llama_index.core.agent.workflow.workflow_events import (

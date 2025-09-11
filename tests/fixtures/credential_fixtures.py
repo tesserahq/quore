@@ -1,7 +1,5 @@
 import pytest
-import json
 from app.schemas.credential import CredentialCreate
-from app.constants.credentials import CredentialType
 from app.models.credential import Credential
 from app.core.credentials import encrypt_credential_fields
 

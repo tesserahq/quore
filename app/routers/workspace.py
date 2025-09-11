@@ -1,6 +1,5 @@
 from app.commands.workspaces.create_workspace_command import CreateWorkspaceCommand
 from app.schemas.project import ProjectCreate, Project
-from app.models.project import Project as ProjectModel
 from app.services.project_service import ProjectService
 from app.utils.auth import get_current_user
 from fastapi import APIRouter, Depends, HTTPException, status

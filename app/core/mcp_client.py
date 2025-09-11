@@ -1,5 +1,4 @@
 from typing import List, Dict, Any, Optional
-from fastmcp import Client as FastMCPClient
 from fastmcp import Client
 from fastmcp.client.transports import StreamableHttpTransport
 from dataclasses import dataclass, field

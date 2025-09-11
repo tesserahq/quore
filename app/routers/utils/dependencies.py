@@ -1,5 +1,4 @@
 from fastapi import Depends, HTTPException, Header
-from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from uuid import UUID
 

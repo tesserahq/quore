@@ -1,7 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from typing import Optional, Dict, Any
 from uuid import UUID
 
 from app.commands.initialize_plugin import initialize_plugin_command

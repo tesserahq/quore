@@ -13,7 +13,7 @@ from fastapi.responses import JSONResponse
 import httpx
 from sqlalchemy.orm import Session
 from uuid import UUID
-from typing import Optional, List
+from typing import Optional
 import json
 
 from app.db import get_db
@@ -23,7 +23,6 @@ from app.schemas.project import (
     ProjectSearchFilters,
     ProjectSearchResponse,
     NodeListResponse,
-    NodeResponse,
 )
 from app.services.project_service import ProjectService
 from app.models.project import Project as ProjectModel

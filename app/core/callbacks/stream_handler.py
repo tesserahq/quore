@@ -27,7 +27,7 @@ class StreamHandler:
 
     async def stream_events(self) -> AsyncGenerator[Any, None]:
         """Stream events through the processor chain."""
-        logger.info(f"Streaming events")
+        logger.info("Streaming events")
         async for event in self.workflow_handler.stream_events():
             events_to_process = [event]
             logger.info(f"Events to process: {events_to_process}")

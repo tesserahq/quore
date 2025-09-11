@@ -7,7 +7,6 @@ from app.schemas.project import ProjectCreate, ProjectUpdate, Project as Project
 from app.services.workspace_service import WorkspaceService
 from app.utils.db.filtering import apply_filters
 from app.core.index_manager import IndexManager
-from app.models.node import get_node_model
 from app.services.soft_delete_service import SoftDeleteService
 
 

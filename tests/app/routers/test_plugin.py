@@ -4,7 +4,6 @@ from app.models.project_plugin import ProjectPlugin
 from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
-from app.constants.plugin_states import PluginState
 
 from app.models.plugin import Plugin
 

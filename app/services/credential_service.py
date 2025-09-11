@@ -1,8 +1,6 @@
 from typing import List, Optional, Dict, Any
 from uuid import UUID
-from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-import logging
 
 from app.models.credential import Credential
 from app.schemas.credential import CredentialCreate, CredentialUpdate, CredentialInfo

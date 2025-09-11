@@ -1,10 +1,7 @@
-import os
 import json
-import tempfile
-from typing import Dict, Type, Any, Tuple, List
+from typing import Dict, Type, Any
 from cryptography.fernet import Fernet
 from pydantic import BaseModel
-from urllib.parse import urlparse
 
 from app.constants.credentials import CredentialType
 from app.schemas.credential import (

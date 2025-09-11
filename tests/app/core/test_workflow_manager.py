@@ -1,8 +1,7 @@
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 from app.core.workflow_manager import WorkflowManager
 from app.schemas.ai_schemas.chat.workflow_manager_context import WorkflowManagerContext
-from app.services.prompt_service import PromptService
 from llama_index.core.llms.mock import MockLLM
 
 

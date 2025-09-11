@@ -1,25 +1,17 @@
-import json
-from typing import Any, Dict, List, Optional, Type, get_type_hints
-from pydantic import BaseModel, create_model
-from fastapi.security import HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
+from typing import Optional
 from app.config import get_settings
 from app.core.index_manager import IndexManager
-from app.core.plugin_manager.manager import PluginManager
-from app.models.project import Project
 from app.schemas.ai_schemas.chat.chat_request import ChatRequest
 from app.schemas.ai_schemas.chat.workflow_manager_context import WorkflowManagerContext
 from llama_index.core.agent.workflow import AgentWorkflow
 from app.core.logging_config import get_logger
 from app.plugins.datetime import get_tools as get_datetime_tools
-from app.plugins.debug import get_tools as get_debug_tools
 from app.services.plugin_service import PluginService
 from app.services.prompt_service import PromptService
 from llama_index.core.tools import FunctionTool
 from mcp.types import Tool as MCPTool
 from llama_index.tools.mcp import aget_tools_from_mcp_url
 from llama_index.tools.mcp import BasicMCPClient
-from llama_index.core.agent.workflow import FunctionAgent
 
 
 class WorkflowManager:

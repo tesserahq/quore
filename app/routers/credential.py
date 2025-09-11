@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from uuid import UUID
-import logging
 
 from app.db import get_db
 from app.schemas.credential import (
@@ -17,7 +16,6 @@ from app.schemas.common import ListResponse
 from app.utils.auth import get_current_user
 from app.models.workspace import Workspace
 from app.models.credential import Credential
-from app.models.membership import Membership
 from app.routers.utils.dependencies import get_workspace_by_id
 from app.core.credentials import credential_registry
 from app.core.logging_config import get_logger
