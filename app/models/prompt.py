@@ -28,7 +28,11 @@ class Prompt(Base, TimestampMixin, SoftDeleteMixin):
     workspace = relationship("Workspace", back_populates="prompts")
 
     # Constraints
-    __table_args__ = (UniqueConstraint("prompt_id", name="uq_prompts_prompt_id"),)
+    __table_args__ = (
+        UniqueConstraint(
+            "workspace_id", "prompt_id", name="uq_prompts_workspace_id_prompt_id"
+        ),
+    )
 
     def __repr__(self):
         return f"<Prompt(id={self.id}, name={self.name}, type={self.type}, workspace_id={self.workspace_id})>"
