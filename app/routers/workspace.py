@@ -4,6 +4,7 @@ from app.services.project_service import ProjectService
 from app.utils.auth import get_current_user
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+import pprint
 
 from app.db import get_db
 from app.schemas.workspace import (

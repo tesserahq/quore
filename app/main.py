@@ -21,6 +21,7 @@ from .routers import (
     system,
     prompt,
     invitation,
+    app_setting,
 )
 from .routers.assistant import assistant_router
 from .ws import status
@@ -89,6 +90,7 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
     app.include_router(assistant_router())
     app.include_router(system.router)
     app.include_router(invitation.router)
+    app.include_router(app_setting.router)
     app.include_router(summarize.router)
 
     register_exception_handlers(app)

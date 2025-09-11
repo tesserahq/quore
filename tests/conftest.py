@@ -24,6 +24,7 @@ pytest_plugins = [
     "tests.fixtures.plugin_fixtures",
     "tests.fixtures.prompt_fixtures",
     "tests.fixtures.invitation_fixtures",
+    "tests.fixtures.app_setting_fixtures",
 ]
 
 logger = logging.getLogger(__name__)
