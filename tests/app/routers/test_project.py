@@ -74,6 +74,7 @@ def test_create_project(client, setup_workspace):
     }
 
     response = client.post(f"/workspaces/{workspace.id}/projects", json=project_data)
+    print(response.json())
     assert response.status_code == 201
     project = response.json()
     assert project["name"] == project_data["name"]

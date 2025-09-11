@@ -173,7 +173,7 @@ def test_create_project_uses_workspace_defaults(db: Session, setup_workspace):
     # Set workspace default LLM settings
     workspace.default_llm_provider = "mock"
     workspace.default_embed_model = "mock-embed"
-    workspace.default_embed_dim = 4242
+    workspace.default_embed_dim = 1536
     workspace.default_llm = "mock-llm"
     db.add(workspace)
     db.commit()
@@ -198,5 +198,5 @@ def test_create_project_uses_workspace_defaults(db: Session, setup_workspace):
 
     assert project.llm_provider == workspace.default_llm_provider
     assert project.embed_model == workspace.default_embed_model
-    assert project.embed_dim == workspace.default_embed_dim
     assert project.llm == workspace.default_llm
+    assert project.embed_dim == workspace.default_embed_dim

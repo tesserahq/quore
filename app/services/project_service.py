@@ -1,8 +1,11 @@
 from typing import List, Optional, Dict, Any
 from uuid import UUID
+from app.config import get_settings
+from app.constants.providers import OPENAI_PROVIDER, LLMProviderType
 from app.exceptions.resource_not_found_error import ResourceNotFoundError
 from sqlalchemy.orm import Session
 from app.models.project import Project
+from app.models.workspace import Workspace
 from app.schemas.project import ProjectCreate, ProjectUpdate, Project as ProjectSchema
 from app.services.workspace_service import WorkspaceService
 from app.utils.db.filtering import apply_filters
@@ -29,15 +32,7 @@ class ProjectService(SoftDeleteService[Project]):
                 f"Workspace with ID {project.workspace_id} not found"
             )
 
-        if project.llm_provider is None:
-            project.llm_provider = workspace.default_llm_provider
-        if project.embed_model is None:
-            project.embed_model = workspace.default_embed_model
-        if project.embed_dim is None:
-            project.embed_dim = workspace.default_embed_dim
-        if project.llm is None:
-            project.llm = workspace.default_llm
-
+        project = self._set_project_defaults(project, workspace)
         data = project.model_dump()
 
         db_project = Project(**data)
@@ -93,3 +88,27 @@ class ProjectService(SoftDeleteService[Project]):
         query = self.db.query(Project)
         query = apply_filters(query, Project, filters)
         return [ProjectSchema.model_validate(project) for project in query.all()]
+
+    def _set_project_defaults(
+        self, project: ProjectCreate, workspace: Workspace
+    ) -> ProjectCreate:
+        if project.llm_provider is None:
+            project.llm_provider = workspace.default_llm_provider or cast(
+                LLMProviderType, OPENAI_PROVIDER
+            )
+        if project.embed_model is None:
+            project.embed_model = (
+                workspace.default_embed_model or get_settings().default_embed_model
+            )
+        if project.embed_dim is None:
+            project.embed_dim = (
+                workspace.default_embed_dim or get_settings().default_embed_dim
+            )
+        if project.llm is None:
+            project.llm = workspace.default_llm or get_settings().default_llm
+        if project.system_prompt is None:
+            project.system_prompt = (
+                workspace.system_prompt or get_settings().default_system_prompt
+            )
+
+        return project
