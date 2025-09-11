@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, cast
 from uuid import UUID
 from app.config import get_settings
 from app.constants.providers import OPENAI_PROVIDER, LLMProviderType

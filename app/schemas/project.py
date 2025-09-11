@@ -1,10 +1,9 @@
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any, cast, List, Union
+from typing import Optional, Dict, Any, List, Union
 from uuid import UUID
 from datetime import datetime
 from typing import Literal
-from app.constants.providers import LLMProviderType, OPENAI_PROVIDER
-from app.config import get_settings
+from app.constants.providers import LLMProviderType
 
 
 class IngestSettings(BaseModel):
