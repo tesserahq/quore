@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from llama_index.core.chat_engine.types import ChatMode
 from sqlalchemy.orm import Session
 from app.core.index_manager import IndexManager
 from app.db import get_db
@@ -16,10 +17,12 @@ router = APIRouter(
     tags=["summarize"],
     responses={404: {"description": "Not found"}},
 )
+from llama_index.core.prompts import RichPromptTemplate
 
 
 class SummarizeRequest(BaseModel):
     text: str
+    query: str
     labels: Optional[dict] = None
     prompt_id: Optional[str] = None
 
@@ -39,6 +42,7 @@ def summarize(
     """
     Summarize the text for a project.
     """
+
     if request.prompt_id is None:
         system_prompt = project.system_prompt
     else:
@@ -55,10 +59,12 @@ def summarize(
     summary_index = SummaryIndex(nodes)
     summary_query_engine = summary_index.as_query_engine(
         llm=index_manager.llm(),
-        response_mode="tree_summarize",
+        chat_mode=ChatMode.SIMPLE,
+        system_prompt=system_prompt,
         use_async=True,
     )
-    summary = summary_query_engine.query(system_prompt)
+
+    summary = summary_query_engine.query(request.query)
 
     return SummarizeResponse(
         summary=summary.response,

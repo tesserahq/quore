@@ -5,6 +5,8 @@ from llama_index.core.agent.workflow import AgentWorkflow
 from llama_index.core.tools import FunctionTool
 import asyncio
 
+MODEL = "calebfahlgren/natural-functions"
+
 
 def echo(text: str) -> str:
     """Return the provided text unchanged."""
@@ -17,7 +19,7 @@ echo_tool = FunctionTool.from_defaults(
     description="Echo back the provided text as-is.",
 )
 
-llm = Ollama(model="deepseek-r1:8b")
+llm = Ollama(model=MODEL)
 
 workflow = AgentWorkflow.from_tools_or_functions(
     tools_or_functions=[echo_tool],
