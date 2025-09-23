@@ -77,21 +77,6 @@ def list_workspace_prompts(
     return ListResponse(data=prompts)
 
 
-@prompt_router.get("", response_model=ListResponse[Prompt])
-def list_prompts(
-    skip: int = 0,
-    limit: int = 100,
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
-    """List all prompts the user has access to."""
-    # Get all workspaces the user is a member of
-    workspace_ids = [m.workspace_id for m in current_user.memberships]
-    filters = {"workspace_id": {"operator": "in", "value": workspace_ids}}
-    prompts = PromptService(db).search(filters)
-    return ListResponse(data=prompts)
-
-
 @workspace_router.post("", response_model=Prompt, status_code=status.HTTP_201_CREATED)
 def create_workspace_prompt(
     prompt_data: PromptCreate,
