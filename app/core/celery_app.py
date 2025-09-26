@@ -4,7 +4,7 @@ from app.config import get_settings
 
 settings = get_settings()
 
-celery_app = Celery("worker")
+celery_app = Celery("quore-worker")
 
 celery_app.conf.update(
     broker_url=f"redis://{settings.redis_host}:{settings.redis_port}/0",
