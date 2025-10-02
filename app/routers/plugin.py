@@ -123,10 +123,11 @@ def update_plugin(
 async def refresh_plugin(
     plugin: Plugin = Depends(get_plugin_by_id),
     db: Session = Depends(get_db),
+    access_token: str = Depends(get_access_token),
 ):
     """Refresh and refresh all plugin components (tools, resources, prompts) and refresh plugin state."""
     # Create plugin manager and refresh plugin
-    manager = PluginManager(db, plugin.id)
+    manager = PluginManager(db, plugin.id, access_token=access_token)
 
     return await manager.refresh()
 
