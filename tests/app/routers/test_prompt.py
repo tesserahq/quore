@@ -86,6 +86,7 @@ def test_update_workspace_prompt(client, setup_prompt, setup_workspace):
         "name": "Updated System Prompt",
         "type": "user",
         "prompt": "You are an updated AI assistant.",
+        "notes": "This is an updated note.",
     }
 
     response = client.put(
@@ -101,6 +102,7 @@ def test_update_workspace_prompt(client, setup_prompt, setup_workspace):
     # Original fields should remain unchanged
     assert data["prompt_id"] == prompt.prompt_id
     assert data["created_by_id"] == str(prompt.created_by_id)
+    assert data["notes"] == update_data["notes"]
 
 
 def test_update_prompt(client, setup_prompt):

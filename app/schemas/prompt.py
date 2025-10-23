@@ -54,6 +54,9 @@ class PromptUpdate(BaseModel):
     prompt: Optional[str] = Field(None, min_length=1)
     """Updated prompt content."""
 
+    notes: Optional[str] = None
+    """Notes about the prompt."""
+
 
 class PromptInDB(PromptBase):
     """Schema representing a prompt as stored in the database. Includes database-specific fields."""
