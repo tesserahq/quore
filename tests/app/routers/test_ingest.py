@@ -11,20 +11,12 @@ def test_ingest_text_success(client, setup_project):
         "labels": {"source": "test", "type": "example"},
     }
 
-    # Mock the Ingestor to avoid actual vector store operations
-    with patch("app.core.ingestor.Ingestor.ingest_raw_text") as mock_ingest:
-        mock_ingest.return_value = None
-        response = client.post(f"/projects/{project.id}/ingest/text", json=request_data)
+    response = client.post(f"/projects/{project.id}/ingest/text", json=request_data)
 
-        assert response.status_code == 200
-        assert response.json() == {
-            "message": "Text successfully ingested into the vector store."
-        }
-
-        # Verify the ingest method was called with correct parameters
-        mock_ingest.assert_called_once_with(
-            request_data["ref_id"], request_data["text"], request_data["labels"]
-        )
+    assert response.status_code == 200
+    assert response.json()["data"]["status"] == "queued"
+    assert response.json()["data"]["detail"] == "Text ingestion scheduled."
+    assert response.json()["data"]["task_id"] is not None
 
 
 def test_ingest_text_invalid_project(client):
@@ -72,11 +64,6 @@ def test_ingest_text_without_labels(client, setup_project):
         response = client.post(f"/projects/{project.id}/ingest/text", json=request_data)
 
         assert response.status_code == 200
-        assert response.json() == {
-            "message": "Text successfully ingested into the vector store."
-        }
-
-        # Verify the ingest method was called with None for labels
-        mock_ingest.assert_called_once_with(
-            request_data["ref_id"], request_data["text"], None
-        )
+        assert response.json()["data"]["status"] == "queued"
+        assert response.json()["data"]["detail"] == "Text ingestion scheduled."
+        assert response.json()["data"]["task_id"] is not None

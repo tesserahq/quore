@@ -1,14 +1,12 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.core.storage_manager import StorageManager
 from app.models.project import Project
 from app.schemas.ingest_text_request import IngestTextRequest
 from app.utils.auth import get_current_user
 from app.db import get_db
-from app.core.index_manager import IndexManager
-from app.core.ingestor import Ingestor
 from app.routers.utils.dependencies import get_project_by_id
+from app.tasks.ingest_tasks import ingest_project_text
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -33,12 +31,14 @@ def ingest_text(
         dict: A success message.
     """
 
-    # Use IndexManager to ingest the text
-    index_manager = IndexManager(db, project)
-    storage_manager = StorageManager()
-    ingestor = Ingestor(
-        index_manager.embedding_model(), storage_manager.vector_store(project)
+    task = ingest_project_text.delay(
+        str(project.id), request.ref_id, request.text, request.labels
     )
-    ingestor.ingest_raw_text(request.ref_id, request.text, request.labels)
 
-    return {"message": "Text successfully ingested into the vector store."}
+    return {
+        "data": {
+            "task_id": task.id,
+            "status": "queued",
+            "detail": "Text ingestion scheduled.",
+        }
+    }
