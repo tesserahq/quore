@@ -27,6 +27,7 @@ wheels/
 .pytest_cache/
 .coverage
 htmlcov/
+.mypy_cache
 
 # Virtual Environment
 venv/
