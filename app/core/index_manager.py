@@ -189,7 +189,7 @@ class IndexManager:
 
         index = self.load_index()
 
-        query_engine = index.as_query_engine(llm=self.llm())
+        query_engine = index.as_query_engine(llm=self.llm(), **kwargs)
 
         return query_engine
 
