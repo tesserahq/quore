@@ -9,6 +9,10 @@ celery_app = Celery("quore-worker")
 celery_app.conf.update(
     broker_url=f"redis://{settings.redis_host}:{settings.redis_port}/0",
     result_backend=f"redis://{settings.redis_host}:{settings.redis_port}/0",
+    task_default_queue="quore",  # Use dedicated queue for quore tasks
+    task_routes={
+        "app.tasks.*": {"queue": "quore"},  # Route all app.tasks.* to quore queue
+    },
 )
 
 # Optional configuration

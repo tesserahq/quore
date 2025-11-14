@@ -33,11 +33,12 @@ def ingest_project_text(
             raise ResourceNotFoundError(f"Project with id {project_id} not found")
 
         index_manager = IndexManager(db, project)
-        storage_manager = StorageManager()
-        ingestor = Ingestor(
-            index_manager.embedding_model(),
-            storage_manager.vector_store(project),
-        )
-        ingestor.ingest_raw_text(ref_id, text, labels)
     finally:
         db.close()
+
+    storage_manager = StorageManager()
+    ingestor = Ingestor(
+        index_manager.embedding_model(),
+        storage_manager.vector_store(project),
+    )
+    ingestor.ingest_raw_text(ref_id, text, labels)

@@ -16,10 +16,10 @@ class Settings(BaseSettings):
     otel_enabled: bool = Field(default=False, json_schema_extra={"env": "OTEL_ENABLED"})
     database_url: Optional[str] = None  # Will be set dynamically
     database_pool_size: int = Field(
-        default=10, json_schema_extra={"env": "DATABASE_POOL_SIZE"}
+        default=20, json_schema_extra={"env": "DATABASE_POOL_SIZE"}
     )
     database_max_overflow: int = Field(
-        default=20, json_schema_extra={"env": "DATABASE_MAX_OVERFLOW"}
+        default=30, json_schema_extra={"env": "DATABASE_MAX_OVERFLOW"}
     )
     environment: str = Field(
         default="development",
