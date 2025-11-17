@@ -1,5 +1,6 @@
 import logging
-from app.middleware.db_session import DBSessionMiddleware
+
+# from app.middleware.db_session import DBSessionMiddleware
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
@@ -29,6 +30,10 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from app.telemetry import setup_tracing
 from app.exceptions.handlers import register_exception_handlers
 from app.core.logging_config import get_logger
+from app.db import db_manager
+
+
+SKIP_PATHS = ["/health", "/openapi.json", "/docs"]
 
 
 def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
@@ -55,15 +60,34 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
 
     if not testing and not settings.disable_auth:
         logger.info("Main: Adding authentication middleware")
-        from app.middleware.authentication import AuthenticationMiddleware
+        from tessera_sdk.utils.service_factory import create_service_factory
 
-        app.add_middleware(AuthenticationMiddleware)
+        # from app.middleware.authentication import AuthenticationMiddleware
+        from tessera_sdk.middleware.authentication import AuthenticationMiddleware
+        from tessera_sdk.middleware.user_onboarding import UserOnboardingMiddleware
+        from app.services.user_service import UserService
+
+        # Create service factory for UserService
+        user_service_factory = create_service_factory(UserService)
+
+        app.add_middleware(
+            UserOnboardingMiddleware,
+            identies_base_url=settings.identies_host,
+            user_service_factory=user_service_factory,
+        )
+
+        app.add_middleware(
+            AuthenticationMiddleware,
+            identies_base_url=settings.identies_host,
+            skip_paths=SKIP_PATHS,
+            database_manager=db_manager,
+        )
     else:
         logger.info("Main: No authentication middleware")
         if auth_middleware:
             app.add_middleware(auth_middleware)
 
-    app.add_middleware(DBSessionMiddleware)
+    # app.add_middleware(DBSessionMiddleware)
 
     # TODO: Restrict this to the allowed origins
     app.add_middleware(

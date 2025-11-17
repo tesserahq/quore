@@ -1,3 +1,5 @@
+from sqlalchemy.orm import Session
+from app.db import SessionLocal
 from app.schemas.user import UserOnboard
 import jwt
 import requests  # For making HTTP requests
@@ -24,14 +26,16 @@ class UnauthenticatedException(HTTPException):
         )
 
 
-def get_db_from_request(request: Request):
-    return request.state.db_session
+def verify_token_dependency(request: Request, token: str, db: Session = None):
+    if db is None:
+        db = SessionLocal()
 
-
-def verify_token_dependency(request: Request, token: str):
-    verifier = VerifyToken(get_db_from_request(request))
-    user = verifier.verify(token)
-    request.state.user = user
+    try:
+        verifier = VerifyToken(db)
+        user = verifier.verify(token)
+        request.state.user = user
+    finally:
+        db.close()
 
 
 async def get_current_user(request: Request):
@@ -48,7 +52,7 @@ class VerifyToken:
     def __init__(self, db_session):
         self.config = get_settings()
         self.db = db_session  # Store the DB session
-        self.user_service = UserService(self.db)
+        self.user_service = UserService(db_session)
 
         if self.config.oidc_domain is None:
             raise ValueError("oidc domain is not set in the configuration.")

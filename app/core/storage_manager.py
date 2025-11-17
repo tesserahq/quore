@@ -40,7 +40,13 @@ class StorageManager:
         Returns:
             PGVectorStore: Configured PostgreSQL vector store instance
         """
+
         ingest_settings = project.ingest_settings_obj()
+        # Note: PGVectorStore creates its own SQLAlchemy engine with its own connection pool.
+        # We cannot easily limit this pool size through the API. Each call to vector_store()
+        # creates a new PGVectorStore instance, which may contribute to connection exhaustion
+        # under high concurrency. Consider caching/reusing vector store instances per project
+        # if this becomes an issue.
         return PGVectorStore.from_params(
             database=self.settings.database_url_obj.database,
             host=self.settings.database_url_obj.host,
@@ -48,7 +54,7 @@ class StorageManager:
             port=self.settings.database_url_obj.port,
             user=self.settings.database_url_obj.username,
             table_name=project.vector_index_name(),
-            embed_dim=project.embed_dim,
+            embed_dim=int(project.embed_dim),  # Ensure it's an int, not a Column
             hybrid_search=True,
             hnsw_kwargs={
                 "hnsw_m": ingest_settings.hnsw_m,

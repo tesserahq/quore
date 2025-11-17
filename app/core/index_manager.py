@@ -1,3 +1,9 @@
+from llama_index.core.vector_stores.types import (
+    ExactMatchFilter,
+    FilterOperator,
+    MetadataFilter,
+    MetadataFilters,
+)
 from app.config import get_settings
 from app.core.ingestor import Ingestor
 from app.models.project import Project
@@ -21,6 +27,9 @@ from llama_index.storage.chat_store.postgres import PostgresChatStore
 from llama_index.core.memory import ChatMemoryBuffer
 from app.core.telemetry import instrument_method, instrument_span
 from app.core.storage_manager import StorageManager
+from llama_index.core import PromptTemplate
+
+from app.services.prompt_service import PromptService
 
 
 class IndexManager:
@@ -54,6 +63,7 @@ class IndexManager:
             vector_store=self.storage.vector_store(self.project),
             storage=self.storage,
         )
+        self.prompt_service = PromptService(self.db)
 
     def get_chat_memory(self, session_id: str) -> ChatMemoryBuffer:
         """Get a chat memory buffer instance for a specific project and user.
@@ -66,8 +76,13 @@ class IndexManager:
             ChatMemoryBuffer: Configured chat memory buffer with PostgreSQL storage
         """
         settings = get_settings()
+        # Note: PostgresChatStore creates its own SQLAlchemy engine with its own connection pool.
+        # We cannot easily limit this pool size through the API. Each call to get_chat_memory
+        # creates a new PostgresChatStore instance, which may contribute to connection exhaustion.
+        # Consider caching/reusing chat store instances if this becomes an issue.
+        database_url = settings.database_url or ""
         chat_store = PostgresChatStore.from_uri(
-            uri=settings.database_url,
+            uri=database_url,
         )
 
         return ChatMemoryBuffer.from_defaults(
@@ -182,14 +197,47 @@ class IndexManager:
         Returns:
             BaseQueryEngine: Configured query engine instance
         """
-        # TODO: This settings should come from the project settings
-        top_k = int(os.getenv("TOP_K", 0))
-        if top_k != 0 and kwargs.get("filters") is None:
-            kwargs["similarity_top_k"] = top_k
+
+        rag_settings = self.project.rag_settings_obj()
+
+        similarity_top_k = 4
+        if rag_settings.similarity_top_k is not None:
+            similarity_top_k = rag_settings.similarity_top_k
+
+        query_engine_kwargs = {
+            "llm": self.llm(),
+            "similarity_top_k": similarity_top_k,
+        }
+
+        if rag_settings.text_qa_template:
+            # Try to fetch as a prompt ID first, otherwise treat as template string
+            text_qa_template_value: str = rag_settings.text_qa_template
+            db_prompt = self.prompt_service.get_prompt_by_id_or_prompt_id(
+                text_qa_template_value
+            )
+            if db_prompt:
+                template_str = str(db_prompt.prompt)
+            else:
+                # Treat as template string directly
+                template_str = text_qa_template_value
+            query_engine_kwargs["text_qa_template"] = PromptTemplate(template_str)
+
+        if rag_settings.refine_template:
+            # Try to fetch as a prompt ID first, otherwise treat as template string
+            refine_template_value: str = rag_settings.refine_template
+            db_prompt = self.prompt_service.get_prompt_by_id_or_prompt_id(
+                refine_template_value
+            )
+            if db_prompt:
+                refine_template_str = str(db_prompt.prompt)
+            else:
+                # Treat as template string directly
+                refine_template_str = refine_template_value
+            query_engine_kwargs["refine_template"] = PromptTemplate(refine_template_str)
 
         index = self.load_index()
 
-        query_engine = index.as_query_engine(llm=self.llm(), **kwargs)
+        query_engine = index.as_query_engine(**query_engine_kwargs)
 
         return query_engine
 
@@ -264,3 +312,29 @@ class IndexManager:
             model_name=self.project.embed_model,
             api_key=self.llm_api_key(),
         )
+
+    @classmethod
+    def embedding_model_from_project(cls, project: Project):
+        return get_embedding_provider(
+            str(project.llm_provider),
+            model_name=str(project.embed_model),
+            api_key=cls.llm_api_key_from_project(project),
+        )
+
+    @classmethod
+    def llm_from_project(cls, project: Project):
+        return get_llm_provider(
+            str(project.llm_provider),
+            model_name=str(project.llm),
+            api_key=cls.llm_api_key_from_project(project),
+        )
+
+    @classmethod
+    def llm_api_key_from_project(cls, project: Project):
+        if project.llm_provider != OPENAI_PROVIDER:
+            return None
+
+        if not project.ingest_settings_obj().has_key("openai_api_key"):
+            return get_settings().openai_api_key
+
+        return project.ingest_settings_obj().get("openai_api_key")

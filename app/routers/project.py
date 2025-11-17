@@ -23,6 +23,7 @@ from app.schemas.project import (
     ProjectSearchFilters,
     ProjectSearchResponse,
     NodeListResponse,
+    NodeSearchRequest,
 )
 from app.services.project_service import ProjectService
 from app.models.project import Project as ProjectModel
@@ -41,6 +42,9 @@ from app.schemas.common import ListResponse
 from app.models.project_membership import ProjectMembership
 from app.core.index_manager import IndexManager
 from app.services.node_service import NodeService
+from llama_index.core.response_synthesizers import ResponseMode
+from llama_index.core import get_response_synthesizer
+from llama_index.core import PromptTemplate
 
 router = APIRouter(prefix="/projects", tags=["workspace-projects"])
 
@@ -59,6 +63,43 @@ def nodes(
     nodes = node_service.get_nodes(project, skip=skip, limit=limit)
     node_responses = [node_service.build_node_response(n) for n in nodes]
     return NodeListResponse(data=node_responses)
+
+
+@router.post("/{project_id}/nodes/search")
+def search_nodes(
+    request: NodeSearchRequest,
+    project: ProjectModel = Depends(get_project_by_id),
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    project_service = ProjectService(db)
+    node_service = NodeService(db)
+
+    response_synthesizer = get_response_synthesizer(response_mode=ResponseMode.REFINE)
+
+    # # **kwargs
+    # QA_PROMPT_TMPL = (
+    #     "Context information is below.\n"
+    #     "---------------------\n"
+    #     "{context_str}\n"
+    #     "---------------------\n"
+    #     "Given this information, answer the question **in detail**, including the issue's status, url, any recent updates, and who is involved. And make a joke at the end\n"
+    #     "Question: {query_str}\n"
+    #     "Answer: "
+    # )
+    # QA_PROMPT = PromptTemplate(QA_PROMPT_TMPL)
+
+    index_manager = IndexManager(db, project)
+
+    query_engine = index_manager.create_query_engine()
+
+    return query_engine.query(request.query)
+    # # project is provided by dependency already; use NodeService to fetch nodes
+    # nodes = node_service.get_nodes(project, skip=skip, limit=limit)
+    # node_responses = [node_service.build_node_response(n) for n in nodes]
+    # return NodeListResponse(data=node_responses)
 
 
 @router.post("/search", response_model=ProjectSearchResponse)
@@ -249,19 +290,20 @@ async def search_project_documents(
     """
     Search documents from a project by querying Vaulta service
     """
-    settings = get_settings()
+    # settings = get_settings()
 
-    # Create the query to find documents with this project_id
-    query = {"labels": {"project_id": str(project.id)}}
+    # # Create the query to find documents with this project_id
+    # query = {"labels": {"project_id": str(project.id)}}
 
-    # Forward the request to Vaulta
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            f"{settings.vaulta_api_url}/documents/search",
-            json={"query": query},
-            headers={"authorization": request.headers.get("authorization") or ""},
-        )
-        return JSONResponse(content=response.json(), status_code=response.status_code)
+    # # Forward the request to Vaulta
+    # async with httpx.AsyncClient() as client:
+    #     response = await client.post(
+    #         f"{settings.vaulta_api_url}/documents/search",
+    #         json={"query": query},
+    #         headers={"authorization": request.headers.get("authorization") or ""},
+    #     )
+    #     return JSONResponse(content=response.json(), status_code=response.status_code)
+    return []
 
 
 @router.post("/{project_id}/index/reset")
