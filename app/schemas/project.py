@@ -24,6 +24,22 @@ class IngestSettings(BaseModel):
     )
 
 
+class RAGSettings(BaseModel):
+    similarity_top_k: Optional[int] = Field(
+        None, description="Number of top similar nodes to retrieve for RAG queries."
+    )
+    text_qa_template: Optional[str] = Field(
+        None, description="Template for text Q&A responses in RAG queries."
+    )
+    refine_template: Optional[str] = Field(
+        None, description="Template for refining responses in RAG queries."
+    )
+    response_mode: Optional[str] = Field(
+        None,
+        description="Response mode for RAG queries (e.g., 'compact', 'refine', 'tree_summarize').",
+    )
+
+
 class ProjectBase(BaseModel):
     name: str = Field(
         ...,
@@ -40,6 +56,10 @@ class ProjectBase(BaseModel):
     ingest_settings: Optional[IngestSettings] = Field(
         None,
         description="Optional configuration for data ingestion settings and parameters.",
+    )
+    rag_settings: Optional[RAGSettings] = Field(
+        None,
+        description="Optional configuration for RAG settings and parameters.",
     )
     llm_provider: Optional[LLMProviderType] = Field(
         None,
@@ -74,6 +94,7 @@ class ProjectUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
     ingest_settings: Optional[Dict[str, Any]] = None
+    rag_settings: Optional[Dict[str, Any]] = None
     llm_provider: Optional[LLMProviderType] = None
     embed_model: Optional[str] = None
     llm: Optional[str] = None
@@ -159,6 +180,10 @@ class NodeResponse(BaseModel):
 
 class NodeListResponse(BaseModel):
     data: List[NodeResponse] = Field(..., description="List of nodes in the project")
+
+
+class NodeSearchRequest(BaseModel):
+    query: str = Field(..., description="The search query string")
 
 
 class EnablePluginRequest(BaseModel):

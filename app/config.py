@@ -14,12 +14,12 @@ class Settings(BaseSettings):
         default="http://localhost:8004", json_schema_extra={"env": "VAULTA_API_URL"}
     )
     otel_enabled: bool = Field(default=False, json_schema_extra={"env": "OTEL_ENABLED"})
-    database_url: Optional[str] = None  # Will be set dynamically
+    database_url: str = Field(default="", json_schema_extra={"env": "DATABASE_URL"})
     database_pool_size: int = Field(
-        default=20, json_schema_extra={"env": "DATABASE_POOL_SIZE"}
+        default=10, json_schema_extra={"env": "DATABASE_POOL_SIZE"}
     )
     database_max_overflow: int = Field(
-        default=30, json_schema_extra={"env": "DATABASE_MAX_OVERFLOW"}
+        default=5, json_schema_extra={"env": "DATABASE_MAX_OVERFLOW"}
     )
     environment: str = Field(
         default="development",
@@ -56,6 +56,9 @@ class Settings(BaseSettings):
     default_hnsw_dist_method: str = "vector_cosine_ops"
     default_system_prompt: str = "You are a helpful assistant."
     openai_api_key: str = Field(default="", json_schema_extra={"env": "ENV"})
+    db_app_name: str = Field(
+        default="quore-api", json_schema_extra={"env": "DB_APP_NAME"}
+    )
     ollama_base_url: str = Field(
         default="http://localhost:11434", json_schema_extra={"env": "OLLAMA_BASE_URL"}
     )

@@ -8,6 +8,8 @@ from app.core.storage_manager import StorageManager
 from app.db import SessionLocal
 from app.exceptions.resource_not_found_error import ResourceNotFoundError
 from app.models.project import Project
+from app.services.project_service import ProjectService
+from app.utils.db.db_session_helper import db_session
 
 
 @celery_app.task
@@ -26,19 +28,16 @@ def ingest_project_text(
         text: The textual content to ingest.
         labels: Optional metadata labels to attach to the ingested text.
     """
-    db = SessionLocal()
-    try:
-        project = db.query(Project).filter(Project.id == UUID(project_id)).one_or_none()
+    with db_session() as db:
+        project = ProjectService(db).get_project(UUID(project_id))
         if project is None:
             raise ResourceNotFoundError(f"Project with id {project_id} not found")
 
-        index_manager = IndexManager(db, project)
-    finally:
-        db.close()
-
-    storage_manager = StorageManager()
-    ingestor = Ingestor(
-        index_manager.embedding_model(),
-        storage_manager.vector_store(project),
-    )
-    ingestor.ingest_raw_text(ref_id, text, labels)
+        # Extract all needed project data before closing the session
+        # to avoid lazy loading issues
+        storage_manager = StorageManager()
+        ingestor = Ingestor(
+            IndexManager.embedding_model_from_project(project),
+            storage_manager.vector_store(project),
+        )
+        ingestor.ingest_raw_text(ref_id, text, labels)

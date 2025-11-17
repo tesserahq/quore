@@ -44,13 +44,12 @@ class Ingestor:
             text (str): Raw text content to be ingested
             labels (Optional[dict[str, str]]): Optional metadata labels for the document
         """
+        print(labels)
         # Create a document from the raw text
         document = Document(
             text=text,
             id_=ref_id,
-            metadata={
-                "labels": labels,
-            },
+            metadata=labels,
         )
 
         # create (or load) docstore and add nodes

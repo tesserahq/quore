@@ -19,7 +19,7 @@ class ProjectService(SoftDeleteService[Project]):
         self.workspace_service = WorkspaceService(db)
 
     def get_project(self, project_id: UUID) -> Optional[Project]:
-        return self.db.query(Project).filter(Project.id == project_id).first()
+        return self.db.query(Project).filter(Project.id == project_id).one_or_none()
 
     def get_projects(self, skip: int = 0, limit: int = 100) -> List[Project]:
         return self.db.query(Project).offset(skip).limit(limit).all()

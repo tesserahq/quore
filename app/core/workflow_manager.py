@@ -105,6 +105,7 @@ class WorkflowManager:
             model_name = getattr(llm_instance, "model", "")
             provider_name = getattr(self.project, "llm_provider", "").lower()
             if not self.disable_tools and len(tools) > 0 and provider_name == "ollama":
+                # TODO: Remove this once we have a better way to handle this
                 if isinstance(model_name, str) and (
                     "deepseek-r1" in model_name.lower()
                 ):

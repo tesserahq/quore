@@ -1,3 +1,4 @@
+from typing import Any
 from app.models.mixins import TimestampMixin, SoftDeleteMixin
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
@@ -9,6 +10,57 @@ from app.config import get_settings
 import uuid
 
 from app.db import Base
+
+
+class RAGSettings:
+    __slots__ = ("_data",)
+
+    _schema = {
+        "similarity_top_k": int,
+        "text_qa_template": str,
+        "refine_template": str,
+        "response_mode": str,
+    }
+
+    _allowed_keys = set(_schema.keys())
+
+    def __init__(self, data=None, settings=None):
+        self._data = {}
+        settings = settings or get_settings()
+        data = data or {}
+
+        for key in self._allowed_keys:
+            raw_value = data.get(key, getattr(settings, f"default_{key}", None))
+            if raw_value is None:
+                continue
+            self._data[key] = self._coerce_type(key, raw_value)
+
+    def __getattr__(self, name):
+        if name not in self._allowed_keys:
+            raise AttributeError(f"No such attribute: {name}")
+        return self._data.get(name)
+
+    def __setattr__(self, name, value):
+        if name == "_data":
+            super().__setattr__(name, value)
+        elif name not in self._allowed_keys:
+            raise AttributeError(f"Invalid attribute: {name}")
+        else:
+            self._data[name] = self._coerce_type(name, value)
+
+    def _coerce_type(self, key, value):
+        expected_type = self._schema[key]
+        if not isinstance(value, expected_type):
+            try:
+                return expected_type(value)
+            except (ValueError, TypeError):
+                raise ValueError(
+                    f"Invalid type for '{key}': expected {expected_type.__name__}, got {type(value).__name__}"
+                )
+        return value
+
+    def to_dict(self):
+        return self._data.copy()
 
 
 class IngestSettings:
@@ -88,6 +140,12 @@ class Project(Base, TimestampMixin, SoftDeleteMixin):
     ingest_settings: Column[dict] = Column(
         mutable_json_type(dbtype=JSONB, nested=True), default=dict
     )
+    rag_settings = Column[dict](
+        mutable_json_type(dbtype=JSONB, nested=True), default=dict, nullable=False
+    )
+
+    def rag_settings_obj(self) -> RAGSettings:
+        return RAGSettings(self.rag_settings or {}, settings=get_settings())
 
     def ingest_settings_obj(self) -> IngestSettings:
         return IngestSettings(self.ingest_settings or {}, settings=get_settings())
