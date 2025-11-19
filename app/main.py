@@ -68,7 +68,7 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
         from app.services.user_service import UserService
 
         # Create service factory for UserService
-        user_service_factory = create_service_factory(UserService)
+        user_service_factory = create_service_factory(UserService, db_manager)
 
         app.add_middleware(
             UserOnboardingMiddleware,
