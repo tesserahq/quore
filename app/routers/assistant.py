@@ -229,7 +229,9 @@ async def _stream_content(
                     logger.info(
                         f"Stream content: Processing other event type: {type(event).__name__}"
                     )
-                    yield VercelStreamResponse.convert_data(event.model_dump())
+                    yield VercelStreamResponse.convert_data(
+                        event.model_dump(mode="json")
+                    )
 
     except asyncio.CancelledError:
         logger.warning("Client cancelled the request!")
