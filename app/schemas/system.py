@@ -39,6 +39,7 @@ class LLMGroup(BaseModel):
     default_embed_dim: int
     default_system_prompt: str
     ollama_base_url: str
+    openai_api_key: str
 
 
 class GeneralGroup(BaseModel):

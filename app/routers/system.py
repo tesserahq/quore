@@ -61,7 +61,6 @@ def get_system_settings(
         disable_auth=s.disable_auth,
         port=s.port,
     )
-
     llm_group = LLMGroup(
         default_provider=s.default_llm_provider,
         default_llm=s.default_llm,
@@ -69,6 +68,11 @@ def get_system_settings(
         default_embed_dim=s.default_embed_dim,
         default_system_prompt=s.default_system_prompt,
         ollama_base_url=s.ollama_base_url,
+        openai_api_key=(
+            f"{s.openai_api_key[:3]}...{s.openai_api_key[-4:]}"
+            if s.openai_api_key and len(s.openai_api_key) >= 7
+            else (s.openai_api_key if s.openai_api_key else "")
+        ),
     )
 
     # Extract safe database info only (no credentials)

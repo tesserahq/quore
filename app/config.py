@@ -55,7 +55,7 @@ class Settings(BaseSettings):
     default_hnsw_ef_search: int = 40
     default_hnsw_dist_method: str = "vector_cosine_ops"
     default_system_prompt: str = "You are a helpful assistant."
-    openai_api_key: str = Field(default="", json_schema_extra={"env": "ENV"})
+    openai_api_key: str = Field(default="", json_schema_extra={"env": "OPENAI_API_KEY"})
     db_app_name: str = Field(
         default="quore-api", json_schema_extra={"env": "DB_APP_NAME"}
     )
