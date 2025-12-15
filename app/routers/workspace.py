@@ -23,17 +23,15 @@ from fastapi_pagination.ext.sqlalchemy import paginate
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 
 
-@router.get("", response_model=ListResponse[Workspace])
+@router.get("", response_model=Page[Workspace])
 def list_workspaces(
-    skip: int = 0,
-    limit: int = 100,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    workspaces = WorkspaceService(db).get_workspaces_by_user_memberships(
-        current_user.id, skip, limit
-    )
-    return ListResponse(data=workspaces)
+    """List workspaces accessible to the current user."""
+    workspace_service = WorkspaceService(db)
+    query = workspace_service.get_workspaces_by_user_memberships_query(current_user.id)
+    return paginate(db, query)
 
 
 @router.post("", response_model=Workspace, status_code=status.HTTP_201_CREATED)

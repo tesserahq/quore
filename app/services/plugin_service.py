@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict, Any
 from uuid import UUID
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, Query
 from app.constants.plugin_states import PluginState
 from app.models.plugin import Plugin
 from app.models.project_plugin import ProjectPlugin
@@ -63,6 +63,17 @@ class PluginService(SoftDeleteService[Plugin]):
     def get_workspace_plugins(self, workspace_id: UUID) -> List[Plugin]:
         """Get all plugins for a workspace."""
         return self.db.query(Plugin).filter(Plugin.workspace_id == workspace_id).all()
+
+    def get_workspace_plugins_query(self, workspace_id: UUID) -> Query:
+        """Get a query for plugins in a workspace.
+
+        Args:
+            workspace_id: The UUID of the workspace
+
+        Returns:
+            Query: SQLAlchemy query for plugins in the workspace
+        """
+        return self.db.query(Plugin).filter(Plugin.workspace_id == workspace_id)
 
     def get_global_workspace_plugins(self, workspace_id: UUID) -> List[Plugin]:
         """Get all global plugins for a workspace."""

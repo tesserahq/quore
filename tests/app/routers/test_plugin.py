@@ -69,11 +69,12 @@ def test_list_workspace_plugins(client, db, setup_workspace, setup_plugin):
     response = client.get(f"/workspaces/{workspace.id}/plugins")
     assert response.status_code == 200
     data = response.json()
-    assert "data" in data
-    assert isinstance(data["data"], list)
-    assert len(data["data"]) == 1
-    assert data["data"][0]["id"] == str(plugin.id)
-    assert data["data"][0]["name"] == "Test Plugin"
+    assert "items" in data
+    assert isinstance(data["items"], list)
+    assert len(data["items"]) == 1
+    item = data["items"][0]
+    assert item["id"] == str(plugin.id)
+    assert item["name"] == "Test Plugin"
 
 
 def test_create_workspace_plugin(client, db, setup_workspace):

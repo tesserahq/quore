@@ -26,20 +26,21 @@ from app.routers.utils.dependencies import (
 from app.core.mcp_client import MCPClient
 from app.constants.plugin_states import PluginState, PLUGIN_STATE_DESCRIPTIONS
 from app.core.plugin_manager.manager import PluginManager
+from fastapi_pagination import Page
+from fastapi_pagination.ext.sqlalchemy import paginate
 
 router = APIRouter(tags=["plugins"])
 
 
-@router.get(
-    "/workspaces/{workspace_id}/plugins", response_model=ListResponse[PluginResponse]
-)
+@router.get("/workspaces/{workspace_id}/plugins", response_model=Page[PluginResponse])
 def list_workspace_plugins(
     workspace: Workspace = Depends(get_workspace_by_id),
     db: Session = Depends(get_db),
 ):
     """List all plugins available for a workspace (both system plugins and workspace-specific plugins)."""
-    plugins = PluginService(db).get_workspace_plugins(UUID(str(workspace.id)))
-    return ListResponse(data=plugins)
+    plugin_service = PluginService(db)
+    query = plugin_service.get_workspace_plugins_query(UUID(str(workspace.id)))
+    return paginate(db, query)
 
 
 @router.post("/workspaces/{workspace_id}/plugins", response_model=PluginResponse)

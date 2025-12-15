@@ -11,6 +11,8 @@ from app.models.workspace import Workspace
 from app.models.prompt import Prompt as PromptModel
 from app.routers.utils.dependencies import get_workspace_by_id
 from app.core.logging_config import get_logger
+from fastapi_pagination import Page
+from fastapi_pagination.ext.sqlalchemy import paginate
 
 logger = get_logger()
 
@@ -62,19 +64,16 @@ def get_prompt_direct(
     return prompt
 
 
-@workspace_router.get("", response_model=ListResponse[Prompt])
+@workspace_router.get("", response_model=Page[Prompt])
 def list_workspace_prompts(
     workspace: Workspace = Depends(get_workspace_by_id),
-    skip: int = 0,
-    limit: int = 100,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
     """List prompts in a workspace."""
-    prompts = PromptService(db).get_prompts_by_workspace(
-        workspace.id, skip=skip, limit=limit
-    )
-    return ListResponse(data=prompts)
+    prompt_service = PromptService(db)
+    query = prompt_service.get_prompts_by_workspace_query(workspace.id)
+    return paginate(db, query)
 
 
 @workspace_router.post("", response_model=Prompt, status_code=status.HTTP_201_CREATED)
@@ -147,35 +146,3 @@ def delete_prompt(
 
 
 # Additional convenience endpoints
-
-
-@workspace_router.get("/types/{prompt_type}", response_model=ListResponse[Prompt])
-def list_prompts_by_type(
-    prompt_type: str,
-    workspace: Workspace = Depends(get_workspace_by_id),
-    skip: int = 0,
-    limit: int = 100,
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
-    """List prompts by type in a workspace."""
-    prompts = PromptService(db).get_prompts_by_type(
-        prompt_type, workspace_id=workspace.id, skip=skip, limit=limit
-    )
-    return ListResponse(data=prompts)
-
-
-@workspace_router.get("/creator/{creator_id}", response_model=ListResponse[Prompt])
-def list_prompts_by_creator(
-    creator_id: UUID,
-    workspace: Workspace = Depends(get_workspace_by_id),
-    skip: int = 0,
-    limit: int = 100,
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
-    """List prompts by creator in a workspace."""
-    prompts = PromptService(db).get_prompts_by_creator(
-        creator_id, workspace_id=workspace.id, skip=skip, limit=limit
-    )
-    return ListResponse(data=prompts)

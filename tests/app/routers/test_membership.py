@@ -14,12 +14,12 @@ def test_list_memberships(client, setup_membership):
     response = client.get(f"/workspaces/{membership.workspace_id}/memberships")
     assert response.status_code == 200
     data = response.json()
-    assert "data" in data
-    assert isinstance(data["data"], list)
-    assert len(data["data"]) > 0
+    assert "items" in data
+    assert isinstance(data["items"], list)
+    assert len(data["items"]) > 0
 
     # Verify the created membership is in the list
-    membership_list = data["data"]
+    membership_list = data["items"]
     assert any(m["id"] == str(membership.id) for m in membership_list)
     assert any(m["user_id"] == str(membership.user_id) for m in membership_list)
     assert any(
@@ -112,19 +112,17 @@ def test_list_memberships_pagination(
     """Test GET /workspaces/{workspace_id}/memberships endpoint with pagination."""
     membership = setup_membership
 
-    # Test with limit
-    response = client.get(f"/workspaces/{membership.workspace_id}/memberships?limit=1")
+    # Test with size
+    response = client.get(f"/workspaces/{membership.workspace_id}/memberships?size=1")
     assert response.status_code == 200
     data = response.json()
-    assert len(data["data"]) == 1
+    assert len(data["items"]) == 1
 
     # Test with skip
-    response = client.get(
-        f"/workspaces/{membership.workspace_id}/memberships?skip=0&limit=10"
-    )
+    response = client.get(f"/workspaces/{membership.workspace_id}/memberships?size=10")
     assert response.status_code == 200
     data = response.json()
-    assert len(data["data"]) >= 1
+    assert len(data["items"]) >= 1
 
 
 def test_update_membership_to_invalid_role(client, setup_membership):

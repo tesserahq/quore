@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict, Any
 from uuid import UUID
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, Query
 
 from app.models.credential import Credential
 from app.schemas.credential import CredentialCreate, CredentialUpdate, CredentialInfo
@@ -131,6 +131,17 @@ class CredentialService(SoftDeleteService[Credential]):
         query = self.db.query(Credential)
         query = apply_filters(query, Credential, filters)
         return query.all()
+
+    def get_workspace_credentials_query(self, workspace_id: UUID) -> Query:
+        """Get a query for credentials in a specific workspace.
+
+        Args:
+            workspace_id: The UUID of the workspace
+
+        Returns:
+            Query: SQLAlchemy query for credentials in the workspace
+        """
+        return self.db.query(Credential).filter(Credential.workspace_id == workspace_id)
 
     def get_credential_fields(self, credential_id: UUID) -> Optional[Dict[str, Any]]:
         """

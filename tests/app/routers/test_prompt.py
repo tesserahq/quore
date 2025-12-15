@@ -9,18 +9,20 @@ def test_list_workspace_prompts(client, setup_prompt, setup_workspace):
     response = client.get(f"/workspaces/{workspace.id}/prompts")
     assert response.status_code == 200
     data = response.json()
-    assert "data" in data
-    assert isinstance(data["data"], list)
+    assert "items" in data
+    assert isinstance(data["items"], list)
 
+    data = data["items"]
+    item = data[0]
     # Make sure the response contains the correct prompt
-    assert len(data["data"]) == 1
-    assert data["data"][0]["id"] == str(prompt.id)
-    assert data["data"][0]["name"] == prompt.name
-    assert data["data"][0]["prompt_id"] == prompt.prompt_id
-    assert data["data"][0]["type"] == prompt.type
-    assert data["data"][0]["prompt"] == prompt.prompt
-    assert data["data"][0]["workspace_id"] == str(workspace.id)
-    assert data["data"][0]["created_by_id"] == str(prompt.created_by_id)
+    assert len(data) == 1
+    assert item["id"] == str(prompt.id)
+    assert item["name"] == prompt.name
+    assert item["prompt_id"] == prompt.prompt_id
+    assert item["type"] == prompt.type
+    assert item["prompt"] == prompt.prompt
+    assert item["workspace_id"] == str(workspace.id)
+    assert item["created_by_id"] == str(prompt.created_by_id)
 
 
 def test_get_workspace_prompt(client, setup_prompt, setup_workspace):
@@ -134,52 +136,6 @@ def test_delete_prompt(client, setup_prompt):
     assert response.status_code == 404
 
 
-def test_list_prompts_by_type(
-    client, setup_system_prompt, setup_user_prompt, setup_workspace
-):
-    """Test GET /workspaces/{workspace_id}/prompts/types/{prompt_type} endpoint."""
-    system_prompt = setup_system_prompt
-    user_prompt = setup_user_prompt
-    workspace = setup_workspace
-
-    # Test system prompts
-    response = client.get(f"/workspaces/{workspace.id}/prompts/types/system")
-    assert response.status_code == 200
-    data = response.json()
-    assert "data" in data
-    assert isinstance(data["data"], list)
-    assert len(data["data"]) == 1
-    assert data["data"][0]["id"] == str(system_prompt.id)
-    assert data["data"][0]["type"] == "system"
-
-    # Test user prompts
-    response = client.get(f"/workspaces/{workspace.id}/prompts/types/user")
-    assert response.status_code == 200
-    data = response.json()
-    assert "data" in data
-    assert isinstance(data["data"], list)
-    assert len(data["data"]) == 1
-    assert data["data"][0]["id"] == str(user_prompt.id)
-    assert data["data"][0]["type"] == "user"
-
-
-def test_list_prompts_by_creator(client, setup_prompt, setup_workspace):
-    """Test GET /workspaces/{workspace_id}/prompts/creator/{creator_id} endpoint."""
-    prompt = setup_prompt
-    workspace = setup_workspace
-
-    response = client.get(
-        f"/workspaces/{workspace.id}/prompts/creator/{prompt.created_by_id}"
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert "data" in data
-    assert isinstance(data["data"], list)
-    assert len(data["data"]) == 1
-    assert data["data"][0]["id"] == str(prompt.id)
-    assert data["data"][0]["created_by_id"] == str(prompt.created_by_id)
-
-
 def test_pagination(client, setup_prompt, setup_workspace):
     """Test pagination parameters on list endpoints."""
     prompt = setup_prompt
@@ -189,26 +145,8 @@ def test_pagination(client, setup_prompt, setup_workspace):
     response = client.get(f"/workspaces/{workspace.id}/prompts?skip=0&limit=5")
     assert response.status_code == 200
     data = response.json()
-    assert "data" in data
-    assert len(data["data"]) <= 5
-
-    # Test pagination on prompts by type
-    response = client.get(
-        f"/workspaces/{workspace.id}/prompts/types/{prompt.type}?skip=0&limit=5"
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert "data" in data
-    assert len(data["data"]) <= 5
-
-    # Test pagination on prompts by creator
-    response = client.get(
-        f"/workspaces/{workspace.id}/prompts/creator/{prompt.created_by_id}?skip=0&limit=5"
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert "data" in data
-    assert len(data["data"]) <= 5
+    assert "items" in data
+    assert len(data["items"]) <= 5
 
 
 # Error cases and edge cases
@@ -380,7 +318,7 @@ def test_workspace_isolation(
     response = client.get(f"/workspaces/{workspace.id}/prompts")
     assert response.status_code == 200
     data = response.json()
-    workspace_prompts = [p["id"] for p in data["data"]]
+    workspace_prompts = [p["id"] for p in data["items"]]
     assert str(prompt.id) in workspace_prompts
     assert str(different_prompt.id) not in workspace_prompts
 
@@ -388,6 +326,6 @@ def test_workspace_isolation(
     response = client.get(f"/workspaces/{different_workspace.id}/prompts")
     assert response.status_code == 200
     data = response.json()
-    different_workspace_prompts = [p["id"] for p in data["data"]]
+    different_workspace_prompts = [p["id"] for p in data["items"]]
     assert str(different_prompt.id) in different_workspace_prompts
     assert str(prompt.id) not in different_workspace_prompts

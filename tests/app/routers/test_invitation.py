@@ -17,16 +17,16 @@ class TestGetWorkspaceInvitations:
         assert response.status_code == 200
 
         data = response.json()
-        assert isinstance(data, list)
-        assert len(data) == 1
+        assert isinstance(data["items"], list)
+        assert len(data["items"]) == 1
 
-        invitation_data = data[0]
-        assert invitation_data["id"] == str(invitation.id)
-        assert invitation_data["email"] == invitation.email
-        assert invitation_data["workspace_id"] == str(invitation.workspace_id)
-        assert invitation_data["role"] == invitation.role
-        assert invitation_data["message"] == invitation.message
-        assert invitation_data["inviter_id"] == str(invitation.inviter_id)
+        item = data["items"][0]
+        assert item["id"] == str(invitation.id)
+        assert item["email"] == invitation.email
+        assert item["workspace_id"] == str(invitation.workspace_id)
+        assert item["role"] == invitation.role
+        assert item["message"] == invitation.message
+        assert item["inviter_id"] == str(invitation.inviter_id)
 
     def test_get_workspace_invitations_empty(self, client, setup_workspace):
         """Test getting invitations for workspace with no invitations."""
@@ -36,8 +36,8 @@ class TestGetWorkspaceInvitations:
         assert response.status_code == 200
 
         data = response.json()
-        assert isinstance(data, list)
-        assert len(data) == 0
+        assert isinstance(data["items"], list)
+        assert len(data["items"]) == 0
 
     def test_get_workspace_invitations_with_pagination(
         self, client, setup_workspace, setup_multiple_invitations
@@ -46,26 +46,12 @@ class TestGetWorkspaceInvitations:
         workspace = setup_workspace
         invitations = setup_multiple_invitations
 
-        # Test with limit
-        response = client.get(f"/workspaces/{workspace.id}/invitations?limit=2")
+        # Test with size
+        response = client.get(f"/workspaces/{workspace.id}/invitations?size=2")
         assert response.status_code == 200
 
         data = response.json()
-        assert len(data) == 2
-
-        # Test with skip
-        response = client.get(f"/workspaces/{workspace.id}/invitations?skip=2&limit=2")
-        assert response.status_code == 200
-
-        data = response.json()
-        assert len(data) == 2
-
-        # Test with skip beyond available data
-        response = client.get(f"/workspaces/{workspace.id}/invitations?skip=10")
-        assert response.status_code == 200
-
-        data = response.json()
-        assert len(data) == 0
+        assert len(data["items"]) == 2
 
     def test_get_workspace_invitations_valid_only_true(
         self, client, setup_workspace, setup_invitation, setup_expired_invitation
@@ -79,8 +65,8 @@ class TestGetWorkspaceInvitations:
         assert response.status_code == 200
 
         data = response.json()
-        assert len(data) == 1
-        assert data[0]["id"] == str(valid_invitation.id)
+        assert len(data["items"]) == 1
+        assert data["items"][0]["id"] == str(valid_invitation.id)
 
     def test_get_workspace_invitations_valid_only_false(
         self, client, setup_workspace, setup_invitation, setup_expired_invitation
@@ -96,9 +82,9 @@ class TestGetWorkspaceInvitations:
         assert response.status_code == 200
 
         data = response.json()
-        assert len(data) == 2
+        assert len(data["items"]) == 2
 
-        invitation_ids = [inv["id"] for inv in data]
+        invitation_ids = [inv["id"] for inv in data["items"]]
         assert str(valid_invitation.id) in invitation_ids
         assert str(expired_invitation.id) in invitation_ids
 
@@ -115,16 +101,12 @@ class TestGetWorkspaceInvitations:
         """Test invalid pagination parameters."""
         workspace = setup_workspace
 
-        # Test negative skip
-        response = client.get(f"/workspaces/{workspace.id}/invitations?skip=-1")
+        # Test negative size
+        response = client.get(f"/workspaces/{workspace.id}/invitations?size=-1")
         assert response.status_code == 422
 
-        # Test negative limit
-        response = client.get(f"/workspaces/{workspace.id}/invitations?limit=-1")
-        assert response.status_code == 422
-
-        # Test limit too high
-        response = client.get(f"/workspaces/{workspace.id}/invitations?limit=1001")
+        # Test size too high
+        response = client.get(f"/workspaces/{workspace.id}/invitations?size=1001")
         assert response.status_code == 422
 
 
@@ -236,13 +218,13 @@ class TestGetInvitationsByUser:
         # Create multiple invitations for the current user
         invitation1 = setup_invitation_for_current_user
 
-        response = client.get("/invitations?limit=1")
+        response = client.get("/invitations?size=1")
         assert response.status_code == 200
 
         data = response.json()
         assert len(data) == 1
 
-        response = client.get("/invitations?skip=1&limit=1")
+        response = client.get("/invitations?skip=1&size=1")
         assert response.status_code == 200
 
         data = response.json()

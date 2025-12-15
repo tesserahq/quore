@@ -56,6 +56,17 @@ class MembershipService(SoftDeleteService[Membership]):
             .all()
         )
 
+    def get_user_memberships_query(self, user_id: UUID) -> Query:
+        """Get a query for memberships for a specific user.
+
+        Args:
+            user_id: The UUID of the user
+
+        Returns:
+            Query: SQLAlchemy query for memberships of the user
+        """
+        return self.db.query(Membership).filter(Membership.user_id == user_id)
+
     def get_memberships_by_workspace(
         self, workspace_id: UUID, skip: int = 0, limit: int = 100
     ) -> List[Membership]:
@@ -67,6 +78,21 @@ class MembershipService(SoftDeleteService[Membership]):
             .offset(skip)
             .limit(limit)
             .all()
+        )
+
+    def get_memberships_by_workspace_query(self, workspace_id: UUID) -> Query:
+        """Get a query for memberships for a specific workspace.
+
+        Args:
+            workspace_id: The UUID of the workspace
+
+        Returns:
+            Query: SQLAlchemy query for memberships in the workspace
+        """
+        return (
+            self.db.query(Membership)
+            .options(joinedload(Membership.user), joinedload(Membership.created_by))
+            .filter(Membership.workspace_id == workspace_id)
         )
 
     def get_user_workspace_membership(

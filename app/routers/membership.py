@@ -18,6 +18,8 @@ from app.schemas.common import ListResponse
 from app.models.workspace import Workspace
 from app.routers.utils.dependencies import get_membership_by_id, get_workspace_by_id
 from app.constants.membership import ROLES_DATA
+from fastapi_pagination import Page
+from fastapi_pagination.ext.sqlalchemy import paginate
 
 workspace_membership_router = APIRouter(
     prefix="/workspaces/{workspace_id}/memberships", tags=["memberships"]
@@ -26,10 +28,8 @@ workspace_membership_router = APIRouter(
 membership_router = APIRouter(prefix="/memberships", tags=["memberships"])
 
 
-@workspace_membership_router.get("", response_model=ListResponse[MembershipResponse])
+@workspace_membership_router.get("", response_model=Page[MembershipResponse])
 def list_memberships(
-    skip: int = 0,
-    limit: int = 100,
     workspace: Optional[Workspace] = Depends(get_workspace_by_id),
     user_id: Optional[UUID] = None,
     db: Session = Depends(get_db),
@@ -39,18 +39,16 @@ def list_memberships(
     membership_service = MembershipService(db)
 
     if workspace:
-        memberships = membership_service.get_memberships_by_workspace(
-            UUID(str(workspace.id)), skip, limit
+        query = membership_service.get_memberships_by_workspace_query(
+            UUID(str(workspace.id))
         )
     elif user_id:
-        memberships = membership_service.get_user_memberships(user_id, skip, limit)
+        query = membership_service.get_user_memberships_query(user_id)
     else:
         # If no filters provided, return memberships for current user
-        memberships = membership_service.get_user_memberships(
-            current_user.id, skip, limit
-        )
+        query = membership_service.get_user_memberships_query(current_user.id)
 
-    return ListResponse(data=memberships)
+    return paginate(db, query)
 
 
 @membership_router.get("/roles", response_model=RolesResponse)

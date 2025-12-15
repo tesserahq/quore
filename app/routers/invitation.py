@@ -18,6 +18,8 @@ from app.models.invitation import Invitation
 from app.services.invitation_service import InvitationService
 from app.models.workspace import Workspace
 from app.models.user import User
+from fastapi_pagination import Page
+from fastapi_pagination.ext.sqlalchemy import paginate
 
 router = APIRouter(
     tags=["invitations"],
@@ -27,12 +29,10 @@ router = APIRouter(
 
 # Workspace-based invitation endpoints
 @router.get(
-    "/workspaces/{workspace_id}/invitations", response_model=List[InvitationResponse]
+    "/workspaces/{workspace_id}/invitations", response_model=Page[InvitationResponse]
 )
 def get_workspace_invitations(
     workspace: Workspace = Depends(get_workspace_by_id),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
     valid_only: bool = Query(
         True, description="Only return valid (unexpired, unaccepted) invitations"
     ),
@@ -40,10 +40,10 @@ def get_workspace_invitations(
 ):
     """Get all invitations for a specific workspace with pagination."""
     invitation_service = InvitationService(db)
-    invitations = invitation_service.get_invitations_by_workspace(
-        workspace.id, skip=skip, limit=limit, valid_only=valid_only
+    query = invitation_service.get_invitations_by_workspace_query(
+        workspace.id, valid_only=valid_only
     )
-    return invitations
+    return paginate(db, query)
 
 
 @router.post(

@@ -44,16 +44,17 @@ def test_list_credentials(client, setup_credential, setup_workspace):
     response = client.get(f"/workspaces/{workspace.id}/credentials")
     assert response.status_code == 200
     data = response.json()
-    assert "data" in data
-    assert isinstance(data["data"], list)
+    assert "items" in data
+    assert isinstance(data["items"], list)
 
     # Make sure the response contains the correct credential
-    assert len(data["data"]) == 1
-    assert data["data"][0]["id"] == str(credential.id)
-    assert data["data"][0]["name"] == credential.name
-    assert data["data"][0]["type"] == credential.type
-    assert data["data"][0]["workspace_id"] == str(workspace.id)
-    assert data["data"][0]["created_by"]["id"] == str(credential.created_by_id)
+    assert len(data["items"]) == 1
+    item = data["items"][0]
+    assert item["id"] == str(credential.id)
+    assert item["name"] == credential.name
+    assert item["type"] == credential.type
+    assert item["workspace_id"] == str(workspace.id)
+    assert item["created_by"]["id"] == str(credential.created_by_id)
 
 
 def test_create_credential(client, setup_workspace, test_credential_data):

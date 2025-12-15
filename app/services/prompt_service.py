@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict, Any, Union
 from uuid import UUID
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, Query
 from app.models.prompt import Prompt
 from app.schemas.prompt import PromptCreate, PromptUpdate
 from app.utils.db.filtering import apply_filters
@@ -116,6 +116,17 @@ class PromptService(SoftDeleteService[Prompt]):
             .limit(limit)
             .all()
         )
+
+    def get_prompts_by_workspace_query(self, workspace_id: UUID) -> Query:
+        """Get a query for prompts in a specific workspace.
+
+        Args:
+            workspace_id: The UUID of the workspace
+
+        Returns:
+            Query: SQLAlchemy query for prompts in the workspace
+        """
+        return self.db.query(Prompt).filter(Prompt.workspace_id == workspace_id)
 
     def get_prompts_by_type(
         self,

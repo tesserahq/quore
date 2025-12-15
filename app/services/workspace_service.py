@@ -1,7 +1,7 @@
 from typing import List, Optional, Dict, Any, cast
 from datetime import datetime
 from uuid import UUID
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, Query
 from sqlalchemy import func, desc, case
 from app.models.membership import Membership
 from app.models.workspace import Workspace
@@ -66,6 +66,24 @@ class WorkspaceService(SoftDeleteService[Workspace]):
             .limit(limit)
         )
         return query.all()
+
+    def get_workspaces_by_user_memberships_query(self, user_id: UUID) -> Query:
+        """
+        Get a query for workspaces that a user has access to based on their memberships.
+
+        Args:
+            user_id: The UUID of the user
+
+        Returns:
+            Query: SQLAlchemy query for workspaces the user has access to through memberships
+        """
+        return (
+            self.db.query(Workspace)
+            .join(Membership, Workspace.id == Membership.workspace_id)
+            .filter(
+                Membership.user_id == user_id,
+            )
+        )
 
     def get_workspaces(self, skip: int = 0, limit: int = 100) -> List[Workspace]:
         return self.db.query(Workspace).offset(skip).limit(limit).all()

@@ -19,6 +19,8 @@ from app.models.credential import Credential
 from app.routers.utils.dependencies import get_workspace_by_id
 from app.core.credentials import credential_registry
 from app.core.logging_config import get_logger
+from fastapi_pagination import Page
+from fastapi_pagination.ext.sqlalchemy import paginate
 
 logger = get_logger()
 
@@ -64,20 +66,29 @@ def get_credential_direct(
     return credential
 
 
-@workspace_router.get("", response_model=ListResponse[CredentialInfo])
+@workspace_router.get("", response_model=Page[CredentialInfo])
 def list_workspace_credentials(
     workspace: Workspace = Depends(get_workspace_by_id),
-    skip: int = 0,
-    limit: int = 100,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
     """List credentials in a workspace."""
-    filters = {"workspace_id": workspace.id}
-    credentials = CredentialService(db).search(filters)
     credential_service = CredentialService(db)
-    return ListResponse(
-        data=[credential_service.to_credential_info(c) for c in credentials]
+    query = credential_service.get_workspace_credentials_query(workspace.id)
+    page = paginate(db, query)
+
+    # Transform Credential items to CredentialInfo
+    transformed_items = [
+        credential_service.to_credential_info(item) for item in page.items
+    ]
+
+    # Create a new Page with transformed items
+    return Page(
+        items=transformed_items,
+        total=page.total,
+        page=page.page,
+        size=page.size,
+        pages=page.pages,
     )
 
 

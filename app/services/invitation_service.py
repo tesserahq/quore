@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from uuid import UUID
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, Query
 from sqlalchemy import and_
 
 from app.models.invitation import Invitation
@@ -65,6 +65,31 @@ class InvitationService(SoftDeleteService[Invitation]):
             query = query.filter(Invitation.expires_at > datetime.now(timezone.utc))
 
         return query.offset(skip).limit(limit).all()
+
+    def get_invitations_by_workspace_query(
+        self,
+        workspace_id: UUID,
+        valid_only: bool = True,
+    ) -> Query:
+        """Get a query for invitations in a specific workspace.
+
+        Args:
+            workspace_id: The UUID of the workspace
+            valid_only: If True, only return valid (unexpired) invitations
+
+        Returns:
+            Query: SQLAlchemy query for invitations in the workspace
+        """
+        query = (
+            self.db.query(Invitation)
+            .options(joinedload(Invitation.workspace), joinedload(Invitation.inviter))
+            .filter(Invitation.workspace_id == workspace_id)
+        )
+
+        if valid_only:
+            query = query.filter(Invitation.expires_at > datetime.now(timezone.utc))
+
+        return query
 
     def get_invitations_by_email(
         self, email: str, skip: int = 0, limit: int = 100, valid_only: bool = True

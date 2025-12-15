@@ -7,15 +7,16 @@ def test_list_workspaces(client, setup_workspace, setup_different_workspace):
     response = client.get("/workspaces")
     assert response.status_code == 200
     data = response.json()
-    assert "data" in data
-    assert isinstance(data["data"], list)
+    assert "items" in data
+    assert isinstance(data["items"], list)
 
     # Make sure the response contains the correct workspace
-    assert len(data["data"]) == 1
-    assert data["data"][0]["id"] == str(workspace.id)
-    assert data["data"][0]["name"] == workspace.name
-    assert data["data"][0]["description"] == workspace.description
-    assert data["data"][0]["created_by_id"] == str(workspace.created_by_id)
+    assert len(data["items"]) == 1
+    item = data["items"][0]
+    assert item["id"] == str(workspace.id)
+    assert item["name"] == workspace.name
+    assert item["description"] == workspace.description
+    assert item["created_by_id"] == str(workspace.created_by_id)
 
 
 def test_get_workspace(client, setup_workspace):
@@ -48,7 +49,7 @@ def test_create_workspace(client, setup_user):
     membership_response = client.get(f"/workspaces/{workspace_id}/memberships")
     assert membership_response.status_code == 200
 
-    memberships = membership_response.json()["data"]
+    memberships = membership_response.json()["items"]
     assert len(memberships) == 1
 
     membership = memberships[0]
