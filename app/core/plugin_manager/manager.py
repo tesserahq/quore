@@ -1,6 +1,7 @@
-from typing import Optional, cast
+from typing import Optional, cast, Any
 from uuid import UUID
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 
 from app.core.mcp_client import MCPClient
 from app.models.plugin import Plugin
@@ -32,6 +33,43 @@ class PluginManager:
 
         # Initialize services
         self.credential_service = CredentialService(db)
+
+    def _serialize_to_dict(self, obj: Any) -> Any:
+        """Recursively serialize objects to JSON-serializable dictionaries.
+
+        Handles Pydantic models, AnyUrl types, and nested structures.
+
+        Args:
+            obj: The object to serialize
+
+        Returns:
+            JSON-serializable representation of the object
+        """
+        # Handle Pydantic models
+        if isinstance(obj, BaseModel):
+            return obj.model_dump(mode="json")
+
+        # Handle Pydantic URL types (AnyUrl, Url, etc.)
+        # Check by type name to handle different Pydantic URL implementations
+        if hasattr(obj, "__class__"):
+            class_name = obj.__class__.__name__
+            if "Url" in class_name or "url" in class_name.lower():
+                return str(obj)
+
+        # Handle dictionaries - recursively process values
+        if isinstance(obj, dict):
+            return {key: self._serialize_to_dict(value) for key, value in obj.items()}
+
+        # Handle lists and tuples - recursively process items
+        if isinstance(obj, (list, tuple)):
+            return [self._serialize_to_dict(item) for item in obj]
+
+        # Handle objects with __dict__ attribute
+        if hasattr(obj, "__dict__"):
+            return self._serialize_to_dict(obj.__dict__)
+
+        # Return primitive types as-is
+        return obj
 
     def _get_credential_fields(self) -> Optional[dict]:
         """Get decrypted credential fields if a credential is set."""
@@ -68,10 +106,12 @@ class PluginManager:
                 if client.prompt_enabled():
                     prompts = await client.list_prompts()
 
-            # Convert Tool objects to dictionaries
-            tools_dicts = [tool.__dict__ for tool in tools]
-            resources_dicts = [resource.__dict__ for resource in resources]
-            prompts_dicts = [prompt.__dict__ for prompt in prompts]
+            # Convert objects to JSON-serializable dictionaries
+            tools_dicts = [self._serialize_to_dict(tool) for tool in tools]
+            resources_dicts = [
+                self._serialize_to_dict(resource) for resource in resources
+            ]
+            prompts_dicts = [self._serialize_to_dict(prompt) for prompt in prompts]
 
             return self.plugin_service.update_plugin(
                 cast(UUID, self.plugin.id),
