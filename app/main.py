@@ -31,6 +31,7 @@ from app.telemetry import setup_tracing
 from app.exceptions.handlers import register_exception_handlers
 from app.core.logging_config import get_logger
 from app.db import db_manager
+from fastapi_pagination import add_pagination
 
 
 SKIP_PATHS = ["/health", "/openapi.json", "/docs"]
@@ -80,7 +81,7 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
             AuthenticationMiddleware,
             identies_base_url=settings.identies_host,
             skip_paths=SKIP_PATHS,
-            database_manager=db_manager,
+            user_service_factory=user_service_factory,
         )
     else:
         logger.info("Main: No authentication middleware")
@@ -118,6 +119,9 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
     app.include_router(summarize.router)
 
     register_exception_handlers(app)
+
+    # Add pagination support
+    add_pagination(app)
 
     return app
 

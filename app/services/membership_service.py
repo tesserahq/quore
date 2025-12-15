@@ -1,8 +1,9 @@
 from typing import List, Optional, Dict, Any
 from uuid import UUID
 from fastapi import HTTPException
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, Query
 from sqlalchemy import and_
+from sqlalchemy.sql import false
 from app.constants.membership import MembershipRoles
 from app.models.membership import Membership
 from app.schemas.membership import MembershipCreate, MembershipUpdate
@@ -176,6 +177,39 @@ class MembershipService(SoftDeleteService[Membership]):
 
         # Owners/admins/collaborators: full access to workspace projects
         return self.db.query(Project).filter(Project.workspace_id == workspace_id).all()
+
+    def get_accessible_projects_query_for_user(
+        self, workspace_id: UUID, user_id: UUID
+    ) -> Query:
+        """Return a query for projects in a workspace that the user can access.
+
+        - If the user has a workspace membership with role project_member,
+          return only projects where the user has a project membership.
+        - Otherwise, return all projects in the workspace.
+        - If the user has no membership, return a query that yields no results.
+        """
+        membership = self.get_user_workspace_membership(user_id, workspace_id)
+        if membership is None:
+            # Return a query that will yield no results
+            return self.db.query(Project).filter(false())
+
+        if membership.role == MembershipRoles.PROJECT_MEMBER:
+            return (
+                self.db.query(Project)
+                .join(
+                    ProjectMembership,
+                    ProjectMembership.project_id == Project.id,
+                )
+                .filter(
+                    and_(
+                        Project.workspace_id == workspace_id,
+                        ProjectMembership.user_id == user_id,
+                    )
+                )
+            )
+
+        # Owners/admins/collaborators: full access to workspace projects
+        return self.db.query(Project).filter(Project.workspace_id == workspace_id)
 
     def validate_delete_membership_permissions(
         self, membership_id: UUID, current_user_id: UUID, workspace_id: UUID

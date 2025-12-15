@@ -113,12 +113,12 @@ def test_list_projects(client, setup_project):
     response = client.get(f"/workspaces/{project.workspace_id}/projects")
     assert response.status_code == 200
     data = response.json()
-    assert "data" in data
-    assert isinstance(data["data"], list)
-    assert len(data["data"]) > 0
+    assert "items" in data
+    assert isinstance(data["items"], list)
+    assert len(data["items"]) > 0
 
     # Verify the created project is in the list
-    project_list = data["data"]
+    project_list = data["items"]
     assert any(p["id"] == str(project.id) for p in project_list)
     assert any(p["name"] == project.name for p in project_list)
     assert any(p["description"] == project.description for p in project_list)

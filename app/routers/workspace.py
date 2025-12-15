@@ -17,6 +17,8 @@ from app.services.workspace_service import WorkspaceService
 from app.schemas.common import ListResponse
 from app.routers.utils.dependencies import get_workspace_by_id
 from app.exceptions.workspace_exceptions import WorkspaceLockedError
+from fastapi_pagination import Page
+from fastapi_pagination.ext.sqlalchemy import paginate
 
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 
@@ -92,7 +94,7 @@ def get_workspace_stats(
     return stats
 
 
-@router.get("/{workspace_id}/projects", response_model=ListResponse[Project])
+@router.get("/{workspace_id}/projects", response_model=Page[Project])
 def list_projects(
     workspace: Workspace = Depends(get_workspace_by_id),
     db: Session = Depends(get_db),
@@ -102,10 +104,10 @@ def list_projects(
     from app.services.membership_service import MembershipService
 
     membership_service = MembershipService(db)
-    projects = membership_service.get_accessible_projects_for_user(
+    query = membership_service.get_accessible_projects_query_for_user(
         workspace.id, current_user.id
     )
-    return ListResponse(data=projects)
+    return paginate(db, query)
 
 
 @router.post(
