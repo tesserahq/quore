@@ -232,6 +232,7 @@ class MembershipService(SoftDeleteService[Membership]):
                         ProjectMembership.user_id == user_id,
                     )
                 )
+                .order_by(Project.updated_at.desc())
             )
 
         # Owners/admins/collaborators: full access to workspace projects
