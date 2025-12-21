@@ -69,7 +69,7 @@ fastapi-pagination = "^0.15.3"
 
 [tool.poetry.dependencies.uvicorn]
 extras = [ "standard" ]
-version = "^0.23.2"
+version = "^0.40.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
