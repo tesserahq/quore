@@ -14,7 +14,6 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def debug_exception_handler(request: Request, exc: Exception):
-
         tracback_msg = format_exc()
         return JSONResponse(
             {

@@ -193,14 +193,14 @@ def test_list_plugin_states(client: TestClient):
     # Verify each expected state is present with correct description
     for state_value, expected_description in expected_states.items():
         assert state_value in states_dict, f"State {state_value} not found in response"
-        assert (
-            states_dict[state_value] == expected_description
-        ), f"Description for state {state_value} does not match. Expected: {expected_description}, Got: {states_dict[state_value]}"
+        assert states_dict[state_value] == expected_description, (
+            f"Description for state {state_value} does not match. Expected: {expected_description}, Got: {states_dict[state_value]}"
+        )
 
     # Verify no extra states were added
-    assert len(states_dict) == len(
-        expected_states
-    ), f"Expected {len(expected_states)} states, got {len(states_dict)}"
+    assert len(states_dict) == len(expected_states), (
+        f"Expected {len(expected_states)} states, got {len(states_dict)}"
+    )
 
 
 def test_delete_plugin(client, db, setup_plugin):

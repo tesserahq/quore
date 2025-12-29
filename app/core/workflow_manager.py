@@ -74,7 +74,6 @@ class WorkflowManager:
     async def create_workflow(
         self, chat_request: Optional[ChatRequest] = None
     ) -> AgentWorkflow:
-
         self.logger.info("Creating AgentWorkflow")
 
         query_tool = self.index_manager.get_query_engine_tool()
