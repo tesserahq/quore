@@ -80,7 +80,6 @@ class TestWorkflowManager:
             ) as mock_get_query_tool,
             patch.object(workflow_manager, "get_tools") as mock_get_tools,
         ):
-
             mock_llm.return_value = MockLLM()
             mock_get_query_tool.return_value = mock_query_tool
             mock_get_tools.return_value = []
@@ -123,7 +122,6 @@ class TestWorkflowManager:
             ) as mock_get_query_tool,
             patch.object(workflow_manager, "get_tools") as mock_get_tools,
         ):
-
             mock_llm.return_value = MockLLM()
             mock_get_query_tool.return_value = mock_query_tool
             mock_get_tools.return_value = []
@@ -165,7 +163,6 @@ class TestWorkflowManager:
             ) as mock_get_query_tool,
             patch.object(workflow_manager, "get_tools") as mock_get_tools,
         ):
-
             mock_llm.return_value = MockLLM()
             mock_get_query_tool.return_value = mock_query_tool
             mock_get_tools.return_value = []
@@ -200,7 +197,6 @@ class TestWorkflowManager:
             ) as mock_get_query_tool,
             patch.object(workflow_manager, "get_tools") as mock_get_tools,
         ):
-
             mock_llm.return_value = MockLLM()
             mock_get_query_tool.return_value = mock_query_tool
             mock_get_tools.return_value = []

@@ -1,6 +1,6 @@
 from typing import List, Optional
 from uuid import UUID
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate, UserOnboard
 from datetime import datetime, timezone
@@ -20,7 +20,12 @@ class UserService(SoftDeleteService[User]):
         return self.db.query(User).filter(User.email == email).first()
 
     def get_user_by_external_id(self, external_id: str) -> Optional[User]:
-        return self.db.query(User).filter(User.external_id == external_id).first()
+        return (
+            self.db.query(User)
+            .options(joinedload(User.memberships))
+            .filter(User.external_id == external_id)
+            .first()
+        )
 
     def get_user_by_username(self, username: str) -> Optional[User]:
         return self.db.query(User).filter(User.username == username).first()
