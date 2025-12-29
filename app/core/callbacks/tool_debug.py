@@ -78,9 +78,9 @@ class ToolDebugCallback(EventCallback):
 
             if matching_call_id:
                 self.tool_calls[matching_call_id]["status"] = "completed"
-                self.tool_calls[matching_call_id]["result"] = (
-                    event.tool_output.raw_output
-                )
+                self.tool_calls[matching_call_id][
+                    "result"
+                ] = event.tool_output.raw_output
                 self.tool_calls[matching_call_id]["error"] = getattr(
                     event.tool_output, "error", None
                 )

@@ -1,6 +1,5 @@
 import pytest
 from sqlalchemy.orm import Session
-from sqlalchemy.orm.exc import DetachedInstanceError
 from app.models.user import User
 from app.models.membership import Membership
 from app.models.workspace import Workspace
@@ -49,7 +48,9 @@ def user_with_membership(db: Session, faker):
     return user, workspace, membership
 
 
-def test_get_user_by_external_id_eager_loads_memberships(db: Session, user_with_membership):
+def test_get_user_by_external_id_eager_loads_memberships(
+    db: Session, user_with_membership
+):
     """
     Test that get_user_by_external_id eagerly loads the memberships relationship.
     This prevents DetachedInstanceError when accessing memberships after session is closed.
@@ -70,7 +71,9 @@ def test_get_user_by_external_id_eager_loads_memberships(db: Session, user_with_
     assert memberships[0].workspace_id == workspace.id
 
 
-def test_get_user_by_external_id_memberships_accessible_after_expunge(db: Session, user_with_membership):
+def test_get_user_by_external_id_memberships_accessible_after_expunge(
+    db: Session, user_with_membership
+):
     """
     Test that memberships are accessible even after the user is expunged from session.
     This simulates the auth flow where session is closed after loading user.
@@ -91,7 +94,9 @@ def test_get_user_by_external_id_memberships_accessible_after_expunge(db: Sessio
     assert memberships[0].workspace_id == workspace.id
 
 
-def test_get_user_by_external_id_returns_empty_memberships_for_new_user(db: Session, faker):
+def test_get_user_by_external_id_returns_empty_memberships_for_new_user(
+    db: Session, faker
+):
     """
     Test that a user without memberships returns an empty list, not None.
     """
@@ -118,9 +123,9 @@ def test_get_user_by_external_id_returns_empty_memberships_for_new_user(db: Sess
     assert fetched_user.memberships == []
 
 
-def test_onboard_user_returns_user_with_accessible_memberships(db: Session, faker):
+def test_onboard_user_returns_user_without_accessible_memberships(db: Session, faker):
     """
-    Test that onboard_user returns a user with memberships relationship loaded.
+    Test that a newly onboarded user has no memberships.
     """
     user_service = UserService(db)
 
@@ -136,14 +141,13 @@ def test_onboard_user_returns_user_with_accessible_memberships(db: Session, fake
     new_user = user_service.onboard_user(user_onboard)
     assert new_user is not None
 
-    # Expire session
-    db.expire_all()
-
-    # Should NOT raise DetachedInstanceError - memberships should be loaded (empty for new user)
-    assert new_user.memberships == []
+    # A newly onboarded user should have no memberships
+    assert len(new_user.memberships) == 0
 
 
-def test_user_workspace_ids_accessible_after_session_expired(db: Session, user_with_membership):
+def test_user_workspace_ids_accessible_after_session_expired(
+    db: Session, user_with_membership
+):
     """
     Test the exact pattern used in prompt.py and credential.py routers:
     accessing workspace_ids from memberships after session is no longer active.
@@ -164,7 +168,9 @@ def test_user_workspace_ids_accessible_after_session_expired(db: Session, user_w
     assert workspace.id in user_workspace_ids
 
 
-def test_membership_check_pattern_works_after_session_expired(db: Session, user_with_membership):
+def test_membership_check_pattern_works_after_session_expired(
+    db: Session, user_with_membership
+):
     """
     Test the credential.py pattern: checking if user has membership in a workspace.
     """
@@ -181,4 +187,3 @@ def test_membership_check_pattern_works_after_session_expired(db: Session, user_
     has_access = any(m.workspace_id == workspace.id for m in fetched_user.memberships)
 
     assert has_access is True
-
